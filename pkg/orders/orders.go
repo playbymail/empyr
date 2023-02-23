@@ -21,97 +21,29 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"log"
+	"os"
 )
 
-// Loader loads all the order records from the buffer.
-func Loader(buffer []byte) ([]Command, []error) {
-	csvReader := csv.NewReader(bytes.NewReader(buffer))
-	// we don't want the spaces
-	csvReader.TrimLeadingSpace = true
-	// special value means variable number of fields per record
-	csvReader.FieldsPerRecord = -1
-
-	raw, err := csvReader.ReadAll()
+// Load loads all the order records from the buffer.
+func LoadOrdersCSV(filename string) (commands []Command, err error) {
+	data, err := os.ReadFile(filename)
 	if err != nil {
-		// parse error on line 41, column 19: bare " in non-quoted-field
-		return nil, []error{fmt.Errorf("reader: %w", err)}
+		log.Fatal(fmt.Errorf("loadOrdersCSV: %w", err))
 	}
 
-	// good luck here
-	//var orders Orders
-	var commands []Command
-	var errs []error
+	// create a CSV reader that accepts a variable number of fields per record
+	// and ignores leading spaces in fields.
+	csvReader := csv.NewReader(bytes.NewReader(data))
+	csvReader.FieldsPerRecord = -1
+	csvReader.TrimLeadingSpace = true
 
-	for row := range raw {
-		line := row + 1
-		cmd := parseCommand(row+1, raw[row]...)
-		commands = append(commands)
-		if cmd.Command == "" {
-			cmd.Errors = append(cmd.Errors, fmt.Errorf("%d: unknown command", line))
-		} else {
-
-		}
-		commands = append(commands, cmd)
-		//for col := range raw[row] {
-		//	raw[row][col] = strings.TrimSpace(raw[row][col])
-		//}
-		//if raw[row][0] == "game" {
-		//	if orders.Game != nil {
-		//		errs = append(errs, fmt.Errorf("%d: game: already defined", line))
-		//		continue
-		//	}
-		//	// expect game , game-name , game-turn
-		//	if len(raw[row]) != 3 {
-		//		errs = append(errs, fmt.Errorf("%d: game: requires 3 values", line))
-		//		continue
-		//	}
-		//	turn, err := strconv.Atoi(raw[row][2])
-		//	if err != nil {
-		//		errs = append(errs, fmt.Errorf("%d: game: turn: %w", line, err))
-		//	}
-		//	orders.Game = &Game{Name: raw[row][1], Turn: turn}
-		//	continue
-		//} else if raw[row][0] == "auth" {
-		//	if orders.Auth != nil {
-		//		errs = append(errs, fmt.Errorf("%d: auth: already defined", line))
-		//		continue
-		//	}
-		//	// expect auth , auth-kind , value
-		//	if len(raw[row]) != 3 {
-		//		errs = append(errs, fmt.Errorf("%d: auth: requires 3 values", line))
-		//		continue
-		//	}
-		//	if raw[row][1] == "token" {
-		//		orders.Auth = &Auth{Kind: "token"}
-		//	} else {
-		//		errs = append(errs, fmt.Errorf("%d: auth: unknown kind", line))
-		//		continue
-		//	}
-		//	orders.Auth.Value = raw[row][1]
-		//	continue
-		//} else if raw[row][1] == "assemble" {
-		//} else if raw[row][1] == "bombard" {
-		//} else if raw[row][1] == "build change" {
-		//} else if raw[row][1] == "buy" {
-		//} else if raw[row][1] == "control" {
-		//} else if raw[row][1] == "draft" {
-		//} else if raw[row][1] == "invade" {
-		//} else if raw[row][1] == "mining" {
-		//} else if raw[row][1] == "move" {
-		//} else if raw[row][1] == "pay" {
-		//} else if raw[row][1] == "permission to colonize" {
-		//} else if raw[row][1] == "probe" {
-		//} else if raw[row][1] == "raid" {
-		//} else if raw[row][1] == "ration" {
-		//} else if raw[row][1] == "sell" {
-		//} else if raw[row][1] == "support" {
-		//} else if raw[row][1] == "survey" {
-		//} else if raw[row][1] == "transfer" {
-		//} else {
-		//	errs = append(errs, fmt.Errorf("unknown order on line %d", line))
-		//	continue
-		//}
+	// parse the data into rows and columns
+	rows, err := csvReader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("loadOrdersCSV: %w", err)
 	}
 
-	return commands, errs
+	// return the parsed orders
+	return parseCSV(rows), nil
 }

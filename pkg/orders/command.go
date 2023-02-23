@@ -52,14 +52,24 @@ func loadCommands(buffer []byte) ([]Command, error) {
 	return commands, nil
 }
 
-func parseCommand(line int, args ...string) Command {
+func parseCSV(rows [][]string) (commands []Command) {
+	for row := range rows {
+		cmd := parseCommand(row+1, rows[row]...)
+		commands = append(commands, cmd)
+	}
+	return commands
+}
+
+// parseCommand assumes that the command has been split into tokens, one token per argument.
+func parseCommand(line int, tokens ...string) Command {
 	c := Command{Line: line}
-	for _, arg := range args {
-		arg = strings.TrimSpace(arg)
+	for _, token := range tokens {
+		arg := strings.TrimSpace(token)
 		if c.Command != "" {
 			c.Arguments = append(c.Arguments, arg)
 			continue
 		}
+
 		switch arg {
 		case "attack spies":
 			c.Command = "attack-spies"

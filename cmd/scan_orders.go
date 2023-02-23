@@ -23,7 +23,6 @@ import (
 	"github.com/playbymail/empyr/pkg/orders"
 	"github.com/spf13/cobra"
 	"log"
-	"os"
 	"strconv"
 )
 
@@ -37,26 +36,14 @@ var cmdScanOrders = &cobra.Command{
 			log.Fatal(fmt.Errorf("scan-orders: %w", err))
 		}
 
-		data, err := os.ReadFile(cfgScanOrders.inputFileName)
+		commands, err := orders.LoadOrdersCSV(cfgScanOrders.inputFileName)
 		if err != nil {
-			log.Fatal(fmt.Errorf("scan-orders: %w", err))
-		}
-
-		commands, errs := orders.Loader(data)
-		foundErrors := false
-		for _, err := range errs {
-			foundErrors = true
-			fmt.Println(err)
+			log.Fatalf("scan-orders: %v\nerrors found - abandoning processing", err)
 		}
 		for _, cmd := range commands {
 			for _, err := range cmd.Errors {
-				foundErrors = true
 				fmt.Println(err)
 			}
-		}
-		if foundErrors {
-			fmt.Println("errors found - abandoning processing")
-			os.Exit(2)
 		}
 
 		// orders must be for the current game and turn
@@ -73,9 +60,9 @@ var cmdScanOrders = &cobra.Command{
 			ordersGameTurn = turnNo
 		}
 		if ordersGameName != g.Name {
-			log.Fatalf("error: orders are for game %q\n", ordersGameName)
+			log.Fatalf("scan-orders: orders are for game %q\n", ordersGameName)
 		} else if ordersGameTurn != g.Turn {
-			log.Fatalf("error: orders are for turn %d\n", ordersGameTurn)
+			log.Fatalf("scan-orders: orders are for turn %d\n", ordersGameTurn)
 		}
 
 		for _, cmd := range commands {
