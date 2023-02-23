@@ -33,13 +33,10 @@ type Game struct {
 // ReadGame loads a game's data file.
 func ReadGame(filename string) (Game, error) {
 	var g Game
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return g, fmt.Errorf("game: open: %w", nil)
-	}
-	err = json.Unmarshal(data, &g)
-	if err != nil {
-		return g, fmt.Errorf("game: parse: %w", nil)
+	if data, err := os.ReadFile(filename); err != nil {
+		return g, fmt.Errorf("game: open: %w", err)
+	} else if err = json.Unmarshal(data, &g); err != nil {
+		return g, fmt.Errorf("game: parse: %w", err)
 	}
 	return g, nil
 }
