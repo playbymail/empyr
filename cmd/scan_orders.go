@@ -19,10 +19,12 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/playbymail/empyr/pkg/empyr"
 	"github.com/playbymail/empyr/pkg/orders"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
+	"strconv"
 )
 
 var cmdScanOrders = &cobra.Command{
@@ -30,6 +32,11 @@ var cmdScanOrders = &cobra.Command{
 	Short: "scan an orders file",
 	Long:  `Load an orders file, scan it, and report on all errors.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		g, err := empyr.ReadGame(cfgScanOrders.gameFileName)
+		if err != nil {
+			log.Fatal(fmt.Errorf("scan-orders: %w", err))
+		}
+
 		data, err := os.ReadFile(cfgScanOrders.inputFileName)
 		if err != nil {
 			log.Fatal(fmt.Errorf("scan-orders: %w", err))
@@ -51,21 +58,48 @@ var cmdScanOrders = &cobra.Command{
 			fmt.Println("errors found - abandoning processing")
 			os.Exit(2)
 		}
+
+		// orders must be for the current game and turn
+		ordersGameName, ordersGameTurn := "", -1
+		for _, cmd := range commands {
+			if cmd.Command != "game" {
+				continue
+			}
+			ordersGameName = cmd.Arguments[0]
+			turnNo, err := strconv.Atoi(cmd.Arguments[1])
+			if err != nil {
+				log.Fatal(fmt.Errorf("scan-orders: game: %q: invalid turn: %v", g.Name, err))
+			}
+			ordersGameTurn = turnNo
+		}
+		if ordersGameName != g.Name {
+			log.Fatalf("error: orders are for game %q\n", ordersGameName)
+		} else if ordersGameTurn != g.Turn {
+			log.Fatalf("error: orders are for turn %d\n", ordersGameTurn)
+		}
+
 		for _, cmd := range commands {
 			fmt.Printf("cmd: %3d: %s\n", cmd.Line, cmd.Command)
 		}
+
+		log.Printf("processing game %q: turn %d\n", g.Name, g.Turn)
 	},
 }
 
 func init() {
 	cmdRoot.AddCommand(cmdScanOrders)
 
-	cmdScanOrders.Flags().StringVarP(&cfgScanOrders.inputFileName, "input-file", "i", "", "file to load and scan")
+	cmdScanOrders.Flags().StringVarP(&cfgScanOrders.gameFileName, "game-file", "g", "", "game file to load")
+	if err := cmdScanOrders.MarkFlagRequired("game-file"); err != nil {
+		panic(fmt.Errorf("scan-orders: %w", err))
+	}
+	cmdScanOrders.Flags().StringVarP(&cfgScanOrders.inputFileName, "input-file", "i", "", "orders file to load and scan")
 	if err := cmdScanOrders.MarkFlagRequired("input-file"); err != nil {
 		panic(fmt.Errorf("scan-orders: %w", err))
 	}
 }
 
 var cfgScanOrders struct {
+	gameFileName  string
 	inputFileName string
 }
