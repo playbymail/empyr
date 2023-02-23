@@ -19,7 +19,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/playbymail/empyr/internal/scanner"
+	"github.com/playbymail/empyr/pkg/orders"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -30,15 +30,29 @@ var cmdScanOrders = &cobra.Command{
 	Short: "scan an orders file",
 	Long:  `Load an orders file, scan it, and report on all errors.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		orders, err := os.ReadFile(cfgScanOrders.inputFileName)
+		data, err := os.ReadFile(cfgScanOrders.inputFileName)
 		if err != nil {
 			log.Fatal(fmt.Errorf("scan-orders: %w", err))
 		}
 
-		if r, err := scanner.Orders(orders); err != nil {
-			log.Fatal(fmt.Errorf("scan-orders: %w", err))
-		} else {
-			fmt.Println(r)
+		commands, errs := orders.Loader(data)
+		foundErrors := false
+		for _, err := range errs {
+			foundErrors = true
+			fmt.Println(err)
+		}
+		for _, cmd := range commands {
+			for _, err := range cmd.Errors {
+				foundErrors = true
+				fmt.Println(err)
+			}
+		}
+		if foundErrors {
+			fmt.Println("errors found - abandoning processing")
+			os.Exit(2)
+		}
+		for _, cmd := range commands {
+			fmt.Printf("cmd: %3d: %s\n", cmd.Line, cmd.Command)
 		}
 	},
 }

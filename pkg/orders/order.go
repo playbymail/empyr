@@ -15,20 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-package scanner
+package orders
 
-import (
-	"bytes"
-	"encoding/csv"
-)
+type Orders struct {
+	Game *Game
+	Auth *Auth
+}
 
-// Orders loads all the order records from the buffer.
-func Orders(buffer []byte) ([][]string, error) {
-	csvReader := csv.NewReader(bytes.NewReader(buffer))
-	// we don't want the spaces
-	csvReader.TrimLeadingSpace = true
-	// special value means variable number of fields per record
-	csvReader.FieldsPerRecord = -1
+type Auth struct {
+	Kind  string
+	Value string
+}
 
-	return csvReader.ReadAll()
+type Game struct {
+	Name string
+	Turn int
 }
