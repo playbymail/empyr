@@ -1,4 +1,4 @@
-// empyr - a game engine for Empyrean Challenge
+// empyr - a reimagining of Vern Holford's Empyrean Challenge
 // Copyright (C) 2023 Michael D Henderson
 //
 // This program is free software: you can redistribute it and/or modify
