@@ -1,2 +1,6 @@
 *
 !.gitignore
+!.env
+!.env.development
+!.env.test
+!.env.production

@@ -33,7 +33,7 @@ func main() {
 
 	log.SetFlags(log.LstdFlags | log.LUTC)
 
-	if err := dotfiles("WRAITH"); err != nil {
+	if err := dotfiles("EMPYR"); err != nil {
 		log.Fatalf("main: %+v\n", err)
 	}
 

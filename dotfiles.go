@@ -32,13 +32,14 @@ import (
 // 1st  .env.test.local         test   yes
 // 1st  .env.production.local   prod   yes
 // 2nd  .env.local              all    yes
-// 3rd  .env.development        dev    no
-// 3rd  .env.test               test   no
-// 3rd  .env.production         prod   no
-// 4th  .env                    all    yes, but see dotenv page
+// 3rd  .env.development        dev    no, but be wary of secrets
+// 3rd  .env.test               test   no, but be wary of secrets
+// 3rd  .env.production         prod   no, but be wary of secrets
+// 4th  .env                    all    no, but be wary of secrets
 //
 // Notes:
 //   - The .env.*.local files are for local overrides of environment-specific settings.
+//     We assume that they're created by the deployment process.
 //     They can contain sensitive information like credentials or tokens.
 //     They are loaded first, so they will override settings in the shared files.
 //     They should never be checked into the repository.

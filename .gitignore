@@ -3,7 +3,6 @@
 *.dylib
 *.exe
 *.gz
-*.html
 *.out
 *.pdf
 *.png
@@ -14,6 +13,7 @@
 *.tgz
 *.zip
 *~
-.env*
+.env.local
+.env.*.local
 .idea/
 notes.txt
