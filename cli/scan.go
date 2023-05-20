@@ -17,19 +17,12 @@
 
 package cli
 
-import (
-	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-)
+import "github.com/spf13/cobra"
 
-var cmdEnv = &cobra.Command{
-	Use:   "env",
-	Short: "dump the environment",
-	Long:  `Print out the environment settings.`,
+// cmdScan runs the scan command
+var cmdScan = &cobra.Command{
+	Use:   "scan",
+	Short: "Scan things",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("%-30s == %q\n", "version", cmdRoot.Version)
-		fmt.Printf("%-30s == %q\n", "homeFolder", config.homeFolder)
-		fmt.Printf("%-30s == %q\n", "configFile", viper.ConfigFileUsed())
 	},
 }

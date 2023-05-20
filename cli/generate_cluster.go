@@ -87,14 +87,3 @@ var argsGenerateCluster struct {
 	mapFile string
 	radius  float64
 }
-
-func init() {
-	cmdGenerate.AddCommand(cmdGenerateCluster)
-
-	// inputs
-	cmdGenerateCluster.Flags().StringVar(&argsGenerateCluster.kind, "kind", "uniform", "point distribution (uniform, clustered, sphere)")
-	cmdGenerateCluster.Flags().StringVar(&argsGenerateCluster.mapFile, "html-map", "", "name of map file to create (optional)")
-	cmdGenerateCluster.Flags().Float64Var(&argsGenerateCluster.radius, "radius", 15.0, "cluster radius")
-
-	// outputs
-}

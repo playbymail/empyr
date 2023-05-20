@@ -74,17 +74,32 @@ var cmdRoot = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the root Command.
 func Execute() error {
+	cmdRoot.Version = config.version.String()
+
+	cmdRoot.PersistentFlags().StringVar(&argsRoot.cfgFile, "config", "", "configuration file (optional)")
+	cmdRoot.PersistentFlags().BoolVar(&argsRoot.timeSelf, "time", false, "time commands")
+
+	cmdRoot.AddCommand(cmdEnv)
+
+	cmdRoot.AddCommand(cmdGenerate)
+
+	cmdGenerate.AddCommand(cmdGenerateCluster)
+	cmdGenerateCluster.Flags().StringVar(&argsGenerateCluster.kind, "kind", "uniform", "point distribution (uniform, clustered, sphere)")
+	cmdGenerateCluster.Flags().StringVar(&argsGenerateCluster.mapFile, "html-map", "", "name of map file to create (optional)")
+	cmdGenerateCluster.Flags().Float64Var(&argsGenerateCluster.radius, "radius", 15.0, "cluster radius")
+
+	cmdRoot.AddCommand(cmdScan)
+
+	cmdScan.AddCommand(cmdScanOrders)
+	cmdScanOrders.Flags().StringVarP(&argsScanOrders.ordersPath, "path", "p", "", "path to orders files")
+	if err := cmdScanOrders.MarkFlagRequired("path"); err != nil {
+		panic(fmt.Errorf("scan: orders: %w", err))
+	}
+
 	return cmdRoot.Execute()
 }
 
 var argsRoot struct {
 	cfgFile  string
 	timeSelf bool
-}
-
-func init() {
-	cmdRoot.Version = config.version.String()
-
-	cmdRoot.PersistentFlags().StringVar(&argsRoot.cfgFile, "config", "", "configuration file (optional)")
-	cmdRoot.PersistentFlags().BoolVar(&argsRoot.timeSelf, "time", false, "time commands")
 }
