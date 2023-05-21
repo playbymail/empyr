@@ -82,11 +82,19 @@ func Execute() error {
 	cmdRoot.AddCommand(cmdEnv)
 
 	cmdRoot.AddCommand(cmdGenerate)
-
 	cmdGenerate.AddCommand(cmdGenerateCluster)
 	cmdGenerateCluster.Flags().StringVar(&argsGenerateCluster.kind, "kind", "uniform", "point distribution (uniform, clustered, sphere)")
 	cmdGenerateCluster.Flags().StringVar(&argsGenerateCluster.mapFile, "html-map", "", "name of map file to create (optional)")
 	cmdGenerateCluster.Flags().Float64Var(&argsGenerateCluster.radius, "radius", 15.0, "cluster radius")
+	cmdGenerate.AddCommand(cmdGenerateGame)
+	cmdGenerateGame.Flags().StringVarP(&argsGenerateGame.code, "code", "c", argsGenerateGame.code, "short code for game")
+	if err := cmdGenerateGame.MarkFlagRequired("code"); err != nil {
+		panic(fmt.Errorf("generate: game: code: %w", err))
+	}
+	cmdGenerateGame.Flags().StringVarP(&argsGenerateGame.descr, "descr", "d", argsGenerateGame.descr, "description of game")
+	cmdGenerateGame.Flags().BoolVarP(&argsGenerateGame.force, "force", "f", argsGenerateGame.force, "force creation of game")
+	cmdGenerateGame.Flags().StringVarP(&argsGenerateGame.name, "name", "n", argsGenerateGame.name, "short name for game")
+	cmdGenerateGame.Flags().StringVarP(&argsGenerateGame.path, "path", "p", argsGenerateGame.path, "path to create game in")
 
 	cmdRoot.AddCommand(cmdScan)
 

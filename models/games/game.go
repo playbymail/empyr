@@ -19,7 +19,9 @@ package games
 
 // Game defines information about the current game
 type Game struct {
-	Id   string
-	Name string
-	Turn int
+	Id    string
+	Code  string
+	Name  string
+	Descr string
+	Turn  int
 }
