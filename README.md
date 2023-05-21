@@ -1,4 +1,7 @@
 # empyr
+[![GoDoc](https://godoc.org/github.com/playbymail/empyr?status.svg)](http://godoc.org/github.com/playbymail/empyr)
+[![Go Report Card](https://goreportcard.com/badge/github.com/playbymail/empyr)](https://goreportcard.com/report/github.com/playbymail/empyr)
+
 Empyr implements a game engine for _Empyrean Challenge_.
 
 You can use the software in this repository to set up a game server.
