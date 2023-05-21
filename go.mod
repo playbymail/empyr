@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/google/uuid v1.1.2
 	github.com/joho/godotenv v1.5.1
+	github.com/maloquacious/cerrors v0.0.0-20230521213745-fc509e049165
 	github.com/maloquacious/semver v0.0.0-20230521212240-49a9889ed791
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/peterbourgon/ff/v3 v3.3.1
