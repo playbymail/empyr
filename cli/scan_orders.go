@@ -29,8 +29,8 @@ import (
 
 var cmdScanOrders = &cobra.Command{
 	Use:   "orders",
-	Short: "Scan an orders file",
-	Long:  `Load an orders file, scan it, and report on all errors.`,
+	Short: "Scan orders file",
+	Long:  `Load all orders file, scan them, and report on all errors.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		argsScanOrders.ordersPath = filepath.Clean(argsScanOrders.ordersPath)
 		log.Printf("scanning %q\n", argsScanOrders.ordersPath)
@@ -40,11 +40,13 @@ var cmdScanOrders = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		// load all the files
+		// find all orders files
 		files, err := filepath.Glob(filepath.Join(argsScanOrders.ordersPath, "orders.*.txt"))
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// scan the order files
 		for _, name := range files {
 			log.Printf("scanning %q\n", name)
 			input, err := os.ReadFile(name)
