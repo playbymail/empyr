@@ -19,7 +19,7 @@ package cli
 
 import (
 	"fmt"
-	"github.com/playbymail/empyr/internal/semver"
+	"github.com/maloquacious/semver"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"

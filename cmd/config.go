@@ -19,8 +19,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/maloquacious/semver"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/playbymail/empyr/internal/semver"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
