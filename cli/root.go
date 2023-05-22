@@ -18,6 +18,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -55,9 +56,17 @@ var cmdRoot = &cobra.Command{
 			// use default location of ~/.empyr.json
 			argsRoot.cfgFile = filepath.Clean(filepath.Join(config.homeFolder, ".empyr.json"))
 		}
-		viper.SetConfigFile(argsRoot.cfgFile)
-
-		return bindConfig(cmd)
+		if sb, err := os.Stat(argsRoot.cfgFile); err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				log.Fatalf("missing config %s\n", argsRoot.cfgFile)
+			}
+		} else if sb.IsDir() {
+			log.Fatalf("config %s is not a file\n", argsRoot.cfgFile)
+		} else {
+			viper.SetConfigFile(argsRoot.cfgFile)
+			return bindConfig(cmd)
+		}
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		started := time.Now()
@@ -82,10 +91,15 @@ func Execute() error {
 	cmdRoot.AddCommand(cmdEnv)
 
 	cmdRoot.AddCommand(cmdGenerate)
+	cmdGenerate.PersistentFlags().StringVarP(&argsGenerate.path, "path", "p", argsGenerate.path, "path containing game folders")
 	cmdGenerate.AddCommand(cmdGenerateCluster)
-	cmdGenerateCluster.Flags().StringVar(&argsGenerateCluster.kind, "kind", "uniform", "point distribution (uniform, clustered, sphere)")
+	cmdGenerateCluster.Flags().StringVarP(&argsGenerateCluster.game, "game", "g", argsGenerateCluster.game, "code of game to update")
+	cmdGenerateCluster.Flags().Float64VarP(&argsGenerateCluster.radius, "radius", "r", 15.0, "cluster radius")
 	cmdGenerateCluster.Flags().StringVar(&argsGenerateCluster.mapFile, "html-map", "", "name of map file to create (optional)")
-	cmdGenerateCluster.Flags().Float64Var(&argsGenerateCluster.radius, "radius", 15.0, "cluster radius")
+	cmdGenerateCluster.Flags().BoolVar(&argsGenerateCluster.kind.cluster, "clustered", false, "clustered point distribution")
+	cmdGenerateCluster.Flags().BoolVar(&argsGenerateCluster.kind.surface, "surface", false, "surface point distribution")
+	cmdGenerateCluster.Flags().BoolVar(&argsGenerateCluster.kind.uniform, "uniform", true, "uniform point distribution")
+	cmdGenerateCluster.MarkFlagsMutuallyExclusive("clustered", "surface", "uniform")
 	cmdGenerate.AddCommand(cmdGenerateGame)
 	cmdGenerateGame.Flags().StringVarP(&argsGenerateGame.code, "code", "c", argsGenerateGame.code, "short code for game")
 	if err := cmdGenerateGame.MarkFlagRequired("code"); err != nil {
@@ -94,7 +108,6 @@ func Execute() error {
 	cmdGenerateGame.Flags().StringVarP(&argsGenerateGame.descr, "descr", "d", argsGenerateGame.descr, "description of game")
 	cmdGenerateGame.Flags().BoolVarP(&argsGenerateGame.force, "force", "f", argsGenerateGame.force, "force creation of game")
 	cmdGenerateGame.Flags().StringVarP(&argsGenerateGame.name, "name", "n", argsGenerateGame.name, "short name for game")
-	cmdGenerateGame.Flags().StringVarP(&argsGenerateGame.path, "path", "p", argsGenerateGame.path, "path to create game in")
 
 	cmdRoot.AddCommand(cmdScan)
 

@@ -19,10 +19,12 @@ package cli
 
 import "github.com/spf13/cobra"
 
+var argsGenerate struct {
+	path string // path containing game folders
+}
+
 // cmdGenerate runs the generate command
 var cmdGenerate = &cobra.Command{
 	Use:   "generate",
 	Short: "generate things",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
 }

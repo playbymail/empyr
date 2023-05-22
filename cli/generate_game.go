@@ -32,7 +32,6 @@ import (
 )
 
 var argsGenerateGame struct {
-	path  string // path to create game in
 	force bool   // if true, delete any existing game
 	code  string // code for game
 	name  string // name of game
@@ -47,6 +46,15 @@ var cmdGenerateGame = &cobra.Command{
 		// isweird is a helper function to check string for weird characters.
 		isweird := func(s string) bool {
 			return `"`+s+`"` != fmt.Sprintf("%q", s)
+		}
+
+		if argsGenerate.path != "" {
+			argsGenerate.path = filepath.Clean(argsGenerate.path)
+			if sb, err := os.Stat(argsGenerate.path); err != nil {
+				return err
+			} else if !sb.IsDir() {
+				return fmt.Errorf("path must be a valid directory")
+			}
 		}
 
 		argsGenerateGame.code = strings.ToUpper(argsGenerateGame.code)
@@ -72,16 +80,7 @@ var cmdGenerateGame = &cobra.Command{
 			return fmt.Errorf("descr must not contain weird characters")
 		}
 
-		if argsGenerateGame.path != "" {
-			argsGenerateGame.path = filepath.Clean(argsGenerateGame.path)
-			if sb, err := os.Stat(argsGenerateGame.path); err != nil {
-				return err
-			} else if !sb.IsDir() {
-				return fmt.Errorf("path must be a valid directory")
-			}
-		}
-
-		gamePath := filepath.Join(argsGenerateGame.path, argsGenerateGame.code)
+		gamePath := filepath.Join(argsGenerate.path, argsGenerateGame.code)
 		if sb, err := os.Stat(gamePath); err == nil {
 			if !argsGenerateGame.force {
 				log.Fatalf("generate: game: path: %s exists\n", gamePath)
