@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wraith Cluster</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script>
+    const canvas = document.getElementById("renderCanvas"); 
+    const engine = new BABYLON.Engine(canvas, true); 
+
+    const createStandardMaterial = function (name, options, scene) {
+        const material = new BABYLON.StandardMaterial(name, scene);
+        for (let property in material) {
+            if (options[property]) {
+                material[property] = options[property];
+            }
+        }
+        return material;
+    }
+
+    const fetchSector = function (x, y, z) {
+        
+        
+        const sector = {
+            
+            
+            origin: {x: x, y: y, z: z},
+            systems: [
+                
+                {
+                    id:  1 ,
+                    x:  0 ,
+                    y:  0 ,
+                    z:  0 ,
+                    size:  0.75 ,
+                    color: BABYLON.Color3.Yellow(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 0 ,  0 ,  0 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  2 ,
+                    x:  1 ,
+                    y:  1 ,
+                    z:  1 ,
+                    size:  0.5 ,
+                    color: BABYLON.Color3.Teal(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 1 ,  1 ,  1 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  3 ,
+                    x:  -1 ,
+                    y:  -1 ,
+                    z:  -1 ,
+                    size:  0.5 ,
+                    color: BABYLON.Color3.Teal(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -1 ,  -1 ,  -1 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  4 ,
+                    x:  -2 ,
+                    y:  2 ,
+                    z:  0 ,
+                    size:  0.5 ,
+                    color: BABYLON.Color3.Teal(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -2 ,  2 ,  0 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  5 ,
+                    x:  4 ,
+                    y:  -1 ,
+                    z:  -3 ,
+                    size:  0.45 ,
+                    color: BABYLON.Color3.White(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 4 ,  -1 ,  -3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  6 ,
+                    x:  6 ,
+                    y:  0 ,
+                    z:  3 ,
+                    size:  0.45 ,
+                    color: BABYLON.Color3.White(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 6 ,  0 ,  3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  7 ,
+                    x:  6 ,
+                    y:  -2 ,
+                    z:  2 ,
+                    size:  0.45 ,
+                    color: BABYLON.Color3.White(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 6 ,  -2 ,  2 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  8 ,
+                    x:  3 ,
+                    y:  0 ,
+                    z:  -5 ,
+                    size:  0.45 ,
+                    color: BABYLON.Color3.White(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 3 ,  0 ,  -5 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  9 ,
+                    x:  4 ,
+                    y:  5 ,
+                    z:  3 ,
+                    size:  0.45 ,
+                    color: BABYLON.Color3.White(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 4 ,  5 ,  3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  10 ,
+                    x:  2 ,
+                    y:  6 ,
+                    z:  2 ,
+                    size:  0.45 ,
+                    color: BABYLON.Color3.White(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 2 ,  6 ,  2 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  11 ,
+                    x:  -6 ,
+                    y:  -1 ,
+                    z:  -1 ,
+                    size:  0.45 ,
+                    color: BABYLON.Color3.White(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -6 ,  -1 ,  -1 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  12 ,
+                    x:  1 ,
+                    y:  -5 ,
+                    z:  -4 ,
+                    size:  0.45 ,
+                    color: BABYLON.Color3.White(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 1 ,  -5 ,  -4 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  13 ,
+                    x:  -1 ,
+                    y:  1 ,
+                    z:  6 ,
+                    size:  0.45 ,
+                    color: BABYLON.Color3.White(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -1 ,  1 ,  6 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  14 ,
+                    x:  2 ,
+                    y:  11 ,
+                    z:  2 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 2 ,  11 ,  2 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  15 ,
+                    x:  12 ,
+                    y:  -9 ,
+                    z:  5 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 12 ,  -9 ,  5 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  16 ,
+                    x:  -2 ,
+                    y:  -9 ,
+                    z:  11 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -2 ,  -9 ,  11 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  17 ,
+                    x:  14 ,
+                    y:  -13 ,
+                    z:  -13 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 14 ,  -13 ,  -13 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  18 ,
+                    x:  -15 ,
+                    y:  2 ,
+                    z:  7 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -15 ,  2 ,  7 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  19 ,
+                    x:  6 ,
+                    y:  -15 ,
+                    z:  -9 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 6 ,  -15 ,  -9 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  20 ,
+                    x:  8 ,
+                    y:  6 ,
+                    z:  -7 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 8 ,  6 ,  -7 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  21 ,
+                    x:  -7 ,
+                    y:  4 ,
+                    z:  2 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -7 ,  4 ,  2 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  22 ,
+                    x:  -15 ,
+                    y:  -11 ,
+                    z:  1 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -15 ,  -11 ,  1 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  23 ,
+                    x:  6 ,
+                    y:  14 ,
+                    z:  -10 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 6 ,  14 ,  -10 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  24 ,
+                    x:  15 ,
+                    y:  -12 ,
+                    z:  3 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 15 ,  -12 ,  3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  25 ,
+                    x:  -6 ,
+                    y:  -13 ,
+                    z:  -11 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -6 ,  -13 ,  -11 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  26 ,
+                    x:  -2 ,
+                    y:  -15 ,
+                    z:  6 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -2 ,  -15 ,  6 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  27 ,
+                    x:  -8 ,
+                    y:  -15 ,
+                    z:  -14 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -8 ,  -15 ,  -14 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  28 ,
+                    x:  15 ,
+                    y:  5 ,
+                    z:  -14 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 15 ,  5 ,  -14 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  29 ,
+                    x:  -9 ,
+                    y:  1 ,
+                    z:  -10 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -9 ,  1 ,  -10 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  30 ,
+                    x:  -12 ,
+                    y:  3 ,
+                    z:  11 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -12 ,  3 ,  11 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  31 ,
+                    x:  13 ,
+                    y:  -9 ,
+                    z:  10 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 13 ,  -9 ,  10 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  32 ,
+                    x:  -3 ,
+                    y:  0 ,
+                    z:  8 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -3 ,  0 ,  8 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  33 ,
+                    x:  1 ,
+                    y:  -14 ,
+                    z:  12 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 1 ,  -14 ,  12 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  34 ,
+                    x:  6 ,
+                    y:  -11 ,
+                    z:  3 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 6 ,  -11 ,  3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  35 ,
+                    x:  14 ,
+                    y:  -1 ,
+                    z:  2 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 14 ,  -1 ,  2 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  36 ,
+                    x:  10 ,
+                    y:  -15 ,
+                    z:  11 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 10 ,  -15 ,  11 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  37 ,
+                    x:  -15 ,
+                    y:  11 ,
+                    z:  -9 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -15 ,  11 ,  -9 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  38 ,
+                    x:  1 ,
+                    y:  -11 ,
+                    z:  13 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 1 ,  -11 ,  13 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  39 ,
+                    x:  1 ,
+                    y:  8 ,
+                    z:  -3 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 1 ,  8 ,  -3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  40 ,
+                    x:  13 ,
+                    y:  4 ,
+                    z:  15 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 13 ,  4 ,  15 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  41 ,
+                    x:  0 ,
+                    y:  -10 ,
+                    z:  -4 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 0 ,  -10 ,  -4 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  42 ,
+                    x:  10 ,
+                    y:  5 ,
+                    z:  -13 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 10 ,  5 ,  -13 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  43 ,
+                    x:  0 ,
+                    y:  -11 ,
+                    z:  4 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 0 ,  -11 ,  4 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  44 ,
+                    x:  1 ,
+                    y:  -10 ,
+                    z:  -1 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 1 ,  -10 ,  -1 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  45 ,
+                    x:  7 ,
+                    y:  0 ,
+                    z:  6 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 7 ,  0 ,  6 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  46 ,
+                    x:  15 ,
+                    y:  -13 ,
+                    z:  15 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 15 ,  -13 ,  15 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  47 ,
+                    x:  -10 ,
+                    y:  12 ,
+                    z:  -4 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -10 ,  12 ,  -4 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  48 ,
+                    x:  -4 ,
+                    y:  12 ,
+                    z:  8 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -4 ,  12 ,  8 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  49 ,
+                    x:  -15 ,
+                    y:  12 ,
+                    z:  15 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -15 ,  12 ,  15 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  50 ,
+                    x:  5 ,
+                    y:  -6 ,
+                    z:  5 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 5 ,  -6 ,  5 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  51 ,
+                    x:  -3 ,
+                    y:  -3 ,
+                    z:  -6 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -3 ,  -3 ,  -6 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  52 ,
+                    x:  14 ,
+                    y:  -4 ,
+                    z:  -14 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 14 ,  -4 ,  -14 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  53 ,
+                    x:  -2 ,
+                    y:  9 ,
+                    z:  -11 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -2 ,  9 ,  -11 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  54 ,
+                    x:  8 ,
+                    y:  1 ,
+                    z:  -8 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 8 ,  1 ,  -8 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  55 ,
+                    x:  -4 ,
+                    y:  -9 ,
+                    z:  -6 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -4 ,  -9 ,  -6 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  56 ,
+                    x:  -6 ,
+                    y:  -11 ,
+                    z:  -9 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -6 ,  -11 ,  -9 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  57 ,
+                    x:  -6 ,
+                    y:  -15 ,
+                    z:  -3 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -6 ,  -15 ,  -3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  58 ,
+                    x:  8 ,
+                    y:  -8 ,
+                    z:  -8 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 8 ,  -8 ,  -8 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  59 ,
+                    x:  -10 ,
+                    y:  12 ,
+                    z:  -5 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -10 ,  12 ,  -5 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  60 ,
+                    x:  7 ,
+                    y:  9 ,
+                    z:  -13 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 7 ,  9 ,  -13 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  61 ,
+                    x:  5 ,
+                    y:  -3 ,
+                    z:  -13 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 5 ,  -3 ,  -13 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  62 ,
+                    x:  -3 ,
+                    y:  11 ,
+                    z:  6 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -3 ,  11 ,  6 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  63 ,
+                    x:  5 ,
+                    y:  3 ,
+                    z:  9 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 5 ,  3 ,  9 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  64 ,
+                    x:  -9 ,
+                    y:  -13 ,
+                    z:  6 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -9 ,  -13 ,  6 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  65 ,
+                    x:  10 ,
+                    y:  -9 ,
+                    z:  -2 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 10 ,  -9 ,  -2 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  66 ,
+                    x:  13 ,
+                    y:  -10 ,
+                    z:  14 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 13 ,  -10 ,  14 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  67 ,
+                    x:  -13 ,
+                    y:  -8 ,
+                    z:  5 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -13 ,  -8 ,  5 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  68 ,
+                    x:  6 ,
+                    y:  15 ,
+                    z:  9 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 6 ,  15 ,  9 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  69 ,
+                    x:  -8 ,
+                    y:  -10 ,
+                    z:  -4 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -8 ,  -10 ,  -4 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  70 ,
+                    x:  -10 ,
+                    y:  3 ,
+                    z:  15 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -10 ,  3 ,  15 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  71 ,
+                    x:  7 ,
+                    y:  -1 ,
+                    z:  -11 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 7 ,  -1 ,  -11 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  72 ,
+                    x:  13 ,
+                    y:  11 ,
+                    z:  1 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 13 ,  11 ,  1 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  73 ,
+                    x:  6 ,
+                    y:  14 ,
+                    z:  -10 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 6 ,  14 ,  -10 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  74 ,
+                    x:  -2 ,
+                    y:  15 ,
+                    z:  -5 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -2 ,  15 ,  -5 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  75 ,
+                    x:  -11 ,
+                    y:  12 ,
+                    z:  -3 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -11 ,  12 ,  -3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  76 ,
+                    x:  4 ,
+                    y:  -3 ,
+                    z:  5 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 4 ,  -3 ,  5 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  77 ,
+                    x:  -14 ,
+                    y:  9 ,
+                    z:  -3 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -14 ,  9 ,  -3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  78 ,
+                    x:  4 ,
+                    y:  -9 ,
+                    z:  -1 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 4 ,  -9 ,  -1 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  79 ,
+                    x:  14 ,
+                    y:  13 ,
+                    z:  -3 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 14 ,  13 ,  -3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  80 ,
+                    x:  -14 ,
+                    y:  -11 ,
+                    z:  11 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -14 ,  -11 ,  11 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  81 ,
+                    x:  5 ,
+                    y:  -9 ,
+                    z:  -11 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 5 ,  -9 ,  -11 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  82 ,
+                    x:  -5 ,
+                    y:  8 ,
+                    z:  -9 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -5 ,  8 ,  -9 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  83 ,
+                    x:  1 ,
+                    y:  -12 ,
+                    z:  -15 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 1 ,  -12 ,  -15 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  84 ,
+                    x:  -8 ,
+                    y:  -14 ,
+                    z:  4 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -8 ,  -14 ,  4 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  85 ,
+                    x:  -2 ,
+                    y:  -3 ,
+                    z:  -11 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -2 ,  -3 ,  -11 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  86 ,
+                    x:  9 ,
+                    y:  -4 ,
+                    z:  10 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 9 ,  -4 ,  10 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  87 ,
+                    x:  1 ,
+                    y:  -3 ,
+                    z:  13 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 1 ,  -3 ,  13 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  88 ,
+                    x:  1 ,
+                    y:  3 ,
+                    z:  -12 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 1 ,  3 ,  -12 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  89 ,
+                    x:  9 ,
+                    y:  8 ,
+                    z:  -3 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 9 ,  8 ,  -3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  90 ,
+                    x:  6 ,
+                    y:  5 ,
+                    z:  -6 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 6 ,  5 ,  -6 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  91 ,
+                    x:  -8 ,
+                    y:  -13 ,
+                    z:  -13 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -8 ,  -13 ,  -13 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  92 ,
+                    x:  -15 ,
+                    y:  -8 ,
+                    z:  2 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -15 ,  -8 ,  2 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  93 ,
+                    x:  4 ,
+                    y:  -15 ,
+                    z:  15 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 4 ,  -15 ,  15 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  94 ,
+                    x:  13 ,
+                    y:  1 ,
+                    z:  3 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 13 ,  1 ,  3 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  95 ,
+                    x:  -12 ,
+                    y:  -9 ,
+                    z:  -14 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -12 ,  -9 ,  -14 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  96 ,
+                    x:  -13 ,
+                    y:  -13 ,
+                    z:  -2 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -13 ,  -13 ,  -2 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  97 ,
+                    x:  -15 ,
+                    y:  -4 ,
+                    z:  6 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -15 ,  -4 ,  6 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  98 ,
+                    x:  -14 ,
+                    y:  -13 ,
+                    z:  -12 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -14 ,  -13 ,  -12 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  99 ,
+                    x:  0 ,
+                    y:  14 ,
+                    z:  14 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( 0 ,  14 ,  14 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+                {
+                    id:  100 ,
+                    x:  -12 ,
+                    y:  2 ,
+                    z:  12 ,
+                    size:  0.33 ,
+                    color: BABYLON.Color3.Gray(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3( -12 ,  2 ,  12 ),
+                    warps: [
+                        
+                    ]
+                },
+                
+            ],
+        };
+
+        
+        sector.systems.forEach((system, ndx) => {
+            if (ndx === 0) {
+                sector.minX = system.x
+                sector.maxX = system.x
+                sector.minY = system.y
+                sector.maxY = system.y
+                sector.minZ = system.z
+                sector.maxZ = system.z
+            }
+            if (system.x < sector.minX) {
+                sector.minX = system.x
+            } else if (sector.maxX < system.x) {
+                sector.maxX = system.x
+            }
+            if (system.y < sector.minY) {
+                sector.minY = system.y
+            } else if (sector.maxY < system.y) {
+                sector.maxY = system.y
+            }
+            if (system.z < sector.minZ) {
+                sector.minZ = system.z
+            } else if (sector.maxZ < system.z) {
+                sector.maxZ = system.z
+            }
+        });
+        sector.radius = Math.max(sector.maxX - sector.minX, sector.maxY - sector.minY, sector.maxZ - sector.minZ) / 2 + 1;
+
+        return sector;
+    }
+
+    const createScene = function (sector) {
+        
+        const scene = new BABYLON.Scene(engine);
+
+        const camera = new BABYLON.ArcRotateCamera(
+            "camera",
+            -Math.PI / 2,    
+            Math.PI / 2.5,   
+            30,              
+            new BABYLON.Vector3(0, 0, 0) 
+        );
+
+        
+        
+        
+        
+
+        
+        camera.attachControl(canvas, true);
+
+        
+        const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+        
+        light.intensity = 0.7;
+
+        
+        sector.systems.forEach((system, ndx) => {
+            const mesh = BABYLON.MeshBuilder.CreateSphere(`obj-${ndx}`, {diameter: system.size, segments: 32}, scene);
+            mesh.position.x = system.x;
+            mesh.position.y = system.y;
+            mesh.position.z = system.z;
+            mesh.material = createStandardMaterial("sphereMaterial", {diffuseColor: system.color}, scene);
+
+            
+            system.warps.forEach((warp, wdx) => {
+                let lines = BABYLON.MeshBuilder.CreateLines(`obj-${ndx}-warp-${wdx}`, {points: [system.origin, warp]}, scene);
+                if (wdx === 0) {
+                    lines.color = new BABYLON.Color3(1, 0, 0);
+                } else if (wdx === 1) {
+                    lines.color = new BABYLON.Color3(0, 1, 0);
+                } else if (wdx === 2) {
+                    lines.color = new BABYLON.Color3(0, 0, 1);
+                } else if (wdx === 3) {
+                    lines.color = new BABYLON.Color3(1, 1, 0);
+                } else if (wdx === 4) {
+                    lines.color = new BABYLON.Color3(0, 1, 1);
+                } else if (wdx === 5) {
+                    lines.color = new BABYLON.Color3(1, 0, 1);
+                } else {
+                    lines.color = new BABYLON.Color3(1, 1, 1);
+                }
+            });
+        });
+
+
+        const cubeSize = 15;
+        const points = [
+            new BABYLON.Vector3(-cubeSize, -cubeSize, -cubeSize),
+            new BABYLON.Vector3(cubeSize, -cubeSize, -cubeSize),
+            new BABYLON.Vector3(cubeSize, -cubeSize, cubeSize),
+            new BABYLON.Vector3(-cubeSize, -cubeSize, cubeSize),
+            new BABYLON.Vector3(-cubeSize, cubeSize, -cubeSize),
+            new BABYLON.Vector3(cubeSize, cubeSize, -cubeSize),
+            new BABYLON.Vector3(cubeSize, cubeSize, cubeSize),
+            new BABYLON.Vector3(-cubeSize, cubeSize, cubeSize)
+        ];
+
+
+        BABYLON.MeshBuilder.CreateLines("bottomEdge1", {points: [points[0], points[1]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("bottomEdge2", {points: [points[1], points[2]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("bottomEdge3", {points: [points[2], points[3]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("bottomEdge4", {points: [points[3], points[0]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+
+
+        BABYLON.MeshBuilder.CreateLines("topEdge1", {points: [points[4], points[5]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("topEdge2", {points: [points[5], points[6]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("topEdge3", {points: [points[6], points[7]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("topEdge4", {points: [points[7], points[4]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+
+
+        BABYLON.MeshBuilder.CreateLines("vertEdge1", {points: [points[0], points[4]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("vertEdge2", {points: [points[1], points[5]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("vertEdge3", {points: [points[2], points[6]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("vertEdge4", {points: [points[3], points[7]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+
+
+        
+        const axisLength = 15;
+
+
+        BABYLON.MeshBuilder.CreateLines("xAxis", {
+            points: [
+                new BABYLON.Vector3(-axisLength, 0, 0),
+                new BABYLON.Vector3(axisLength, 0, 0)
+            ]
+        }, scene).color = new BABYLON.Color3(1, 1, 0);
+
+
+        BABYLON.MeshBuilder.CreateLines("yAxis", {
+            points: [
+                new BABYLON.Vector3(0, -axisLength, 0),
+                new BABYLON.Vector3(0, axisLength, 0)
+            ]
+        }, scene).color = new BABYLON.Color3(1, 1, 0);
+
+
+        BABYLON.MeshBuilder.CreateLines("zAxis", {
+            points: [
+                new BABYLON.Vector3(0, 0, -axisLength),
+                new BABYLON.Vector3(0, 0, axisLength)
+            ]
+        }, scene).color = new BABYLON.Color3(1, 1, 0);
+
+        
+        const makeTextPlane = function (text, color, size) {
+            const dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+            dynamicTexture.hasAlpha = true;
+            dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+            const plane = BABYLON.MeshBuilder.CreatePlane("TextPlane", {width: size, height: size}, scene);
+            plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+            plane.material.backFaceCulling = false;
+            plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+            plane.material.diffuseTexture = dynamicTexture;
+            return plane;
+        };
+
+
+        const axisLabel = makeTextPlane("X", "yellow", 1);
+        axisLabel.position = new BABYLON.Vector3(axisLength + 0.5, 0, 0);
+
+        const yLabel = makeTextPlane("Y", "yellow", 1);
+        yLabel.position = new BABYLON.Vector3(0, axisLength + 0.5, 0);
+
+        const zLabel = makeTextPlane("Z", "yellow", 1);
+        zLabel.position = new BABYLON.Vector3(0, 0, axisLength + 0.5);
+
+
+        return scene;
+    };
+
+    
+    const scene = createScene(fetchSector(0, 0, 0));
+
+    
+    engine.runRenderLoop(function () {
+        scene.render();
+    });
+
+    
+    window.addEventListener("resize", function () {
+        engine.resize();
+    });
+</script>
+</body>
+</html>
