@@ -6,7 +6,9 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"github.com/playbymail/empyr/pkg/internal/clusters"
 	"html/template"
+	"log"
 	"math"
 	"math/rand/v2"
 	"os"
@@ -28,6 +30,15 @@ func NewGame(code string, name string) (Game, error) {
 	}
 	for _, system := range systems {
 		fmt.Printf("System %3d at (%3d, %3d, %3d) has %d stars\n", system.Id, system.X, system.Y, system.Z, len(system.Stars))
+	}
+	cc := clusters.GenerateCluster()
+	log.Printf("cc.gch: len(cc) %d\n", len(cc))
+	if buf, err := clusters.GenerateClusterHTML(cc); err != nil {
+		log.Printf("cc.gch: %v\n", err)
+	} else if err = os.WriteFile("cluster-map.html", buf.Bytes(), 0644); err != nil {
+		log.Printf("cc.gch: write: %v\n", err)
+	} else {
+		log.Printf("cc.ghc: created cluster-map.html\n")
 	}
 	return Game{
 		Code:    code,

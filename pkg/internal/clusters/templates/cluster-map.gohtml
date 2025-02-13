@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wraith Cluster</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script>
+    const canvas = document.getElementById("renderCanvas"); // Get the canvas element
+    const engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+
+    const createStandardMaterial = function (name, options, scene) {
+        const material = new BABYLON.StandardMaterial(name, scene);
+        for (let property in material) {
+            if (options[property]) {
+                material[property] = options[property];
+            }
+        }
+        return material;
+    }
+
+    const fetchSector = function (x, y, z) {
+        // const colors = [BABYLON.Color3.Random(), BABYLON.Color3.Black(), BABYLON.Color3.Blue(), BABYLON.Color3.Purple(), BABYLON.Color3.Red(), BABYLON.Color3.Teal(), BABYLON.Color3.White(), ]
+        // systems in the current sector
+        const sector = {
+            // radius: 0, // initially unknown
+            // minX:0, maxX:0, minY:0, maxY:0, minZ:0, maxZ:0,
+            origin: {x: x, y: y, z: z},
+            systems: [
+                {{ range . }}
+                {
+                    id: {{.Id}},
+                    x: {{.X}},
+                    y: {{.Y}},
+                    z: {{.Z}},
+                    size: {{.Size}},
+                    color: BABYLON.Color3.{{.Color}}(),
+                    kind: "Yellow Main Sequence",
+                    origin: new BABYLON.Vector3({{.X}}, {{.Y}}, {{.Z}}),
+                    warps: [
+                        {{ range .Warps }}new BABYLON.Vector3({{.X}}, {{.Y}}, {{.Z}}), {{ end }}
+                    ]
+                },
+                {{ end }}
+            ],
+        };
+
+        // determine the radius of the sector
+        sector.systems.forEach((system, ndx) => {
+            if (ndx === 0) {
+                sector.minX = system.x
+                sector.maxX = system.x
+                sector.minY = system.y
+                sector.maxY = system.y
+                sector.minZ = system.z
+                sector.maxZ = system.z
+            }
+            if (system.x < sector.minX) {
+                sector.minX = system.x
+            } else if (sector.maxX < system.x) {
+                sector.maxX = system.x
+            }
+            if (system.y < sector.minY) {
+                sector.minY = system.y
+            } else if (sector.maxY < system.y) {
+                sector.maxY = system.y
+            }
+            if (system.z < sector.minZ) {
+                sector.minZ = system.z
+            } else if (sector.maxZ < system.z) {
+                sector.maxZ = system.z
+            }
+        });
+        sector.radius = Math.max(sector.maxX - sector.minX, sector.maxY - sector.minY, sector.maxZ - sector.minZ) / 2 + 1;
+
+        return sector;
+    }
+
+    const createScene = function (sector) {
+        // This creates a basic Babylon Scene object (non-mesh)
+        const scene = new BABYLON.Scene(engine);
+
+        const camera = new BABYLON.ArcRotateCamera(
+            "camera",
+            -Math.PI / 2,    // alpha - rotation around Y axis
+            Math.PI / 2.5,   // beta - rotation around X axis
+            30,              // radius - distance from target
+            new BABYLON.Vector3(0, 0, 0) // target position
+        );
+
+        // // This creates and positions a free camera (non-mesh)
+        // const camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+        // // This targets the camera to scene origin
+        // camera.setTarget(BABYLON.Vector3.Zero());
+
+        // This attaches the camera to the canvas
+        camera.attachControl(canvas, true);
+
+        // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+        const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+        // Default intensity is 1. Let's dim the light a small amount
+        light.intensity = 0.7;
+
+        // add the stars and dust clouds to the scene
+        sector.systems.forEach((system, ndx) => {
+            const mesh = BABYLON.MeshBuilder.CreateSphere(`obj-${ndx}`, {diameter: system.size, segments: 32}, scene);
+            mesh.position.x = system.x;
+            mesh.position.y = system.y;
+            mesh.position.z = system.z;
+            mesh.material = createStandardMaterial("sphereMaterial", {diffuseColor: system.color}, scene);
+
+            // add warp lines to the destination warps
+            system.warps.forEach((warp, wdx) => {
+                let lines = BABYLON.MeshBuilder.CreateLines(`obj-${ndx}-warp-${wdx}`, {points: [system.origin, warp]}, scene);
+                if (wdx === 0) {
+                    lines.color = new BABYLON.Color3(1, 0, 0);
+                } else if (wdx === 1) {
+                    lines.color = new BABYLON.Color3(0, 1, 0);
+                } else if (wdx === 2) {
+                    lines.color = new BABYLON.Color3(0, 0, 1);
+                } else if (wdx === 3) {
+                    lines.color = new BABYLON.Color3(1, 1, 0);
+                } else if (wdx === 4) {
+                    lines.color = new BABYLON.Color3(0, 1, 1);
+                } else if (wdx === 5) {
+                    lines.color = new BABYLON.Color3(1, 0, 1);
+                } else {
+                    lines.color = new BABYLON.Color3(1, 1, 1);
+                }
+            });
+        });
+
+// Create bounding cube
+        const cubeSize = 15;
+        const points = [
+            new BABYLON.Vector3(-cubeSize, -cubeSize, -cubeSize),
+            new BABYLON.Vector3(cubeSize, -cubeSize, -cubeSize),
+            new BABYLON.Vector3(cubeSize, -cubeSize, cubeSize),
+            new BABYLON.Vector3(-cubeSize, -cubeSize, cubeSize),
+            new BABYLON.Vector3(-cubeSize, cubeSize, -cubeSize),
+            new BABYLON.Vector3(cubeSize, cubeSize, -cubeSize),
+            new BABYLON.Vector3(cubeSize, cubeSize, cubeSize),
+            new BABYLON.Vector3(-cubeSize, cubeSize, cubeSize)
+        ];
+
+// Bottom face
+        BABYLON.MeshBuilder.CreateLines("bottomEdge1", {points: [points[0], points[1]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("bottomEdge2", {points: [points[1], points[2]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("bottomEdge3", {points: [points[2], points[3]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("bottomEdge4", {points: [points[3], points[0]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+
+// Top face
+        BABYLON.MeshBuilder.CreateLines("topEdge1", {points: [points[4], points[5]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("topEdge2", {points: [points[5], points[6]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("topEdge3", {points: [points[6], points[7]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("topEdge4", {points: [points[7], points[4]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+
+// Vertical edges
+        BABYLON.MeshBuilder.CreateLines("vertEdge1", {points: [points[0], points[4]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("vertEdge2", {points: [points[1], points[5]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("vertEdge3", {points: [points[2], points[6]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+        BABYLON.MeshBuilder.CreateLines("vertEdge4", {points: [points[3], points[7]]}, scene).color = new BABYLON.Color3(1, 0, 0);
+
+
+        // Add coordinate axes
+        const axisLength = 15;
+
+// X axis (yellow)
+        BABYLON.MeshBuilder.CreateLines("xAxis", {
+            points: [
+                new BABYLON.Vector3(-axisLength, 0, 0),
+                new BABYLON.Vector3(axisLength, 0, 0)
+            ]
+        }, scene).color = new BABYLON.Color3(1, 1, 0);
+
+// Y axis (yellow)
+        BABYLON.MeshBuilder.CreateLines("yAxis", {
+            points: [
+                new BABYLON.Vector3(0, -axisLength, 0),
+                new BABYLON.Vector3(0, axisLength, 0)
+            ]
+        }, scene).color = new BABYLON.Color3(1, 1, 0);
+
+// Z axis (yellow)
+        BABYLON.MeshBuilder.CreateLines("zAxis", {
+            points: [
+                new BABYLON.Vector3(0, 0, -axisLength),
+                new BABYLON.Vector3(0, 0, axisLength)
+            ]
+        }, scene).color = new BABYLON.Color3(1, 1, 0);
+
+        // Add axis labels
+        const makeTextPlane = function (text, color, size) {
+            const dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+            dynamicTexture.hasAlpha = true;
+            dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+            const plane = BABYLON.MeshBuilder.CreatePlane("TextPlane", {width: size, height: size}, scene);
+            plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+            plane.material.backFaceCulling = false;
+            plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+            plane.material.diffuseTexture = dynamicTexture;
+            return plane;
+        };
+
+// Position the labels at the end of each axis
+        const axisLabel = makeTextPlane("X", "yellow", 1);
+        axisLabel.position = new BABYLON.Vector3(axisLength + 0.5, 0, 0);
+
+        const yLabel = makeTextPlane("Y", "yellow", 1);
+        yLabel.position = new BABYLON.Vector3(0, axisLength + 0.5, 0);
+
+        const zLabel = makeTextPlane("Z", "yellow", 1);
+        zLabel.position = new BABYLON.Vector3(0, 0, axisLength + 0.5);
+
+
+        return scene;
+    };
+
+    // Call the createScene function
+    const scene = createScene(fetchSector(0, 0, 0));
+
+    // Register a render loop to repeatedly render the scene
+    engine.runRenderLoop(function () {
+        scene.render();
+    });
+
+    // Watch for browser/canvas resize events
+    window.addEventListener("resize", function () {
+        engine.resize();
+    });
+</script>
+</body>
+</html>
