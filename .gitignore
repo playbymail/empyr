@@ -17,3 +17,5 @@
 .env.*.local
 .idea/
 notes.txt
+
+.DS_Store

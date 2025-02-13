@@ -1,21 +1,6 @@
-// empyr - a reimagining of Vern Holford's Empyrean Challenge
-// Copyright (C) 2023 Michael D Henderson
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//
+// Copyright (c) 2025 Michael D Henderson. All rights reserved.
 
-package cli
+package cmd
 
 import (
 	"encoding/json"
@@ -43,7 +28,12 @@ var cmdGenerateGame = &cobra.Command{
 	Use:   "game",
 	Short: "generate a new game",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// isweird is a helper function to check string for weird characters.
+		// isweird checks if a string contains any special characters or escape sequences
+		// by comparing the raw string with its quoted representation.
+		// It's a clever way to detect special characters by leveraging Go's string quoting behavior.
+		//
+		// Returns true if the string contains special characters, false otherwise.
+		// Example: isweird("hello") returns false, isweird("hello\n") returns true
 		isweird := func(s string) bool {
 			return `"`+s+`"` != fmt.Sprintf("%q", s)
 		}
