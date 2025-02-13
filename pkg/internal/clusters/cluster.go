@@ -11,7 +11,6 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"log"
 	"math"
 	"math/rand/v2"
 )
@@ -52,10 +51,6 @@ func GenerateCluster() (systems []System) {
 			point = randomCubePoint()
 		}
 		systems = append(systems, System{Coordinates: point, NumberOfStars: 1})
-	}
-
-	for n, system := range systems {
-		fmt.Printf("System %3d at %s has %d stars\n", n+1, system.Coordinates, system.NumberOfStars)
 	}
 
 	return systems
@@ -139,7 +134,6 @@ var (
 )
 
 func GenerateClusterHTML(input []System) (*bytes.Buffer, error) {
-	log.Printf("len(input) = %d\n", len(input))
 	buffer := &bytes.Buffer{}
 
 	ts, err := template.ParseFS(templateFS, "templates/cluster-map.gohtml")
@@ -181,7 +175,6 @@ func GenerateClusterHTML(input []System) (*bytes.Buffer, error) {
 		}
 		systems = append(systems, system)
 	}
-	log.Printf("len(systems) = %d\n", len(systems))
 
 	if err = ts.Execute(buffer, systems); err != nil {
 		return nil, err

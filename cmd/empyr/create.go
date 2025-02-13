@@ -8,6 +8,7 @@ import (
 	"github.com/playbymail/empyr/pkg/empyr"
 	"github.com/spf13/cobra"
 	"log"
+	"os"
 	"time"
 )
 
@@ -50,8 +51,13 @@ var cmdCreateGame = &cobra.Command{
 		if err != nil {
 			log.Fatalf("create: game: %v", err)
 		}
-		if err = empyr.GenerateClusterHTML("alpha01.html", g.Systems); err != nil {
-			log.Fatalf("create: game: %v", err)
+		// save the map as an HTML file
+		if buffer, err := g.ClusterHTML(); err != nil {
+			log.Fatalf("create: game: html: %v", err)
+		} else if err = os.WriteFile("cluster-map.html", buffer.Bytes(), 0644); err != nil {
+			log.Fatalf("create: game: html: %v", err)
+		} else {
+			log.Printf("create: game: html: %q: %d bytes\n", "cluster-map.html", buffer.Len())
 		}
 		log.Printf("create: game: created game %s (%q)\n", code, name)
 	},
