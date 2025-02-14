@@ -1,6 +1,6 @@
 // Copyright (c) 2025 Michael D Henderson. All rights reserved.
 
-package main
+package cli
 
 import (
 	"github.com/spf13/cobra"
