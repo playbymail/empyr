@@ -4,7 +4,7 @@ package cli
 
 import (
 	"context"
-	"github.com/playbymail/empyr/pkg/store"
+	"github.com/playbymail/empyr/store"
 	"github.com/spf13/cobra"
 	"log"
 	"time"

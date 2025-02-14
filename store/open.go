@@ -9,7 +9,7 @@ import (
 	_ "embed"
 	"errors"
 	"github.com/playbymail/empyr/pkg/stdlib"
-	"github.com/playbymail/empyr/pkg/store/sqlc"
+	"github.com/playbymail/empyr/store/sqlc"
 	"log"
 	_ "modernc.org/sqlite"
 	"path/filepath"
