@@ -8,9 +8,57 @@ import (
 	"time"
 )
 
-type MetaMigration struct {
-	Version   int64
-	Comment   string
-	Script    string
-	CreatedAt time.Time
+type Colonies struct {
+	ID       int64
+	PlanetID int64
+	Kind     string
+	Location string
+}
+
+type Games struct {
+	ID          int64
+	Code        string
+	Name        string
+	DisplayName string
+	CurrentTurn int64
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type PlanetDeposit struct {
+	DepositID int64
+	Quantity  int64
+	YieldPct  int64
+	EffTurn   int64
+	EndTurn   int64
+	Active    int64
+}
+
+type PlanetDeposits struct {
+	ID        int64
+	PlanetID  int64
+	DepositNo int64
+	Kind      string
+}
+
+type Planets struct {
+	ID           int64
+	StarID       int64
+	Orbit        int64
+	Kind         string
+	Habitability int64
+}
+
+type Stars struct {
+	ID       int64
+	SystemID int64
+	Sequence string
+}
+
+type Systems struct {
+	ID     int64
+	GameID int64
+	X      int64
+	Y      int64
+	Z      int64
 }

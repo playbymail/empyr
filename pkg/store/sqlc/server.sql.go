@@ -9,16 +9,82 @@ import (
 	"context"
 )
 
-const getSchemaVersion = `-- name: GetSchemaVersion :exec
+const createGame = `-- name: CreateGame :one
 
-SELECT max(version)
-FROM meta_migrations
+INSERT INTO games (code, name, display_name)
+VALUES (?1, ?2, ?3)
+RETURNING id
 `
+
+type CreateGameParams struct {
+	Code        string
+	Name        string
+	DisplayName string
+}
 
 //	Copyright (c) 2025 Michael D Henderson. All rights reserved.
 //
-// GetSchemaVersion gets the current schema version.
-func (q *Queries) GetSchemaVersion(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, getSchemaVersion)
+// CreateGame creates a new game.
+func (q *Queries) CreateGame(ctx context.Context, arg CreateGameParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createGame, arg.Code, arg.Name, arg.DisplayName)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createSystem = `-- name: CreateSystem :one
+INSERT INTO systems (game_id, x, y, z)
+VALUES (?1, ?2, ?3, ?4)
+RETURNING id
+`
+
+type CreateSystemParams struct {
+	GameID int64
+	X      int64
+	Y      int64
+	Z      int64
+}
+
+// CreateSystem creates a new system.
+func (q *Queries) CreateSystem(ctx context.Context, arg CreateSystemParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSystem,
+		arg.GameID,
+		arg.X,
+		arg.Y,
+		arg.Z,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getCurrentGameTurn = `-- name: GetCurrentGameTurn :one
+SELECT current_turn
+FROM games
+WHERE id = ?1
+`
+
+// GetCurrentGameTurn gets the current game turn.
+func (q *Queries) GetCurrentGameTurn(ctx context.Context, gameID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCurrentGameTurn, gameID)
+	var current_turn int64
+	err := row.Scan(&current_turn)
+	return current_turn, err
+}
+
+const updateGameTurn = `-- name: UpdateGameTurn :exec
+UPDATE games
+SET current_turn = ?1
+WHERE id = ?2
+`
+
+type UpdateGameTurnParams struct {
+	TurnNumber int64
+	GameID     int64
+}
+
+// UpdateGameTurn increments the game turn number.
+func (q *Queries) UpdateGameTurn(ctx context.Context, arg UpdateGameTurnParams) error {
+	_, err := q.db.ExecContext(ctx, updateGameTurn, arg.TurnNumber, arg.GameID)
 	return err
 }

@@ -7,5 +7,6 @@ sql:
       - "sqlc/server.sql"
     gen:
       go:
+        emit_exact_table_names: true
         package: "sqlc"
         out: "sqlc"
