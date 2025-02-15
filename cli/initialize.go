@@ -29,6 +29,7 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	if err := cmdCreate.MarkPersistentFlagRequired("path"); err != nil {
 		return nil, err
 	}
+	cmdCreate.AddCommand(cmdCreateDatabase)
 	cmdCreate.AddCommand(cmdCreateGame)
 	cmdCreateGame.Flags().String("code", "", "code for the game")
 	if err := cmdCreateGame.MarkFlagRequired("code"); err != nil {

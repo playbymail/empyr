@@ -81,3 +81,17 @@ func FSStat(filesystem fs.FS, path string) (fs.FileInfo, error) {
 	}
 	return sb, nil
 }
+
+// Remove accepts a path and removes it if it is a regular file.
+// Returns nil if the path does not exist.
+// Returns an error if the path exists or there is an error removing it.
+func Remove(path string) error {
+	if !IsExists(path) {
+		return nil
+	} else if IsDirExists(path) {
+		return errors.New("path is a directory")
+	} else if !IsFileExists(path) {
+		return errors.New("path is not a regular file")
+	}
+	return os.Remove(path)
+}

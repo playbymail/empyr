@@ -27,6 +27,13 @@ var cmdCreate = &cobra.Command{
 	},
 }
 
+// cmdCreateDatabase implements the create database command
+var cmdCreateDatabase = &cobra.Command{
+	Use:   "database --path database",
+	Short: "create a new database",
+	Long:  `Create a new database.`,
+}
+
 // cmdCreateGame implements the create game command
 var cmdCreateGame = &cobra.Command{
 	Use:   "game --path database --code code --name name --descr description",
