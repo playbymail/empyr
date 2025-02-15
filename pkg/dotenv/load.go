@@ -8,6 +8,8 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"sort"
+	"strings"
 )
 
 // Load tries to emulate the priority list from the dotenv page at
@@ -91,4 +93,28 @@ func Load(prefix string) error {
 	}
 
 	return nil
+}
+
+type Variable struct {
+	Key   string
+	Value string
+}
+
+func EnvVariables(prefix string) []Variable {
+	var env []string
+	for _, v := range os.Environ() {
+		if strings.HasPrefix(v, prefix) {
+			env = append(env, v)
+		}
+	}
+	sort.Strings(env)
+	var vars []Variable
+	for _, v := range env {
+		key, value, _ := strings.Cut(v, "=")
+		vars = append(vars, Variable{
+			Key:   key,
+			Value: value,
+		})
+	}
+	return vars
 }

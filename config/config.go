@@ -21,6 +21,10 @@ type Environment struct {
 			Close bool
 		}
 	}
+	Game struct {
+		Code string
+		Name string
+	}
 	Verbose bool
 	Version semver.Version
 }
@@ -29,11 +33,17 @@ func Default(options ...Option) *Environment {
 	cfg := &Environment{}
 
 	// get default values from the environment
-	if path, ok := os.LookupEnv("EMPYR_DB_PATH"); ok {
-		cfg.Database.Path = path
+	if value, ok := os.LookupEnv("EMPYR_DATABASE_PATH"); ok {
+		cfg.Database.Path = value
 	}
-	if verbose, ok := os.LookupEnv("EMPYR_VERBOSE"); ok {
-		switch strings.ToLower(verbose) {
+	if value, ok := os.LookupEnv("EMPYR_GAME_CODE"); ok {
+		cfg.Game.Code = value
+	}
+	if value, ok := os.LookupEnv("EMPYR_GAME_NAME"); ok {
+		cfg.Game.Name = value
+	}
+	if value, ok := os.LookupEnv("EMPYR_VERBOSE"); ok {
+		switch strings.ToLower(value) {
 		case "1", "true", "yes":
 			cfg.Verbose = true
 		}

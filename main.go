@@ -49,6 +49,9 @@ func main() {
 	if err := dotenv.Load("EMPYR"); err != nil {
 		log.Fatalf("main: %+v\n", err)
 	}
+	for _, v := range dotenv.EnvVariables("EMPYR_") {
+		log.Printf("main: %-22s == %q\n", v.Key, v.Value)
+	}
 	env := config.Default(options...)
 
 	if err := runRoot(env, args); err != nil {
@@ -116,6 +119,11 @@ func runCreate(env *config.Environment, args []string) error {
 				return fmt.Errorf("database: %w", err)
 			}
 			return nil
+		} else if arg == "game" {
+			if err := runCreateGame(env, args); err != nil {
+				return fmt.Errorf("game: %w", err)
+			}
+			return nil
 		} else if strings.HasPrefix(arg, "-") {
 			return fmt.Errorf("unknown option: %q", arg)
 		} else {
@@ -124,6 +132,7 @@ func runCreate(env *config.Environment, args []string) error {
 	}
 	log.Printf("usage: empyr create [command] [options] [arguments]\n")
 	log.Printf("  cmd: database        create a new database\n")
+	log.Printf("     : game            create a new game\n")
 	log.Printf("  opt: --help          show help for the command   [false]\n")
 	log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
 	log.Printf("     : --verbose       enhance logging             [false]\n")
@@ -167,6 +176,51 @@ func runCreateDatabase(env *config.Environment, args []string) error {
 		return fmt.Errorf("%q: %w", env.Database.Path, err)
 	}
 	log.Printf("%s: created database\n", env.Database.Path)
+	return nil
+}
+
+func runCreateGame(env *config.Environment, args []string) error {
+	var arg string
+	for len(args) > 0 && args[0] != "-- " {
+		arg, args = args[0], args[1:]
+		if argOptHelp(arg) {
+			log.Printf("usage: empyr create game [options]\n")
+			log.Printf("  opt: --help          show help for the command   [false]\n")
+			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
+			log.Printf("     : --verbose       enhance logging             [false]\n")
+			log.Printf("     : --path          path to database            [required]\n")
+			return nil
+		} else if flag, ok := argOptString(arg, "code"); ok {
+			env.Game.Code = flag
+		} else if flag, ok := argOptString(arg, "name"); ok {
+			env.Game.Name = flag
+		} else if flag, ok := argOptString(arg, "path"); ok {
+			env.Database.Path = flag
+		} else if strings.HasPrefix(arg, "-") {
+			return fmt.Errorf("unknown option: %q", arg)
+		} else {
+			return fmt.Errorf("unknown argument: %q", arg)
+		}
+	}
+	if env.Database.Path == "" {
+		return fmt.Errorf("missing path to database")
+	} else if !stdlib.IsFileExists(env.Database.Path) {
+		return fmt.Errorf("%q: does not exist", env.Database.Path)
+	}
+	if env.Game.Code == "" {
+		return fmt.Errorf("missing game code")
+	} else if strings.ToUpper(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must be uppercase", env.Game.Code)
+	} else if strings.TrimSpace(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must not contain whitespace", env.Game.Code)
+	}
+	log.Printf("game: code: %q\n", env.Game.Code)
+	if env.Game.Name == "" {
+		return fmt.Errorf("missing game name")
+	}
+	log.Printf("game: name: %q\n", env.Game.Name)
+	log.Printf("%q: creating game\n", env.Database.Path)
+	log.Printf("%q: created game\n", env.Database.Path)
 	return nil
 }
 
