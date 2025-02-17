@@ -28,9 +28,9 @@ func NewGame(code string, name string) (Game, error) {
 		system := System{
 			Id: no + 1,
 			Coordinates: coordinates.Coordinates{
-				X: cc.Coordinates.X,
-				Y: cc.Coordinates.Y,
-				Z: cc.Coordinates.Z,
+				X: cc.Coordinates.X + 15,
+				Y: cc.Coordinates.Y + 15,
+				Z: cc.Coordinates.Z + 15,
 			},
 		}
 		for i := 1; i <= cc.NumberOfStars; i++ {
@@ -41,7 +41,7 @@ func NewGame(code string, name string) (Game, error) {
 	}
 
 	//for _, system := range systems {
-	//	fmt.Printf("System %3d at %s has %d stars\n", system.Id, system.Coordinates, len(system.Stars))
+	//	fmt.Printf("System %3d at (%3d%3d%3d) has %d stars\n", system.Id, system.Coordinates.X-15, system.Coordinates.Y-15, system.Coordinates.Z-15, len(system.Stars))
 	//}
 
 	return Game{

@@ -18,9 +18,9 @@ type Coordinates struct { // location being set up
 
 func (c Coordinates) String() string {
 	if c.Orbit == 0 {
-		return fmt.Sprintf("(%d %d %d%s)", c.X, c.Y, c.Z, c.System)
+		return fmt.Sprintf("(%2d %2d %2d%s)", c.X, c.Y, c.Z, c.System)
 	}
-	return fmt.Sprintf("(%d %d %d%s %d)", c.X, c.Y, c.Z, c.System, c.Orbit)
+	return fmt.Sprintf("(%2d %2d %d%s %2d)", c.X, c.Y, c.Z, c.System, c.Orbit)
 }
 
 // MarshalJSON implements the Marshaler interface.

@@ -15,6 +15,7 @@ import (
 	"math/rand/v2"
 )
 
+// GenerateCluster generates a slice containing 100 systems.
 func GenerateCluster() (systems []System) {
 	// current list of points generated; used to determine distance to neighbors
 	var points []Point

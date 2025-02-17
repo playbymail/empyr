@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"github.com/mdhender/semver"
 	"github.com/playbymail/empyr/config"
+	"github.com/playbymail/empyr/engine"
 	"github.com/playbymail/empyr/pkg/dotenv"
+	"github.com/playbymail/empyr/pkg/empyr"
 	"github.com/playbymail/empyr/pkg/stdlib"
 	"github.com/playbymail/empyr/store"
 	"log"
+	"math/rand/v2"
 	"os"
 	"strings"
 	"time"
@@ -220,6 +223,16 @@ func runCreateGame(env *config.Environment, args []string) error {
 	}
 	log.Printf("game: name: %q\n", env.Game.Name)
 	log.Printf("%q: creating game\n", env.Database.Path)
+	r := rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed))
+	gc, err := engine.CreateCluster(r)
+	if err != nil {
+		return fmt.Errorf("cluster: %w", err)
+	}
+	log.Printf("%q: creating cluster %p\n", env.Database.Path, gc)
+	_, err = empyr.NewGame(env.Game.Code, env.Game.Name)
+	if err != nil {
+		return fmt.Errorf("code: %q: %w", err)
+	}
 	log.Printf("%q: created game\n", env.Database.Path)
 	return nil
 }
