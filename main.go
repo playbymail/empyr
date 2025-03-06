@@ -3,13 +3,13 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/mdhender/semver"
 	"github.com/playbymail/empyr/config"
 	"github.com/playbymail/empyr/engine"
 	"github.com/playbymail/empyr/pkg/dotenv"
-	"github.com/playbymail/empyr/pkg/empyr"
 	"github.com/playbymail/empyr/pkg/stdlib"
 	"github.com/playbymail/empyr/store"
 	"log"
@@ -147,7 +147,7 @@ func runCreateDatabase(env *config.Environment, args []string) error {
 	for len(args) > 0 && args[0] != "-- " {
 		arg, args = args[0], args[1:]
 		if argOptHelp(arg) {
-			log.Printf("usage: empyr create database [options] path_to_database\n")
+			log.Printf("usage: empyr [options] create [options] database [options] path_to_database\n")
 			log.Printf("  opt: --help          show help for the command   [false]\n")
 			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
 			log.Printf("     : --verbose       enhance logging             [false]\n")
@@ -187,7 +187,7 @@ func runCreateGame(env *config.Environment, args []string) error {
 	for len(args) > 0 && args[0] != "-- " {
 		arg, args = args[0], args[1:]
 		if argOptHelp(arg) {
-			log.Printf("usage: empyr create game [options]\n")
+			log.Printf("usage: empyr [options] create [options] game [options]\n")
 			log.Printf("  opt: --help          show help for the command   [false]\n")
 			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
 			log.Printf("     : --verbose       enhance logging             [false]\n")
@@ -228,11 +228,35 @@ func runCreateGame(env *config.Environment, args []string) error {
 	if err != nil {
 		return fmt.Errorf("cluster: %w", err)
 	}
-	log.Printf("%q: creating cluster %p\n", env.Database.Path, gc)
-	_, err = empyr.NewGame(env.Game.Code, env.Game.Name)
-	if err != nil {
-		return fmt.Errorf("code: %q: %w", err)
+	for _, obj := range []struct {
+		name string
+		ptr  any
+	}{
+		{name: "systems", ptr: gc.Systems[1:]},
+		{name: "stars", ptr: gc.Stars[1:]},
+		{name: "orbits", ptr: gc.Orbits[1:]},
+		{name: "planets", ptr: gc.Planets[1:]},
+	} {
+		if data, err := json.MarshalIndent(obj.ptr, "", "  "); err != nil {
+			return err
+		} else if err = os.WriteFile(obj.name+".json", data, 0644); err != nil {
+			log.Fatalf("cluster: %s: %v\n", obj.name, err)
+		} else {
+			log.Printf("cluster: %s: wrote %s\n", obj.name, obj.name+".json")
+		}
 	}
+
+	//log.Printf("%q: creating cluster %p\n", env.Database.Path, gc)
+	//g, err := empyr.NewGame(env.Game.Code, env.Game.Name)
+	//if err != nil {
+	//	return fmt.Errorf("code: %q: %w", err)
+	//}
+	//if data, err := json.MarshalIndent(g, "", "  "); err != nil {
+	//	return err
+	//} else {
+	//	log.Printf("game: %s\n", string(data))
+	//}
+
 	log.Printf("%q: created game\n", env.Database.Path)
 	return nil
 }
@@ -254,7 +278,7 @@ func runStart(env *config.Environment, args []string) error {
 			return fmt.Errorf("unknown command: %q", arg)
 		}
 	}
-	log.Printf("usage: empyr start [command] [options] [arguments]\n")
+	log.Printf("usage: empyr [options] start [command] [options] [arguments]\n")
 	log.Printf("  cmd: server          start the web server\n")
 	log.Printf("  opt: --help          show help for the command   [false]\n")
 	log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
@@ -275,7 +299,7 @@ func runStartServer(env *config.Environment, args []string) error {
 			return fmt.Errorf("unknown command: %q", arg)
 		}
 	}
-	log.Printf("usage: empyr start server [options] [arguments]\n")
+	log.Printf("usage: empyr [options] start [options] server [options] [arguments]\n")
 	log.Printf("  opt: --help          show help for the command   [false]\n")
 	log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
 	log.Printf("     : --verbose       enhance logging             [false]\n")

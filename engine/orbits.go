@@ -13,7 +13,7 @@ import (
 // note: if the number of planets is not specified, it is randomly chosen.
 //
 // the slice returned uses asteroid belt, gas giant, earth-like, and rocky.
-func generateRings(r *rand.Rand, numPlanets int) (orbits [11]string) {
+func generateRings(r *rand.Rand, numPlanets int) (orbits [11]Orbit_e) {
 	// Ensure valid range
 	if numPlanets <= 0 {
 		// assign a random number of planets, from 1 to 10
@@ -24,13 +24,13 @@ func generateRings(r *rand.Rand, numPlanets int) (orbits [11]string) {
 	}
 
 	// helper to assign a kind to an orbit if possible
-	assignOrbit := func(t bool, kind string, possibleRings ...int) {
+	assignOrbit := func(t bool, kind Orbit_e, possibleRings ...int) {
 		if numPlanets == 0 {
 			return
 		}
 		var rings []int
 		for _, ring := range possibleRings {
-			if orbits[ring] == "" {
+			if orbits[ring] == EmptyOrbit {
 				rings = append(rings, ring)
 			}
 		}
@@ -46,23 +46,23 @@ func generateRings(r *rand.Rand, numPlanets int) (orbits [11]string) {
 	}
 
 	// always create a gas giant
-	assignOrbit(true, "gas giant", 6, 7, 8, 9)
+	assignOrbit(true, GasGiant, 6, 7, 8, 9)
 	// create at least one asteroid belt, if possible
-	assignOrbit(numPlanets > 1, "asteroid belt", 3, 4, 5)
+	assignOrbit(numPlanets > 1, AsteroidBelt, 3, 4, 5)
 	// 50% chance of another gas giant
-	assignOrbit(numPlanets > 4 && r.IntN(2) == 0, "gas giant", 7, 8, 9)
+	assignOrbit(numPlanets > 4 && r.IntN(2) == 0, GasGiant, 7, 8, 9)
 	// 50% chance of another asteroid belt
-	assignOrbit(numPlanets > 4 && r.IntN(2) == 0, "asteroid belt", 1, 4, 5, 6, 10)
+	assignOrbit(numPlanets > 4 && r.IntN(2) == 0, AsteroidBelt, 1, 4, 5, 6, 10)
 	// 33% chance habitable, earth like planets (four attempts!)
-	assignOrbit(r.IntN(3) == 0, "earth-like", 2, 3, 4, 5, 6)
-	assignOrbit(r.IntN(3) == 0, "earth-like", 2, 3, 4, 5, 6)
-	assignOrbit(r.IntN(3) == 0, "earth-like", 2, 3, 4, 5, 6)
-	assignOrbit(r.IntN(3) == 0, "earth-like", 2, 3, 4, 5, 6)
+	assignOrbit(r.IntN(3) == 0, EarthlikePlant, 2, 3, 4, 5, 6)
+	assignOrbit(r.IntN(3) == 0, EarthlikePlant, 2, 3, 4, 5, 6)
+	assignOrbit(r.IntN(3) == 0, EarthlikePlant, 2, 3, 4, 5, 6)
+	assignOrbit(r.IntN(3) == 0, EarthlikePlant, 2, 3, 4, 5, 6)
 
 	// any remaining orbits are kind of random
 	var rings []int // will hold the rings that are not assigned
 	for i := 1; i <= 10; i++ {
-		if orbits[i] == "" {
+		if orbits[i] == EmptyOrbit {
 			rings = append(rings, i)
 		}
 	}
@@ -71,39 +71,39 @@ func generateRings(r *rand.Rand, numPlanets int) (orbits [11]string) {
 	// assign the remaining planets to the remaining orbits
 	for ; numPlanets > 0 && len(rings) > 0; rings, numPlanets = rings[1:], numPlanets-1 {
 		if ring := rings[0]; ring == 1 {
-			orbits[ring] = "rocky"
+			orbits[ring] = RockyPlanet
 		} else if ring < 6 {
 			if r.IntN(10) == 0 {
-				orbits[ring] = "earth-like"
+				orbits[ring] = EarthlikePlant
 			} else if r.IntN(10) < 2 {
-				orbits[ring] = "asteroid belt"
+				orbits[ring] = AsteroidBelt
 			} else {
-				orbits[ring] = "rocky"
+				orbits[ring] = RockyPlanet
 			}
 		} else if ring < 10 {
 			if r.IntN(10) == 0 {
-				orbits[ring] = "gas giant"
+				orbits[ring] = GasGiant
 			} else if r.IntN(10) < 2 {
-				orbits[ring] = "asteroid belt"
+				orbits[ring] = AsteroidBelt
 			} else {
-				orbits[ring] = "rocky"
+				orbits[ring] = RockyPlanet
 			}
 		} else {
 			if r.IntN(4) == 0 {
-				orbits[ring] = "asteroid belt"
+				orbits[ring] = AsteroidBelt
 			} else {
-				orbits[ring] = "rocky"
+				orbits[ring] = RockyPlanet
 			}
 		}
 	}
 
 	// this is a hack to ensure that there are no asteroid belts next to each other
 	for i := 1; i <= 10; i++ {
-		if orbits[i] == "asteroid belt" && orbits[i-1] == "asteroid belt" {
+		if orbits[i] == AsteroidBelt && orbits[i-1] == AsteroidBelt {
 			if 2 <= i && i <= 5 && r.IntN(10) == 0 {
-				orbits[i] = "earth-like"
+				orbits[i] = EarthlikePlant
 			} else {
-				orbits[i] = "rocky"
+				orbits[i] = RockyPlanet
 			}
 		}
 	}

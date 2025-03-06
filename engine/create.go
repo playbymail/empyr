@@ -9,7 +9,7 @@ import (
 
 // this file implements the commands to create assets such as games, systems, and planets.
 
-func CreateCluster(r *rand.Rand) (any, error) {
+func CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 	// create a slice of points to randomly place most of the systems
 	var points []Point_t
 	var point Point_t
@@ -40,28 +40,64 @@ func CreateCluster(r *rand.Rand) (any, error) {
 	}
 
 	// create a cluster
-	var cluster Cluster_t
+	cluster := &Cluster_t{
+		Systems: []*System_t{nil},
+		Stars:   []*Star_t{nil},
+		Orbits:  []*Orbit_t{nil},
+		Planets: []*Planet_t{nil},
+	}
 	// create 100 systems for the cluster
-	for id := 1; len(points) != 0 && id < len(cluster.Systems); id++ {
+	for i := 1; len(points) != 0; i++ {
 		var numberOfStars int
-		switch id {
+		var scarcity Scarcity_e
+		switch i {
 		case 1: // 1 4-star system
-			numberOfStars = 4
+			numberOfStars, scarcity = 4, TYPICAL
 		case 2, 3, 4: // 3 3-star systems
-			numberOfStars = 3
+			numberOfStars, scarcity = 3, TYPICAL
 		case 5, 6, 7, 8, 9, 10, 11, 12, 13: // 9 2-star systems
-			numberOfStars = 2
+			numberOfStars, scarcity = 2, TYPICAL
 		default: // remaining are all 1-star systems
-			numberOfStars = 1
+			numberOfStars, scarcity = 1, TYPICAL
 		}
 		// grab the pre-allocated point from the slice of points
 		point, points = points[0], points[1:]
 		// create the system using the point and number of stars
-		system, err := createSystem(r, point, numberOfStars, TYPICAL)
-		if err != nil {
-			return nil, fmt.Errorf("system: %w", err)
+		system := &System_t{Id: i, Coordinates: Point_t{X: point.X + 15, Y: point.Y + 15, Z: point.Z + 15}}
+		// create the stars for the system
+		for j := 0; j < numberOfStars; j++ {
+			star := &Star_t{Id: len(cluster.Stars), System: system.Id, Sequence: string(rune(65 + j)), Scarcity: scarcity}
+			// all stars have 10 orbits but not all orbits have planets
+			numberOfPlanets := r.IntN(5) + r.IntN(6) + 1 // normalRandInRange(r, 1, 10)
+			// generate the rings for the star based on the number of planets
+			rings := generateRings(r, numberOfPlanets)
+			// generate the planet for each orbit
+			for k := 1; k <= 10; k++ {
+				orbit := &Orbit_t{Id: len(cluster.Orbits), Star: star.Id, OrbitNo: k, Kind: rings[k]}
+				cluster.Orbits = append(cluster.Orbits, orbit)
+				planet := &Planet_t{Id: orbit.Id, Star: star.Id}
+				switch orbit.Kind {
+				case EmptyOrbit:
+					planet.Kind = NoPlanet
+				case AsteroidBelt:
+					planet.Kind = AsteroidBeltPlanet
+				case EarthlikePlant, RockyPlanet:
+					planet.Kind = TerrestrialPlanet
+				case GasGiant, IceGiant:
+					planet.Kind = GasGiantPlanet
+				default:
+					panic(fmt.Sprintf("assert(orbit.Kind != %d)", orbit.Kind))
+				}
+				//orbit.Planet, err = createPlanet(r, rings[k], scarcity)
+				//if err != nil {
+				//	return nil, fmt.Errorf("planet: %w", err)
+				//}
+				cluster.Planets = append(cluster.Planets, planet)
+			}
+			cluster.Stars = append(cluster.Stars, star)
+			system.Stars = append(system.Stars, star.Id)
 		}
-		cluster.Systems[id] = system
+		cluster.Systems = append(cluster.Systems, system)
 	}
 
 	if len(points) != 0 {
@@ -69,68 +105,7 @@ func CreateCluster(r *rand.Rand) (any, error) {
 		panic(fmt.Sprintf("assert(len(points) != %d)", len(points)))
 	}
 
-	// todo: find a better place to generate the various id values
-	return &cluster, nil
-}
-
-// createSystem creates a system with the given number of stars.
-// The number of stars must be between 1 and 5.
-func createSystem(r *rand.Rand, point Point_t, numberOfStars int, scarcity Scarcity_e) (*System_t, error) {
-	if !(1 <= numberOfStars && numberOfStars <= 5) {
-		return nil, fmt.Errorf("number of stars must be between 1 and 5")
-	}
-	// create the system
-	system := &System_t{Coordinates: point}
-	for i := 0; i < numberOfStars; i++ {
-		star, err := createStar(r, scarcity)
-		if err != nil {
-			return nil, fmt.Errorf("star: %w", err)
-		}
-		star.Sequence = string(rune(65 + i))
-		system.Stars = append(system.Stars, star)
-	}
-	return system, nil
-}
-
-// createStar creates a star with the given number of planets.
-// The number of planets must be between 0 and 10.
-func createStar(r *rand.Rand, scarcity Scarcity_e) (*Star_t, error) {
-	star := &Star_t{}
-	numberOfPlanets := r.IntN(5) + r.IntN(6) + 1 // normalRandInRange(r, 1, 10)
-	rings := generateRings(r, numberOfPlanets)
-	for i := 1; i <= 10; i++ {
-		orbit, err := createOrbit(r)
-		if err != nil {
-			return nil, fmt.Errorf("orbit: %w", err)
-		}
-		star.Orbits[i] = orbit
-		if rings[i] == "" {
-			continue
-		}
-		orbit.Planet, err = createPlanet(r, rings[i], scarcity)
-		if err != nil {
-			return nil, fmt.Errorf("planet: %w", err)
-		}
-	}
-	return star, nil
-}
-
-func createOrbit(r *rand.Rand) (*Orbit_t, error) {
-	orbit := &Orbit_t{}
-	return orbit, nil
-}
-
-// createPlanet creates a planet.
-func createPlanet(r *rand.Rand, ring string, scarcity Scarcity_e) (*Planet_t, error) {
-	planet := &Planet_t{}
-	if ring == "asteroid belt" {
-		planet.Kind = ASTEROID_BELT
-	} else if ring == "gas giant" {
-		planet.Kind = GAS_GIANT
-	} else {
-		planet.Kind = TERRESTRIAL
-	}
-	return planet, nil
+	return cluster, nil
 }
 
 // createDeposits creates natural resource deposits for a planet.

@@ -27,7 +27,10 @@ const (
 )
 
 type Cluster_t struct {
-	Systems [101]*System_t
+	Systems []*System_t
+	Stars   []*Star_t
+	Orbits  []*Orbit_t
+	Planets []*Planet_t
 }
 
 type Point_t struct {
@@ -37,29 +40,47 @@ type Point_t struct {
 type System_t struct {
 	Id          int
 	Coordinates Point_t
-	Stars       []*Star_t
+	Scarcity    Scarcity_e
+	Stars       []int // index into Stars
 }
 
 type Star_t struct {
 	Id       int
+	System   int    // index into Systems
 	Sequence string // A ... D for the four stars in the system
-	Orbits   [11]*Orbit_t
+	Scarcity Scarcity_e
+	Orbits   [11]int // index into Orbits
 }
 
 type Orbit_t struct {
-	Id     int
-	Planet *Planet_t
+	Id      int
+	Star    int // index into Stars
+	OrbitNo int // value from 1 to 10 for this orbit
+	Kind    Orbit_e
 }
+
+type Orbit_e int
+
+const (
+	EmptyOrbit Orbit_e = iota
+	AsteroidBelt
+	EarthlikePlant
+	GasGiant
+	IceGiant
+	RockyPlanet
+)
 
 type Planet_t struct {
 	Id   int
+	Star int // index into Stars
 	Kind Planet_e
 }
 
 type Planet_e int
 
 const (
-	TERRESTRIAL Planet_e = iota
-	GAS_GIANT
-	ASTEROID_BELT
+	NoPlanet Planet_e = iota
+	AsteroidBeltPlanet
+	GasGiantPlanet
+	TerrestrialPlanet
 )

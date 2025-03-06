@@ -19,11 +19,15 @@ type Game struct {
 	Name    string
 	Turn    int
 	Systems []System
+	Stars   []Star
+	Orbits  []Orbit
 }
 
 func NewGame(code string, name string) (Game, error) {
 	// generate the systems within the cluster
 	var systems []System
+	var stars []Star
+	var orbits []Orbit
 	for no, cc := range clusters.GenerateCluster() {
 		system := System{
 			Id: no + 1,
@@ -34,20 +38,23 @@ func NewGame(code string, name string) (Game, error) {
 			},
 		}
 		for i := 1; i <= cc.NumberOfStars; i++ {
-			star := Star{Id: i}
-			system.Stars = append(system.Stars, star)
+			star := Star{Id: len(stars) + 1, System: system.Id}
+			system.Stars = append(system.Stars, star.Id)
+			stars = append(stars, star)
 		}
 		systems = append(systems, system)
 	}
 
 	//for _, system := range systems {
-	//	fmt.Printf("System %3d at (%3d%3d%3d) has %d stars\n", system.Id, system.Coordinates.X-15, system.Coordinates.Y-15, system.Coordinates.Z-15, len(system.Stars))
+	//	fmt.Printf("System %3d at (%3d%3d%3d) has %d stars\n", system.Id, system.Coordinates.X-15, system.Coordinates.Y-15, system.Coordinates.Z-15, len(system.StarP))
 	//}
 
 	return Game{
 		Code:    code,
 		Name:    name,
 		Systems: systems,
+		Stars:   stars,
+		Orbits:  orbits,
 	}, nil
 }
 
@@ -65,11 +72,19 @@ func ReadGame(filename string) (Game, error) {
 type System struct {
 	Id          int
 	Coordinates coordinates.Coordinates
-	Stars       []Star
+	Stars       []int // index into Stars
 }
 
 type Star struct {
-	Id int
+	Id     int
+	System int     // system containing this star
+	Orbits [10]int // index into Orbits
+}
+
+type Orbit struct {
+	Id    int // unique identifier for this orbit
+	Star  int // star this orbit is around
+	Orbit int // value from 1 to 10 for this orbit
 }
 
 var (
