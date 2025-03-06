@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/playbymail/empyr/pkg/dotenv"
 	"github.com/playbymail/empyr/pkg/stdlib"
 	"github.com/playbymail/empyr/store"
+	"html/template"
 	"log"
 	"math"
 	"math/rand/v2"
@@ -72,7 +74,6 @@ func main() {
 	//	log.Fatalf("\n%+v\n", err)
 	//}
 
-	log.Printf("\n")
 	log.Printf("completed in %v\n", time.Now().Sub(started))
 }
 
@@ -135,6 +136,11 @@ func runCreate(env *config.Environment, args []string) error {
 				return fmt.Errorf("star-lists: %w", err)
 			}
 			return nil
+		} else if arg == "cluster-map" {
+			if err := runCreateClusterMap(env, args); err != nil {
+				return fmt.Errorf("cluster-map: %w", err)
+			}
+			return nil
 		} else if strings.HasPrefix(arg, "-") {
 			return fmt.Errorf("unknown option: %q", arg)
 		} else {
@@ -144,6 +150,8 @@ func runCreate(env *config.Environment, args []string) error {
 	log.Printf("usage: empyr create [command] [options] [arguments]\n")
 	log.Printf("  cmd: database        create a new database\n")
 	log.Printf("     : game            create a new game\n")
+	log.Printf("     : star-lists      create list of systems in game\n")
+	log.Printf("     : cluster-map     create cluster map of systems\n")
 	log.Printf("  opt: --help          show help for the command   [false]\n")
 	log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
 	log.Printf("     : --verbose       enhance logging             [false]\n")
@@ -266,6 +274,94 @@ func runCreateGame(env *config.Environment, args []string) error {
 	//}
 
 	log.Printf("%q: created game\n", env.Database.Path)
+	return nil
+}
+
+var (
+	//go:embed templates/cluster-map.gohtml
+	clusterMapTmpl string
+)
+
+func runCreateClusterMap(env *config.Environment, args []string) error {
+	var arg string
+	for len(args) > 0 && args[0] != "-- " {
+		arg, args = args[0], args[1:]
+		if argOptHelp(arg) {
+			log.Printf("usage: empyr create cluster-map [options]\n")
+			log.Printf("  opt: --help          show help for the command   [false]\n")
+			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
+			log.Printf("     : --verbose       enhance logging             [false]\n")
+			log.Printf("     : --path          path to database            [required]\n")
+			return nil
+		} else if flag, ok := argOptString(arg, "code"); ok {
+			env.Game.Code = flag
+		} else if flag, ok := argOptString(arg, "name"); ok {
+			env.Game.Name = flag
+		} else if flag, ok := argOptString(arg, "path"); ok {
+			env.Database.Path = flag
+		} else if strings.HasPrefix(arg, "-") {
+			return fmt.Errorf("unknown option: %q", arg)
+		} else {
+			return fmt.Errorf("unknown argument: %q", arg)
+		}
+	}
+
+	// load the systems data from JSON files
+	// TODO: this should be done in the engine and from the database, not flat files
+	var systems []*engine.System_t
+	if data, err := os.ReadFile("systems.json"); err != nil {
+		return err
+	} else if err = json.Unmarshal(data, &systems); err != nil {
+		return err
+	}
+
+	// buffer will hold the table containing the star lists
+	buffer := &bytes.Buffer{}
+
+	ts, err := template.New("cluster-map").Parse(clusterMapTmpl)
+	if err != nil {
+		return err
+	}
+	type cluster_t struct {
+		Id      int
+		X, Y, Z int
+		Size    float64
+		// Black, Blue, Gray, Green, Magenta, Purple, Random, Red, Teal, White, Yellow
+		Color template.JS
+	}
+	var data []cluster_t
+	for _, s := range systems {
+		var color template.JS
+		switch len(s.Stars) {
+		case 4:
+			color = "Green"
+		case 3:
+			color = "Gray"
+		case 2:
+			color = "Blue"
+		case 1:
+			color = "Black"
+		default:
+			panic(fmt.Sprintf("assert(len(s.Stars) != %d)", len(s.Stars)))
+		}
+		data = append(data, cluster_t{
+			Id:    s.Id,
+			X:     s.Coordinates.X - 15,
+			Y:     s.Coordinates.Y - 15,
+			Z:     s.Coordinates.Z - 15,
+			Size:  0.333333,
+			Color: color,
+		})
+	}
+	if err = ts.Execute(buffer, data); err != nil {
+		return err
+	}
+	// write the buffer to our output file
+	if err := os.WriteFile("cluster-map.html", buffer.Bytes(), 0644); err != nil {
+		return err
+	}
+
+	log.Printf("%q: created cluster-map: %3d systems\n", env.Database.Path, len(systems))
 	return nil
 }
 
