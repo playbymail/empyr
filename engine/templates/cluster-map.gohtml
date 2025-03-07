@@ -92,6 +92,7 @@
         // This attaches the camera to the canvas
         const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 45, new BABYLON.Vector3(0, 0, 0));
         camera.attachControl(canvas, true);
+        camera.wheelPrecision = 50; // Adjust for smoother zoom
 
         // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
         const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
@@ -123,7 +124,7 @@
         // Add coordinate label for each system
         sector.systems.forEach((system, ndx) => {
             const labelText = `${system.x+15},${system.y+15},${system.z+15}`;
-            const coordLabel = makeCoordinatesPlane(labelText, "white", 0.8);
+            const coordLabel = makeCoordinatesPlane(labelText, "black", 0.8);
             coordLabel.position = new BABYLON.Vector3(
                 system.x + 0.5,
                 system.y + 0.5,
