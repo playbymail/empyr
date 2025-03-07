@@ -22,8 +22,9 @@ type Environment struct {
 		}
 	}
 	Game struct {
-		Code string
-		Name string
+		Code   string
+		Name   string
+		TurnNo int
 	}
 	Verbose bool
 	Version semver.Version

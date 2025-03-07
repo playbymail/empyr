@@ -19,6 +19,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -141,6 +142,11 @@ func runCreate(env *config.Environment, args []string) error {
 				return fmt.Errorf("cluster-map: %w", err)
 			}
 			return nil
+		} else if arg == "turn-reports" {
+			if err := runCreateTurnReports(env, args); err != nil {
+				return fmt.Errorf("turn-reports: %w", err)
+			}
+			return nil
 		} else if strings.HasPrefix(arg, "-") {
 			return fmt.Errorf("unknown option: %q", arg)
 		} else {
@@ -152,6 +158,7 @@ func runCreate(env *config.Environment, args []string) error {
 	log.Printf("     : game            create a new game\n")
 	log.Printf("     : star-lists      create list of systems in game\n")
 	log.Printf("     : cluster-map     create cluster map of systems\n")
+	log.Printf("     : turn-reports    create turn reports for all empires\n")
 	log.Printf("  opt: --help          show help for the command   [false]\n")
 	log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
 	log.Printf("     : --verbose       enhance logging             [false]\n")
@@ -280,6 +287,8 @@ func runCreateGame(env *config.Environment, args []string) error {
 var (
 	//go:embed templates/cluster-map.gohtml
 	clusterMapTmpl string
+	//go:embed templates/turn-report.gohtml
+	turnReportTmpl string
 )
 
 func runCreateClusterMap(env *config.Environment, args []string) error {
@@ -435,6 +444,87 @@ func runCreateStarLists(env *config.Environment, args []string) error {
 	return nil
 }
 
+func runCreateTurnReports(env *config.Environment, args []string) error {
+	foundTurnId := false
+	var arg string
+	for len(args) > 0 && args[0] != "-- " {
+		arg, args = args[0], args[1:]
+		if argOptHelp(arg) {
+			log.Printf("usage: empyr create turn-reports [options]\n")
+			log.Printf("  opt: --help          show help for the command   [false]\n")
+			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
+			log.Printf("     : --verbose       enhance logging             [false]\n")
+			log.Printf("     : --path          path to database            [required]\n")
+			log.Printf("     : --turn=id       turn id to report on        [required]\n")
+			return nil
+		} else if flag, ok := argOptString(arg, "code"); ok {
+			env.Game.Code = flag
+		} else if flag, ok := argOptString(arg, "name"); ok {
+			env.Game.Name = flag
+		} else if flag, ok := argOptString(arg, "path"); ok {
+			env.Database.Path = flag
+		} else if no, ok := argOptInt(arg, "turn"); ok {
+			if no < 0 {
+				return fmt.Errorf("turn id must be >= 0")
+			}
+			env.Game.TurnNo, foundTurnId = no, true
+		} else if strings.HasPrefix(arg, "-") {
+			return fmt.Errorf("unknown option: %q", arg)
+		} else {
+			return fmt.Errorf("unknown argument: %q", arg)
+		}
+	}
+	if !foundTurnId {
+		return fmt.Errorf("turn id required")
+	}
+
+	ts, err := template.New("turn-report").Parse(turnReportTmpl)
+	if err != nil {
+		return err
+	}
+
+	for empire := 1; empire < 256; empire++ {
+		// attempt to read the empire's turn report
+		filename := fmt.Sprintf("e%03d-turn-%04d.json", empire, env.Game.TurnNo)
+		var payload struct {
+			Site struct {
+				CSS string
+			}
+			Report *turn_report_payload_t
+		}
+		payload.Site.CSS = "a02/css/monospace.css"
+		if data, err := os.ReadFile(filename); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return err
+		} else {
+			log.Printf("loaded report %s\n", filename)
+			var input empire_turn_results_t
+			if err := json.Unmarshal(data, &input); err != nil {
+				return err
+			}
+			payload.Report = adapt_emp_to_turn_report_payload_t(&input)
+			log.Printf("unmarshalled report %s\n", filename)
+		}
+
+		// buffer will hold the table containing the star lists
+		buffer := &bytes.Buffer{}
+		if err = ts.Execute(buffer, payload); err != nil {
+			return err
+		}
+		// write the buffer to our output file
+		reportName := fmt.Sprintf("e%03d-turn-%04d.html", empire, env.Game.TurnNo)
+		if err := os.WriteFile(reportName, buffer.Bytes(), 0644); err != nil {
+			return err
+		}
+		log.Printf("created turn report empire %3d as %s\n", empire, reportName)
+	}
+
+	log.Printf("%q: created turn reports\n", env.Database.Path)
+	return nil
+}
+
 func runStart(env *config.Environment, args []string) error {
 	var arg string
 	for len(args) > 0 && args[0] != "-- " {
@@ -499,6 +589,16 @@ func argOptBool(arg, flag string) (value bool, ok bool) {
 
 func argOptHelp(arg string) bool {
 	return arg == "--help" || arg == "-h" || arg == "help" || arg == "?" || arg == "-?" || arg == "/?"
+}
+
+func argOptInt(arg, flag string) (value int, ok bool) {
+	flag = "--" + flag + "="
+	if strings.HasPrefix(arg, flag) {
+		if value, err := strconv.Atoi(strings.TrimPrefix(arg, flag)); err == nil {
+			return value, true
+		}
+	}
+	return 0, false
 }
 
 func argOptString(arg, flag string) (value string, ok bool) {

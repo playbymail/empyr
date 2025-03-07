@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="generator" content="go"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="author" content="Michael D Henderson"/>
+    <title>A02/E{{.Report.EmpireId}}/Reports/Turn {{.Report.TurnNo}}</title>
+    <link rel="stylesheet" href="{{.Site.CSS}}">
+</head>
+<body>
+<header>
+    <table class="header">
+        <tr>
+            <td colspan="2" rowspan="2" class="width-auto">
+                <h1 class="title">Epimethean Challenge</h1>
+                <span class="subtitle">A reboot of a grander game</span>
+            </td>
+            <th class="width-min">Game</th>
+            <td>A02</td>
+        </tr>
+        <tr>
+            <th>Updated</th>
+            <td class="width-min">
+                <time style="white-space: pre;">2025-03-06</time>
+            </td>
+        </tr>
+        <tr>
+            <th class="width-min">Author</th>
+            <td class="width-auto"><a href="https://github.com/mdhender/empyr"><cite>Michael D Henderson</cite></a></td>
+            <th>Version</th>
+            <td class="width-min">0.0.1</td>
+        </tr>
+    </table>
+</header>
+<main>
+    <article>
+        <h2>Reports - Turn {{.Report.TurnNo}}</h2>
+
+        {{range .Report.Colonies}}
+            <h3>Colony #{{.Id}} Activity Report</h3>
+            <p>
+                {{.Kind}} "{{.Name}}" on Orbit #{{.Planet.Orbit.OrbitNo}} in System {{.Planet.Orbit.Star.Coordinates}}
+            </p>
+
+            <h4>Vital Statistics ******************</h4>
+            <table>
+                <tr>
+                    <th class="width-min">TL</th>
+                    <td class="width-auto" colspan="2">{{.TL}}</td>
+                </tr>
+                <tr>
+                    <th class="width-min">S.O.L.</th>
+                    <td class="width-auto" colspan="2">{{.SOL}}</td>
+                </tr>
+                <tr>
+                    <th class="width-min">Deaths</th>
+                    <td class="width-auto" colspan="2">{{.Vitals.DeathRate}}%</td>
+                </tr>
+                <tr>
+                    <th class="width-min">Births</th>
+                    <td class="width-auto" colspan="2">{{.Vitals.BirthRate}}%</td>
+                </tr>
+                <tr>
+                    <th class="width-min">Rations</th>
+                    <td class="width-auto" colspan="2">{{.Vitals.Rations}}%</td>
+                </tr>
+                <tr>
+                    <th class="width-min">Pay</th>
+                    <td class="width-min">USK</td>
+                    <td class="width-auto">{{.Vitals.PayRates.USK}} CNGD per turn</td>
+                </tr>
+                <tr>
+                    <th class="width-min"></th>
+                    <td class="width-min">PRO</td>
+                    <td class="width-auto">{{.Vitals.PayRates.PRO}} CNGD per turn</td>
+                </tr>
+                <tr>
+                    <th class="width-min"></th>
+                    <td class="width-min">SLD</td>
+                    <td class="width-auto">{{.Vitals.PayRates.SLD}} CNGD per turn</td>
+                </tr>
+            </table>
+            <h4>Other Statistics ******************</h4>
+            <h4>Census Report *********************</h4>
+            <h4>Storage/Non-Assembly Items ********</h4>
+            <h4>Storage/Unassembled Items *********</h4>
+            <h4>Assembled Items *******************</h4>
+            <h4>Mining Groups</h4>
+            <h4>Factory Groups</h4>
+            <h4>Spies</h4>
+        {{end}}
+
+        <h3>Survey Report for Planet # 2 in System  15/15/15A</h3>
+
+        <footer>
+            <nav class="post-footer">
+                [ <a href="../../index.html">HOME</a> ]
+                [ <a href="../index.html">EMPIRE</a> ]
+                [ <a href="../surveys/index.html">SURVEYS</a> ]
+            </nav>
+        </footer>
+    </article>
+</main>
+<hr>
+<footer>
+    Empyrean Challenge is the property of James Columbo and is used with his permission.
+    The documentation from this site may not be used without his express permission.
+</footer>
+</body>
+</html>
