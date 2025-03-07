@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createDeposit = `-- name: CreateDeposit :one
@@ -33,6 +34,38 @@ func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (i
 		arg.YieldPct,
 		arg.InitialQty,
 		arg.RemainingQty,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createEmpire = `-- name: CreateEmpire :one
+INSERT INTO empires (game_id, empire_no, name, home_system_id, home_star_id, home_orbit_id, home_planet_id)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+RETURNING id
+`
+
+type CreateEmpireParams struct {
+	GameID       int64
+	EmpireNo     int64
+	Name         string
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
+	HomePlanetID int64
+}
+
+// CreateEmpire creates a new empire.
+func (q *Queries) CreateEmpire(ctx context.Context, arg CreateEmpireParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createEmpire,
+		arg.GameID,
+		arg.EmpireNo,
+		arg.Name,
+		arg.HomeSystemID,
+		arg.HomeStarID,
+		arg.HomeOrbitID,
+		arg.HomePlanetID,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -180,7 +213,8 @@ func (q *Queries) CreateSystemDistance(ctx context.Context, arg CreateSystemDist
 }
 
 const deleteEmptyDeposits = `-- name: DeleteEmptyDeposits :exec
-DELETE FROM deposits
+DELETE
+FROM deposits
 WHERE kind = 'none'
 `
 
@@ -191,7 +225,8 @@ func (q *Queries) DeleteEmptyDeposits(ctx context.Context) error {
 }
 
 const deleteEmptyOrbits = `-- name: DeleteEmptyOrbits :exec
-DELETE FROM orbits
+DELETE
+FROM orbits
 WHERE kind = 'empty'
 `
 
@@ -225,6 +260,58 @@ func (q *Queries) GetCurrentGameTurn(ctx context.Context, gameID int64) (int64, 
 	var current_turn int64
 	err := row.Scan(&current_turn)
 	return current_turn, err
+}
+
+const readClusterMap = `-- name: ReadClusterMap :many
+SELECT systems.id AS id,
+       systems.x as x,
+       systems.y as y,
+       systems.z as z,
+       count(stars.id) AS number_of_stars
+FROM games
+LEFT JOIN systems on games.id = systems.game_id
+LEFT JOIN stars  on systems.id = stars.system_id
+WHERE games.code = ?1
+GROUP BY systems.id, systems.x, systems.y, systems.z
+ORDER BY systems.id
+`
+
+type ReadClusterMapRow struct {
+	ID            sql.NullInt64
+	X             sql.NullInt64
+	Y             sql.NullInt64
+	Z             sql.NullInt64
+	NumberOfStars int64
+}
+
+// ReadClusterMap reads the cluster map.
+func (q *Queries) ReadClusterMap(ctx context.Context, gameCode string) ([]ReadClusterMapRow, error) {
+	rows, err := q.db.QueryContext(ctx, readClusterMap, gameCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadClusterMapRow
+	for rows.Next() {
+		var i ReadClusterMapRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.X,
+			&i.Y,
+			&i.Z,
+			&i.NumberOfStars,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateGameTurn = `-- name: UpdateGameTurn :exec

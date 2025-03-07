@@ -59,7 +59,8 @@ RETURNING id;
 -- DeleteEmptyOrbits deletes all orbits with no planets.
 --
 -- name: DeleteEmptyOrbits :exec
-DELETE FROM orbits
+DELETE
+FROM orbits
 WHERE kind = 'empty';
 
 -- CreatePlanet creates a new planet.
@@ -79,5 +80,28 @@ RETURNING id;
 -- DeleteEmptyOrbits deletes all orbits with no planets.
 --
 -- name: DeleteEmptyDeposits :exec
-DELETE FROM deposits
+DELETE
+FROM deposits
 WHERE kind = 'none';
+
+-- CreateEmpire creates a new empire.
+--
+-- name: CreateEmpire :one
+INSERT INTO empires (game_id, empire_no, name, home_system_id, home_star_id, home_orbit_id, home_planet_id)
+VALUES (:game_id, :empire_no, :name, :home_system_id, :home_star_id, :home_orbit_id, :home_planet_id)
+RETURNING id;
+
+-- ReadClusterMap reads the cluster map.
+--
+-- name: ReadClusterMap :many
+SELECT systems.id AS id,
+       systems.x as x,
+       systems.y as y,
+       systems.z as z,
+       count(stars.id) AS number_of_stars
+FROM games
+LEFT JOIN systems on games.id = systems.game_id
+LEFT JOIN stars  on systems.id = stars.system_id
+WHERE games.code = :game_code
+GROUP BY systems.id, systems.x, systems.y, systems.z
+ORDER BY systems.id;

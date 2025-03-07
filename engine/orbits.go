@@ -111,6 +111,59 @@ func generateRings(r *rand.Rand, numPlanets int) (orbits [11]Orbit_e) {
 	return orbits
 }
 
+// generateHomeSystemOrbits creates orbits for a home system.
+func generateHomeSystemOrbits(r *rand.Rand, star *Star_t) (orbits [11]*Orbit_t, err error) {
+	for i := 1; i <= 10; i++ {
+		orbits[i] = &Orbit_t{System: star.System, Star: star, OrbitNo: int64(i)}
+	}
+	for k, v := range []Orbit_e{RockyPlanet, RockyPlanet, EarthlikePlant, RockyPlanet, AsteroidBelt, GasGiant, IceGiant, IceGiant, AsteroidBelt} {
+		orbits[k+1].Kind = v
+	}
+	for k, v := range []Scarcity_e{POOR, POOR, RICH, POOR, RICH, POOR, POOR, POOR, RICH, RICH} {
+		orbits[k+1].Scarcity = v
+	}
+	// generate the planet for each orbit
+	for k := int64(1); k <= 10; k++ {
+		orbit := orbits[k]
+		orbit.Planet, err = createPlanet(r, orbit)
+		if err != nil {
+			return orbits, fmt.Errorf("planet: %w", err)
+		}
+		if orbit.Kind == EarthlikePlant {
+			orbit.Planet.Habitability = 25
+		}
+		if err = createDeposits(r, orbit.Planet, orbit.Kind == EarthlikePlant); err != nil {
+			return orbits, fmt.Errorf("deposits: %w", err)
+		}
+	}
+	return orbits, nil
+}
+
+// generateSystemOrbits creates orbits for a non-home system.
+func generateSystemOrbits(r *rand.Rand, star *Star_t) (orbits [11]*Orbit_t, err error) {
+	for i := 1; i <= 10; i++ {
+		orbits[i] = &Orbit_t{System: star.System, Star: star, OrbitNo: int64(i)}
+	}
+	// all stars have 10 orbits but not all orbits have planets
+	numberOfPlanets := r.IntN(5) + r.IntN(6) + 1 // normalRandInRange(r, 1, 10)
+	// generate the rings for the star based on the number of planets
+	rings := generateRings(r, numberOfPlanets)
+	// generate the planet for each orbit
+	for k := int64(1); k <= 10; k++ {
+		orbit := orbits[k]
+		orbit.Kind = rings[k]
+		orbit.Scarcity = star.Scarcity
+		orbit.Planet, err = createPlanet(r, orbit)
+		if err != nil {
+			return orbits, fmt.Errorf("planet: %w", err)
+		}
+		if err = createDeposits(r, orbit.Planet, false); err != nil {
+			return orbits, fmt.Errorf("deposits: %w", err)
+		}
+	}
+	return orbits, nil
+}
+
 // print system for debugging
 func printSystem(orbits [11]string) {
 	for i, orbit := range orbits {

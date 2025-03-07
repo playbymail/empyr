@@ -34,6 +34,17 @@ type Deposits struct {
 	RemainingQty int64
 }
 
+type Empires struct {
+	ID           int64
+	GameID       int64
+	EmpireNo     int64
+	Name         string
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
+	HomePlanetID int64
+}
+
 type Games struct {
 	ID          int64
 	Code        string

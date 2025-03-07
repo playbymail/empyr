@@ -216,6 +216,7 @@ func runCreateDatabase(env *config.Environment, args []string) error {
 
 func runCreateGame(env *config.Environment, args []string) error {
 	calculateSystemDistances := false
+	numberOfEmpires := int64(8)
 	var arg string
 	for len(args) > 0 && args[0] != "-- " {
 		arg, args = args[0], args[1:]
@@ -228,6 +229,8 @@ func runCreateGame(env *config.Environment, args []string) error {
 			return nil
 		} else if flag, ok := argOptBool(arg, "calculate-system-distances"); ok {
 			calculateSystemDistances = flag
+		} else if flag, ok := argOptInt(arg, "number-of-empires"); ok {
+			numberOfEmpires = int64(flag)
 		} else if flag, ok := argOptString(arg, "code"); ok {
 			env.Game.Code = flag
 		} else if flag, ok := argOptString(arg, "name"); ok {
@@ -272,7 +275,7 @@ func runCreateGame(env *config.Environment, args []string) error {
 	r := rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed))
 
 	log.Printf("%q: creating game\n", env.Database.Path)
-	gameId, err := e.CreateGame(env.Game.Code, env.Game.Name, env.Game.Name, calculateSystemDistances, r)
+	gameId, err := e.CreateGame(env.Game.Code, env.Game.Name, env.Game.Name, numberOfEmpires, calculateSystemDistances, r)
 	if err != nil {
 		return fmt.Errorf("game: %w", err)
 	}
@@ -301,8 +304,6 @@ func runCreateClusterMap(env *config.Environment, args []string) error {
 			return nil
 		} else if flag, ok := argOptString(arg, "code"); ok {
 			env.Game.Code = flag
-		} else if flag, ok := argOptString(arg, "name"); ok {
-			env.Game.Name = flag
 		} else if flag, ok := argOptString(arg, "path"); ok {
 			env.Database.Path = flag
 		} else if strings.HasPrefix(arg, "-") {
@@ -312,62 +313,37 @@ func runCreateClusterMap(env *config.Environment, args []string) error {
 		}
 	}
 
-	// load the systems data from JSON files
-	// TODO: this should be done in the engine and from the database, not flat files
-	var systems []*engine.System_t
-	if data, err := os.ReadFile("systems.json"); err != nil {
-		return err
-	} else if err = json.Unmarshal(data, &systems); err != nil {
-		return err
+	if env.Database.Path == "" {
+		return fmt.Errorf("missing path to database")
+	} else if !stdlib.IsFileExists(env.Database.Path) {
+		return fmt.Errorf("%q: does not exist", env.Database.Path)
+	}
+	if env.Game.Code == "" {
+		return fmt.Errorf("missing game code")
+	} else if strings.ToUpper(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must be uppercase", env.Game.Code)
+	} else if strings.TrimSpace(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must not contain whitespace", env.Game.Code)
 	}
 
-	// buffer will hold the table containing the star lists
-	buffer := &bytes.Buffer{}
-
-	ts, err := template.New("cluster-map").Parse(clusterMapTmpl)
+	var err error
+	if env.Store, err = store.Open(env.Database.Path, context.Background()); err != nil {
+		return fmt.Errorf("%q: %w", env.Database.Path, err)
+	}
+	defer env.Store.Close()
+	e, err := engine.Open(env.Store)
 	if err != nil {
 		return err
 	}
-	type cluster_t struct {
-		Id      int64
-		X, Y, Z int64
-		Size    float64
-		// Black, Blue, Gray, Green, Magenta, Purple, Random, Red, Teal, White, Yellow
-		Color template.JS
-	}
-	var data []cluster_t
-	for _, s := range systems {
-		var color template.JS
-		switch len(s.Stars) {
-		case 4:
-			color = "Green"
-		case 3:
-			color = "Gray"
-		case 2:
-			color = "Blue"
-		case 1:
-			color = "Black"
-		default:
-			panic(fmt.Sprintf("assert(len(s.Stars) != %d)", len(s.Stars)))
-		}
-		data = append(data, cluster_t{
-			Id:    s.Id,
-			X:     s.Coordinates.X - 15,
-			Y:     s.Coordinates.Y - 15,
-			Z:     s.Coordinates.Z - 15,
-			Size:  0.333333,
-			Color: color,
-		})
-	}
-	if err = ts.Execute(buffer, data); err != nil {
+
+	data, err := engine.CreateClusterMapCommand(e, &engine.CreateClusterMapParams_t{Code: env.Game.Code})
+	if err != nil {
 		return err
-	}
-	// write the buffer to our output file
-	if err := os.WriteFile("cluster-map.html", buffer.Bytes(), 0644); err != nil {
+	} else if err = os.WriteFile("cluster-map.html", data, 0644); err != nil {
 		return err
 	}
 
-	log.Printf("%q: created cluster-map: %3d systems\n", env.Database.Path, len(systems))
+	log.Printf("create: cluster-map: created %q\n", "cluster-map.html")
 	return nil
 }
 

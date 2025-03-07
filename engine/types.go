@@ -53,6 +53,7 @@ type Cluster_t struct {
 	Orbits   []*Orbit_t
 	Planets  []*Planet_t
 	Deposits []*Deposit_t
+	Empires  []*Empire_t
 }
 
 type Point_t struct {
@@ -114,3 +115,13 @@ const (
 	GasGiantPlanet
 	TerrestrialPlanet
 )
+
+type Empire_t struct {
+	Id         int64
+	EmpireNo   int64
+	Name       string
+	HomeSystem *System_t
+	HomeStar   *Star_t
+	HomeOrbit  *Orbit_t
+	HomePlanet *Planet_t
+}

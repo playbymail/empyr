@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS meta_migrations;
 DROP TABLE IF EXISTS colonies;
 DROP TABLE IF EXISTS deposit;
 DROP TABLE IF EXISTS deposits;
+DROP TABLE IF EXISTS empires;
 DROP TABLE IF EXISTS games;
 DROP TABLE IF EXISTS planets;
 DROP TABLE IF EXISTS orbits;
@@ -147,4 +148,37 @@ CREATE TABLE colonies
     planet_id INTEGER NOT NULL REFERENCES planets (id),
     kind      TEXT    NOT NULL CHECK (kind IN ('open', 'enclosed')),
     location  TEXT    NOT NULL CHECK (location IN ('surface', 'orbital'))
+);
+
+CREATE TABLE empires
+(
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    game_id        INTEGER NOT NULL,
+    empire_no      INTEGER NOT NULL CHECK (empire_no BETWEEN 1 AND 256),
+    name           TEXT    NOT NULL,
+    home_system_id INTEGER NOT NULL,
+    home_star_id   INTEGER NOT NULL,
+    home_orbit_id  INTEGER NOT NULL,
+    home_planet_id INTEGER NOT NULL,
+    UNIQUE (game_id, empire_no),
+    CONSTRAINT fk_game_id
+        FOREIGN KEY (game_id)
+            REFERENCES games (id)
+            ON DELETE CASCADE,
+    CONSTRAINT fk_system_id
+        FOREIGN KEY (home_system_id)
+            REFERENCES systems (id)
+            ON DELETE CASCADE,
+    CONSTRAINT fk_star_id
+        FOREIGN KEY (home_star_id)
+            REFERENCES stars (id)
+            ON DELETE CASCADE,
+    CONSTRAINT fk_orbit_id
+        FOREIGN KEY (home_orbit_id)
+            REFERENCES orbits (id)
+            ON DELETE CASCADE,
+    CONSTRAINT fk_home_planet_id
+        FOREIGN KEY (home_planet_id)
+            REFERENCES planets (id)
+            ON DELETE CASCADE
 );

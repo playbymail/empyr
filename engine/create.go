@@ -28,8 +28,8 @@ func Close(e *Engine_t) error {
 	return nil
 }
 
-func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDistances bool, r *rand.Rand) (int64, error) {
-	cluster, err := e.CreateCluster(r)
+func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires int64, calculateSystemDistances bool, r *rand.Rand) (int64, error) {
+	cluster, err := e.CreateCluster(r, numberOfEmpires)
 	if err != nil {
 		return 0, errors.Join(fmt.Errorf("create cluster"), err)
 	}
@@ -51,16 +51,16 @@ func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDis
 	//	}
 	//}
 
+	err = e.Store.Queries.DeleteGame(e.Store.Context, code)
+	if err != nil {
+		return 0, errors.Join(fmt.Errorf("delete game"), err)
+	}
+
 	q, tx, err := e.Store.Begin()
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
-
-	err = q.DeleteGame(e.Store.Context, code)
-	if err != nil {
-		return 0, errors.Join(fmt.Errorf("delete game"), err)
-	}
 
 	id, err := q.CreateGame(e.Store.Context, sqlc.CreateGameParams{
 		Code:        code,
@@ -70,6 +70,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDis
 	if err != nil {
 		return 0, errors.Join(fmt.Errorf("create game"), err)
 	}
+	log.Printf("create: game: %d: %s\n", id, code)
 
 	log.Printf("create: systems: %8d systems\n", len(cluster.Systems)-1)
 	for _, system := range cluster.Systems {
@@ -208,6 +209,28 @@ func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDis
 		deposit.Id = depositId
 	}
 
+	log.Printf("create: empires: %8d empires\n", len(cluster.Empires)-1)
+	for _, empire := range cluster.Empires {
+		if empire == nil {
+			continue
+		}
+		parms := sqlc.CreateEmpireParams{
+			GameID:       id,
+			EmpireNo:     empire.EmpireNo,
+			Name:         empire.Name,
+			HomeSystemID: empire.HomeSystem.Id,
+			HomeStarID:   empire.HomeStar.Id,
+			HomeOrbitID:  empire.HomeOrbit.Id,
+			HomePlanetID: empire.HomePlanet.Id,
+		}
+		empireId, err := q.CreateEmpire(e.Store.Context, parms)
+		if err != nil {
+			return 0, errors.Join(fmt.Errorf("create empire"), err)
+		}
+		// update the empire with the id from the database
+		empire.Id = empireId
+	}
+
 	// clean up the deposits table. we added empty deposits to keep players
 	// from guessing system resources based on the number of deposits they have
 	// seen.
@@ -254,7 +277,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDis
 	return id, tx.Commit()
 }
 
-func (e *Engine_t) CreateCluster(r *rand.Rand) (*Cluster_t, error) {
+func (e *Engine_t) CreateCluster(r *rand.Rand, numberOfEmpires int64) (*Cluster_t, error) {
 	// create a slice of points to randomly place most of the systems
 	var points []Point_t
 	var point Point_t
@@ -284,16 +307,16 @@ func (e *Engine_t) CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 		points = append(points, point)
 	}
 
-	var err error
-
 	// create a cluster
 	cluster := &Cluster_t{
 		Systems: []*System_t{nil},
 		Stars:   []*Star_t{nil},
 		Orbits:  []*Orbit_t{nil},
 		Planets: []*Planet_t{nil},
+		Empires: []*Empire_t{nil},
 	}
 	// create 100 systems for the cluster
+	isHomeSystem := true
 	for i := int64(1); len(points) != 0; i++ {
 		var numberOfStars int64
 		var scarcity Scarcity_e
@@ -314,33 +337,50 @@ func (e *Engine_t) CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 		// create the stars for the system
 		for j := int64(0); j < numberOfStars; j++ {
 			star := &Star_t{Id: int64(len(cluster.Stars)), System: system, Sequence: string(rune(65 + j)), Scarcity: scarcity}
-			// all stars have 10 orbits but not all orbits have planets
-			numberOfPlanets := r.IntN(5) + r.IntN(6) + 1 // normalRandInRange(r, 1, 10)
-			// generate the rings for the star based on the number of planets
-			rings := generateRings(r, numberOfPlanets)
-			// generate the planet for each orbit
-			for k := int64(1); k <= 10; k++ {
-				orbit := &Orbit_t{Id: int64(len(cluster.Orbits)), System: system, Star: star, OrbitNo: k, Kind: rings[k], Scarcity: scarcity}
-				cluster.Orbits = append(cluster.Orbits, orbit)
-				orbit.Planet, err = createPlanet(r, orbit)
+			var err error
+			var orbits [11]*Orbit_t
+			if isHomeSystem {
+				orbits, err = generateHomeSystemOrbits(r, star)
 				if err != nil {
-					return nil, fmt.Errorf("planet: %w", err)
+					return nil, errors.Join(fmt.Errorf("generate home system orbits"), err)
 				}
-				if err = createDeposits(r, orbit.Planet); err != nil {
-					return nil, fmt.Errorf("deposits: %w", err)
+				isHomeSystem = false
+			} else {
+				orbits, err = generateSystemOrbits(r, star)
+				if err != nil {
+					return nil, errors.Join(fmt.Errorf("generate system orbits"), err)
 				}
+			}
+			for _, orbit := range orbits {
+				if orbit == nil {
+					continue
+				}
+				star.Orbits[orbit.OrbitNo] = orbit
+				cluster.Planets = append(cluster.Planets, orbit.Planet)
+				cluster.Orbits = append(cluster.Orbits, orbit)
 				for _, deposit := range orbit.Planet.Deposits {
 					if deposit == nil {
 						continue
 					}
 					cluster.Deposits = append(cluster.Deposits, deposit)
 				}
-				cluster.Planets = append(cluster.Planets, orbit.Planet)
 			}
 			cluster.Stars = append(cluster.Stars, star)
 			system.Stars = append(system.Stars, star)
 		}
 		cluster.Systems = append(cluster.Systems, system)
+	}
+
+	for i := int64(1); i <= numberOfEmpires; i++ {
+		empire := &Empire_t{
+			EmpireNo:   i,
+			Name:       fmt.Sprintf("Empire %03d", i),
+			HomeSystem: cluster.Systems[1],
+			HomeStar:   cluster.Stars[1],
+			HomeOrbit:  cluster.Orbits[3],
+			HomePlanet: cluster.Planets[3],
+		}
+		cluster.Empires = append(cluster.Empires, empire)
 	}
 
 	if len(points) != 0 {
@@ -370,15 +410,19 @@ func createPlanet(r *rand.Rand, orbit *Orbit_t) (*Planet_t, error) {
 }
 
 // createDeposits creates natural resource deposits for a planet.
-func createDeposits(r *rand.Rand, planet *Planet_t) error {
+func createDeposits(r *rand.Rand, planet *Planet_t, isHomeSystem bool) error {
 	var numberOfDeposits int64
-	switch planet.Scarcity {
-	case TYPICAL:
-		numberOfDeposits = normalRandInRange(r, 1, 35)
-	case RICH:
-		numberOfDeposits = normalRandInRange(r, 16, 35)
-	case POOR:
-		numberOfDeposits = normalRandInRange(r, 1, 17)
+	if isHomeSystem {
+		numberOfDeposits = 35
+	} else {
+		switch planet.Scarcity {
+		case TYPICAL:
+			numberOfDeposits = normalRandInRange(r, 1, 35)
+		case RICH:
+			numberOfDeposits = normalRandInRange(r, 16, 35)
+		case POOR:
+			numberOfDeposits = normalRandInRange(r, 1, 17)
+		}
 	}
 	for i := int64(1); i <= numberOfDeposits; i++ {
 		deposit, err := createDeposit(r, planet)
