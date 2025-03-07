@@ -17,12 +17,10 @@ import (
 	"github.com/playbymail/empyr/store"
 	"html/template"
 	"log"
-	"math"
 	"math/rand/v2"
 	"os"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 	"time"
 )
 
@@ -138,14 +136,9 @@ func runCreate(env *config.Environment, args []string) error {
 				return fmt.Errorf("game: %w", err)
 			}
 			return nil
-		} else if arg == "star-lists" {
-			if err := runCreateStarLists(env, args); err != nil {
-				return fmt.Errorf("star-lists: %w", err)
-			}
-			return nil
-		} else if arg == "cluster-map" {
-			if err := runCreateClusterMap(env, args); err != nil {
-				return fmt.Errorf("cluster-map: %w", err)
+		} else if arg == "cluster" {
+			if err := runCreateCluster(env, args); err != nil {
+				return fmt.Errorf("cluster: %w", err)
 			}
 			return nil
 		} else if arg == "turn-reports" {
@@ -162,12 +155,101 @@ func runCreate(env *config.Environment, args []string) error {
 	log.Printf("usage: empyr create [command] [options] [arguments]\n")
 	log.Printf("  cmd: database        create a new database\n")
 	log.Printf("     : game            create a new game\n")
-	log.Printf("     : star-lists      create list of systems in game\n")
-	log.Printf("     : cluster-map     create cluster map of systems\n")
+	log.Printf("     : cluster         create cluster assets\n")
 	log.Printf("     : turn-reports    create turn reports for all empires\n")
 	log.Printf("  opt: --help          show help for the command   [false]\n")
 	log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
 	log.Printf("     : --verbose       enhance logging             [false]\n")
+	return nil
+}
+
+func runCreateCluster(env *config.Environment, args []string) error {
+	var arg string
+	for len(args) > 0 && args[0] != "-- " {
+		arg, args = args[0], args[1:]
+		if argOptHelp(arg) {
+			log.Printf("usage: empyr create cluster [command] [options]\n")
+			log.Printf("  opt: --help          show help for the command   [false]\n")
+			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
+			log.Printf("     : --verbose       enhance logging             [false]\n")
+			log.Printf("     : --path          path to database            [required]\n")
+			return nil
+		} else if arg == "system-map" {
+			if err := runCreateClusterSystemMap(env, args); err != nil {
+				return fmt.Errorf("system-map: %w", err)
+			}
+			return nil
+		} else if arg == "star-list" {
+			if err := runCreateClusterStarList(env, args); err != nil {
+				return fmt.Errorf("star-list: %w", err)
+			}
+			return nil
+		} else if flag, ok := argOptString(arg, "code"); ok {
+			env.Game.Code = flag
+		} else if flag, ok := argOptString(arg, "path"); ok {
+			env.Database.Path = flag
+		} else if strings.HasPrefix(arg, "-") {
+			return fmt.Errorf("unknown option: %q", arg)
+		} else {
+			return fmt.Errorf("unknown argument: %q", arg)
+		}
+	}
+	return fmt.Errorf("missing command")
+}
+
+func runCreateClusterSystemMap(env *config.Environment, args []string) error {
+	var arg string
+	for len(args) > 0 && args[0] != "-- " {
+		arg, args = args[0], args[1:]
+		if argOptHelp(arg) {
+			log.Printf("usage: empyr create cluster system-map [options]\n")
+			log.Printf("  opt: --help          show help for the command   [false]\n")
+			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
+			log.Printf("     : --verbose       enhance logging             [false]\n")
+			log.Printf("     : --path          path to database            [required]\n")
+			return nil
+		} else if flag, ok := argOptString(arg, "code"); ok {
+			env.Game.Code = flag
+		} else if flag, ok := argOptString(arg, "path"); ok {
+			env.Database.Path = flag
+		} else if strings.HasPrefix(arg, "-") {
+			return fmt.Errorf("unknown option: %q", arg)
+		} else {
+			return fmt.Errorf("unknown argument: %q", arg)
+		}
+	}
+
+	if env.Database.Path == "" {
+		return fmt.Errorf("missing path to database")
+	} else if !stdlib.IsFileExists(env.Database.Path) {
+		return fmt.Errorf("%q: does not exist", env.Database.Path)
+	}
+	if env.Game.Code == "" {
+		return fmt.Errorf("missing game code")
+	} else if strings.ToUpper(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must be uppercase", env.Game.Code)
+	} else if strings.TrimSpace(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must not contain whitespace", env.Game.Code)
+	}
+
+	var err error
+	if env.Store, err = store.Open(env.Database.Path, context.Background()); err != nil {
+		return fmt.Errorf("%q: %w", env.Database.Path, err)
+	}
+	defer env.Store.Close()
+	e, err := engine.Open(env.Store)
+	if err != nil {
+		return err
+	}
+
+	data, err := engine.CreateClusterMapCommand(e, &engine.CreateClusterMapParams_t{Code: env.Game.Code})
+	if err != nil {
+		return err
+	} else if err = os.WriteFile("cluster-system-map.html", data, 0644); err != nil {
+		return err
+	}
+
+	log.Printf("create: cluster: system-map: created %q\n", "cluster-system-map.html")
 	return nil
 }
 
@@ -285,18 +367,16 @@ func runCreateGame(env *config.Environment, args []string) error {
 }
 
 var (
-	//go:embed templates/cluster-map.gohtml
-	clusterMapTmpl string
 	//go:embed templates/turn-report.gohtml
 	turnReportTmpl string
 )
 
-func runCreateClusterMap(env *config.Environment, args []string) error {
+func runCreateClusterStarList(env *config.Environment, args []string) error {
 	var arg string
 	for len(args) > 0 && args[0] != "-- " {
 		arg, args = args[0], args[1:]
 		if argOptHelp(arg) {
-			log.Printf("usage: empyr create cluster-map [options]\n")
+			log.Printf("usage: empyr create star-lists [options]\n")
 			log.Printf("  opt: --help          show help for the command   [false]\n")
 			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
 			log.Printf("     : --verbose       enhance logging             [false]\n")
@@ -336,84 +416,17 @@ func runCreateClusterMap(env *config.Environment, args []string) error {
 		return err
 	}
 
-	data, err := engine.CreateClusterMapCommand(e, &engine.CreateClusterMapParams_t{Code: env.Game.Code})
+	dataHtml, dataJson, err := engine.CreateClusterStarListCommand(e, &engine.CreateClusterStarListParams_t{Code: env.Game.Code})
 	if err != nil {
 		return err
-	} else if err = os.WriteFile("cluster-map.html", data, 0644); err != nil {
+	} else if err = os.WriteFile("cluster-star-list.html", dataHtml, 0644); err != nil {
+		return err
+	} else if err = os.WriteFile("cluster-star-list.json", dataJson, 0644); err != nil {
 		return err
 	}
 
-	log.Printf("create: cluster-map: created %q\n", "cluster-map.html")
-	return nil
-}
-
-func runCreateStarLists(env *config.Environment, args []string) error {
-	var arg string
-	for len(args) > 0 && args[0] != "-- " {
-		arg, args = args[0], args[1:]
-		if argOptHelp(arg) {
-			log.Printf("usage: empyr create star-lists [options]\n")
-			log.Printf("  opt: --help          show help for the command   [false]\n")
-			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
-			log.Printf("     : --verbose       enhance logging             [false]\n")
-			log.Printf("     : --path          path to database            [required]\n")
-			return nil
-		} else if flag, ok := argOptString(arg, "code"); ok {
-			env.Game.Code = flag
-		} else if flag, ok := argOptString(arg, "name"); ok {
-			env.Game.Name = flag
-		} else if flag, ok := argOptString(arg, "path"); ok {
-			env.Database.Path = flag
-		} else if strings.HasPrefix(arg, "-") {
-			return fmt.Errorf("unknown option: %q", arg)
-		} else {
-			return fmt.Errorf("unknown argument: %q", arg)
-		}
-	}
-
-	// load the systems data from JSON files
-	// TODO: this should be done in the engine and from the database, not flat files
-	var systems []*engine.System_t
-	if data, err := os.ReadFile("systems.json"); err != nil {
-		return err
-	} else if err = json.Unmarshal(data, &systems); err != nil {
-		return err
-	}
-
-	// buffer will hold the table containing the star lists
-	buffer := &bytes.Buffer{}
-
-	// create a new tabwriter that writes to our buffer
-	w := tabwriter.NewWriter(buffer, 0, 0, 2, ' ', tabwriter.Debug)
-
-	// write table header
-	_, _ = fmt.Fprintln(w, "System ID\tCoordinates\tNumber of Stars\tDistance From Center")
-
-	// write system data rows
-	for i, system := range systems {
-		// Format coordinates as (x, y, z)
-		coords := fmt.Sprintf("(%02d, %02d, %02d)", system.Coordinates.X, system.Coordinates.Y, system.Coordinates.Z)
-		// distance from center uses 15,15,15 as the center
-		dx := float64(system.Coordinates.X - 15)
-		dy := float64(system.Coordinates.Y - 15)
-		dz := float64(system.Coordinates.Z - 15)
-		distance := int(math.Ceil(math.Sqrt(dx*dx + dy*dy + dz*dz)))
-
-		numberOfStars := len(system.Stars)
-
-		// Write the row
-		_, _ = fmt.Fprintf(w, "%d\t%s\t%d\t%d\n", i+1, coords, numberOfStars, distance)
-	}
-
-	// flush ensures all data is written to the buffer
-	_ = w.Flush()
-
-	// write the buffer to our output file
-	if err := os.WriteFile("star-lists.txt", buffer.Bytes(), 0644); err != nil {
-		return err
-	}
-
-	log.Printf("%q: created star-lists: %3d systems\n", env.Database.Path, len(systems))
+	log.Printf("create: cluster-star-list: created %q\n", "cluster-star-list.html")
+	log.Printf("create: cluster-star-list: created %q\n", "cluster-star-list.json")
 	return nil
 }
 
