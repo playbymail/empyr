@@ -13,8 +13,8 @@ import (
 )
 
 type Store struct {
-	path string
-	db   *sql.DB
-	ctx  context.Context
-	q    *sqlc.Queries
+	Path    string
+	DB      *sql.DB
+	Context context.Context
+	Queries *sqlc.Queries
 }

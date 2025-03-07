@@ -6,6 +6,7 @@ package config
 import (
 	"fmt"
 	"github.com/mdhender/semver"
+	"github.com/playbymail/empyr/store"
 	"os"
 	"strings"
 )
@@ -13,6 +14,7 @@ import (
 type Environment struct {
 	Database struct {
 		Path        string
+		DryRun      bool
 		ForceCreate bool
 	}
 	Debug struct {
@@ -26,6 +28,7 @@ type Environment struct {
 		Name   string
 		TurnNo int
 	}
+	Store   *store.Store
 	Verbose bool
 	Version semver.Version
 }

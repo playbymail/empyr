@@ -108,18 +108,26 @@ func Open(path string, ctx context.Context) (*Store, error) {
 	}
 
 	// return the store.
-	return &Store{path: path, db: db, ctx: ctx, q: sqlc.New(db)}, nil
+	return &Store{Path: path, DB: db, Context: ctx, Queries: sqlc.New(db)}, nil
 }
 
 func (s *Store) Close() error {
 	var err error
 	if s != nil {
-		if s.db != nil {
-			err = s.db.Close()
-			s.db = nil
+		if s.DB != nil {
+			err = s.DB.Close()
+			s.DB = nil
 		}
 	}
 	return err
+}
+
+func (s *Store) Begin() (*sqlc.Queries, *sql.Tx, error) {
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.Queries.WithTx(tx), tx, nil
 }
 
 type migrationScript struct {

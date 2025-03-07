@@ -2,7 +2,13 @@
 
 package engine
 
-type Resource_e int
+import "github.com/playbymail/empyr/store"
+
+type Engine_t struct {
+	Store *store.Store
+}
+
+type Resource_e int64
 
 const (
 	GOLD Resource_e = iota
@@ -12,13 +18,13 @@ const (
 )
 
 type Deposit_t struct {
-	Id       int
+	Id       int64
 	Resource Resource_e
-	Quantity int
-	Yield    int
+	Quantity int64
+	Yield    int64
 }
 
-type Scarcity_e int
+type Scarcity_e int64
 
 const (
 	TYPICAL Scarcity_e = iota
@@ -34,32 +40,32 @@ type Cluster_t struct {
 }
 
 type Point_t struct {
-	X, Y, Z int
+	X, Y, Z int64
 }
 
 type System_t struct {
-	Id          int
+	Id          int64
 	Coordinates Point_t
 	Scarcity    Scarcity_e
-	Stars       []int // index into Stars
+	Stars       []int64 // index into Stars
 }
 
 type Star_t struct {
-	Id       int
-	System   int    // index into Systems
+	Id       int64
+	SystemId int64  // index into Systems
 	Sequence string // A ... D for the four stars in the system
 	Scarcity Scarcity_e
-	Orbits   [11]int // index into Orbits
+	Orbits   [11]int64 // index into Orbits
 }
 
 type Orbit_t struct {
-	Id      int
-	Star    int // index into Stars
-	OrbitNo int // value from 1 to 10 for this orbit
+	Id      int64
+	StarId  int64 // index into Stars
+	OrbitNo int64 // value from 1 to 10 for this orbit
 	Kind    Orbit_e
 }
 
-type Orbit_e int
+type Orbit_e int64
 
 const (
 	EmptyOrbit Orbit_e = iota
@@ -71,12 +77,12 @@ const (
 )
 
 type Planet_t struct {
-	Id   int
-	Star int // index into Stars
+	Id   int64
+	Star int64 // index into Stars
 	Kind Planet_e
 }
 
-type Planet_e int
+type Planet_e int64
 
 const (
 	NoPlanet Planet_e = iota

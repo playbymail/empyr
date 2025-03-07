@@ -4,7 +4,7 @@ sql:
     schema:
       - "sqlc/schema.sql"
     queries:
-      - "sqlc/server.sql"
+      - "sqlc/queries.sql"
     gen:
       go:
         emit_exact_table_names: true

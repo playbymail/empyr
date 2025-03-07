@@ -50,7 +50,7 @@ func bellCurve(r *rand.Rand, mean, stdDev float64) float64 {
 //
 //	// Generate values for a poor region
 //	poorDeposit := normalRandInRange(r, 1, 50)
-func normalRandInRange(r *rand.Rand, min, max int) int {
+func normalRandInRange(r *rand.Rand, min, max int) int64 {
 	// ensure lower < upper
 	var lower, upper float64
 	if min < max {
@@ -77,7 +77,7 @@ func normalRandInRange(r *rand.Rand, min, max int) int {
 		value = upper
 	}
 
-	return int(value)
+	return int64(value)
 }
 
 // randomPoint returns scaled coordinates with a uniform volume distribution
@@ -93,9 +93,9 @@ func randomPoint(radius float64) Point_t {
 
 	// convert spherical coordinates to Cartesian coordinates
 	return Point_t{
-		X: int(math.Round(d * math.Sin(phi) * math.Cos(theta))),
-		Y: int(math.Round(d * math.Sin(phi) * math.Sin(theta))),
-		Z: int(math.Round(d * math.Cos(phi))),
+		X: int64(math.Round(d * math.Sin(phi) * math.Cos(theta))),
+		Y: int64(math.Round(d * math.Sin(phi) * math.Sin(theta))),
+		Z: int64(math.Round(d * math.Cos(phi))),
 	}
 }
 
@@ -103,8 +103,8 @@ func randomPoint(radius float64) Point_t {
 // centered at the origin and uniformly distributed.
 func randomCubePoint() Point_t {
 	return Point_t{
-		X: rand.IntN(31) - 15, // -15 to 15
-		Y: rand.IntN(31) - 15, // -15 to 15
-		Z: rand.IntN(31) - 15, // -15 to 15
+		X: rand.Int64N(31) - 15, // -15 to 15
+		Y: rand.Int64N(31) - 15, // -15 to 15
+		Z: rand.Int64N(31) - 15, // -15 to 15
 	}
 }

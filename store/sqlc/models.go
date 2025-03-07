@@ -25,6 +25,13 @@ type Games struct {
 	UpdatedAt   time.Time
 }
 
+type Orbits struct {
+	ID      int64
+	StarID  int64
+	OrbitNo int64
+	Kind    string
+}
+
 type PlanetDeposit struct {
 	DepositID int64
 	Quantity  int64
@@ -43,22 +50,38 @@ type PlanetDeposits struct {
 
 type Planets struct {
 	ID           int64
-	StarID       int64
-	Orbit        int64
-	Kind         string
+	OrbitID      int64
 	Habitability int64
+}
+
+type StarOrbits struct {
+	StarID  int64
+	OrbitID int64
 }
 
 type Stars struct {
 	ID       int64
 	SystemID int64
 	Sequence string
+	Scarcity int64
+}
+
+type SystemDistances struct {
+	FromSystemID int64
+	ToSystemID   int64
+	Distance     int64
+}
+
+type SystemStars struct {
+	SystemID int64
+	StarID   int64
 }
 
 type Systems struct {
-	ID     int64
-	GameID int64
-	X      int64
-	Y      int64
-	Z      int64
+	ID       int64
+	GameID   int64
+	X        int64
+	Y        int64
+	Z        int64
+	Scarcity int64
 }

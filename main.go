@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -58,9 +59,9 @@ func main() {
 	if err := dotenv.Load("EMPYR"); err != nil {
 		log.Fatalf("main: %+v\n", err)
 	}
-	for _, v := range dotenv.EnvVariables("EMPYR_") {
-		log.Printf("main: %-22s == %q\n", v.Key, v.Value)
-	}
+	//for _, v := range dotenv.EnvVariables("EMPYR_") {
+	//	log.Printf("main: %-22s == %q\n", v.Key, v.Value)
+	//}
 	env := config.Default(options...)
 
 	if err := runRoot(env, args); err != nil {
@@ -87,6 +88,11 @@ func runRoot(env *config.Environment, args []string) error {
 		} else if arg == "create" {
 			if err := runCreate(env, args); err != nil {
 				return fmt.Errorf("create: %w", err)
+			}
+			return nil
+		} else if arg == "show" {
+			if err := runShow(env, args); err != nil {
+				return errors.Join(fmt.Errorf("show"), err)
 			}
 			return nil
 		} else if arg == "start" {
@@ -170,12 +176,15 @@ func runCreateDatabase(env *config.Environment, args []string) error {
 	for len(args) > 0 && args[0] != "-- " {
 		arg, args = args[0], args[1:]
 		if argOptHelp(arg) {
-			log.Printf("usage: empyr [options] create [options] database [options] path_to_database\n")
+			log.Printf("usage: empyr create database [options] path_to_database\n")
 			log.Printf("  opt: --help          show help for the command   [false]\n")
 			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
 			log.Printf("     : --verbose       enhance logging             [false]\n")
 			log.Printf("     : --force         force creation              [false]\n")
+			log.Printf("     : --dry-run       show what would happen      [false]\n")
 			return nil
+		} else if flag, ok := argOptBool(arg, "dry-run"); ok {
+			env.Database.DryRun = flag
 		} else if flag, ok := argOptBool(arg, "force"); ok {
 			env.Database.ForceCreate = flag
 		} else if strings.HasPrefix(arg, "-") {
@@ -228,6 +237,7 @@ func runCreateGame(env *config.Environment, args []string) error {
 			return fmt.Errorf("unknown argument: %q", arg)
 		}
 	}
+	var err error
 	if env.Database.Path == "" {
 		return fmt.Errorf("missing path to database")
 	} else if !stdlib.IsFileExists(env.Database.Path) {
@@ -245,29 +255,47 @@ func runCreateGame(env *config.Environment, args []string) error {
 		return fmt.Errorf("missing game name")
 	}
 	log.Printf("game: name: %q\n", env.Game.Name)
-	log.Printf("%q: creating game\n", env.Database.Path)
-	r := rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed))
-	gc, err := engine.CreateCluster(r)
+
+	if env.Store, err = store.Open(env.Database.Path, context.Background()); err != nil {
+		return fmt.Errorf("%q: %w", env.Database.Path, err)
+	}
+	defer env.Store.Close()
+	e, err := engine.Open(env.Store)
 	if err != nil {
-		return fmt.Errorf("cluster: %w", err)
+		return fmt.Errorf("%q: %w", env.Database.Path, err)
 	}
-	for _, obj := range []struct {
-		name string
-		ptr  any
-	}{
-		{name: "systems", ptr: gc.Systems[1:]},
-		{name: "stars", ptr: gc.Stars[1:]},
-		{name: "orbits", ptr: gc.Orbits[1:]},
-		{name: "planets", ptr: gc.Planets[1:]},
-	} {
-		if data, err := json.MarshalIndent(obj.ptr, "", "  "); err != nil {
-			return err
-		} else if err = os.WriteFile(obj.name+".json", data, 0644); err != nil {
-			log.Fatalf("cluster: %s: %v\n", obj.name, err)
-		} else {
-			log.Printf("cluster: %s: wrote %s\n", obj.name, obj.name+".json")
-		}
+	log.Printf("%q: engine %+v\n", env.Database.Path, e)
+
+	r := rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed))
+
+	log.Printf("%q: creating game\n", env.Database.Path)
+	gameId, err := e.CreateGame(env.Game.Code, env.Game.Name, env.Game.Name, r)
+	if err != nil {
+		return fmt.Errorf("game: %w", err)
 	}
+	log.Printf("create: game: created game %d\n", gameId)
+
+	//gc, err := e.CreateCluster(r)
+	//if err != nil {
+	//	return fmt.Errorf("cluster: %w", err)
+	//}
+	//for _, obj := range []struct {
+	//	name string
+	//	ptr  any
+	//}{
+	//	{name: "systems", ptr: gc.Systems[1:]},
+	//	{name: "stars", ptr: gc.Stars[1:]},
+	//	{name: "orbits", ptr: gc.Orbits[1:]},
+	//	{name: "planets", ptr: gc.Planets[1:]},
+	//} {
+	//	if data, err := json.MarshalIndent(obj.ptr, "", "  "); err != nil {
+	//		return err
+	//	} else if err = os.WriteFile(obj.name+".json", data, 0644); err != nil {
+	//		log.Fatalf("cluster: %s: %v\n", obj.name, err)
+	//	} else {
+	//		log.Printf("cluster: %s: wrote %s\n", obj.name, obj.name+".json")
+	//	}
+	//}
 
 	//log.Printf("%q: creating cluster %p\n", env.Database.Path, gc)
 	//g, err := empyr.NewGame(env.Game.Code, env.Game.Name)
@@ -332,8 +360,8 @@ func runCreateClusterMap(env *config.Environment, args []string) error {
 		return err
 	}
 	type cluster_t struct {
-		Id      int
-		X, Y, Z int
+		Id      int64
+		X, Y, Z int64
 		Size    float64
 		// Black, Blue, Gray, Green, Magenta, Purple, Random, Red, Teal, White, Yellow
 		Color template.JS
@@ -522,6 +550,57 @@ func runCreateTurnReports(env *config.Environment, args []string) error {
 	}
 
 	log.Printf("%q: created turn reports\n", env.Database.Path)
+	return nil
+}
+
+func runShow(env *config.Environment, args []string) error {
+	var arg string
+	for len(args) > 0 && args[0] != "-- " {
+		arg, args = args[0], args[1:]
+		if argOptHelp(arg) {
+			log.Printf("usage: empyr show [command]\n")
+			log.Printf("  cmd: env             dump environment\n")
+			log.Printf("     : version         print application version\n")
+			return nil
+		} else if arg == "env" {
+			if err := runShowEnvironment(env, args); err != nil {
+				return fmt.Errorf("env: %w", err)
+			}
+			return nil
+		} else if arg == "version" {
+			if err := runShowVersion(env, args); err != nil {
+				return fmt.Errorf("version: %w", err)
+			}
+			return nil
+		} else if strings.HasPrefix(arg, "-") {
+			return fmt.Errorf("unknown option: %q", arg)
+		} else if env.Database.Path == "" {
+			env.Database.Path = arg
+		} else {
+			return fmt.Errorf("unknown argument: %q", arg)
+		}
+	}
+	return nil
+}
+
+func runShowEnvironment(env *config.Environment, args []string) error {
+	for _, v := range dotenv.EnvVariables("EMPYR_") {
+		log.Printf("env: %-22s == %q\n", v.Key, v.Value)
+	}
+	log.Printf("env: env.database.path        %q\n", env.Database.Path)
+	log.Printf("env: env.database.dryrun      %v\n", env.Database.DryRun)
+	log.Printf("env: env.database.forcecreate %v\n", env.Database.ForceCreate)
+	log.Printf("env: env.debug.database.open  %v\n", env.Debug.Database.Open)
+	log.Printf("env: env.debug.database.close %v\n", env.Debug.Database.Close)
+	log.Printf("env: env.game.code            %q\n", env.Game.Code)
+	log.Printf("env: env.game.name            %q\n", env.Game.Name)
+	log.Printf("env: env.game.turnno          %d\n", env.Game.TurnNo)
+	log.Printf("env: env.verbose              %v\n", env.Verbose)
+	return nil
+}
+
+func runShowVersion(env *config.Environment, args []string) error {
+	log.Printf("version: %s\n", env.Version.String())
 	return nil
 }
 

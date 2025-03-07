@@ -3,13 +3,201 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
+	"github.com/playbymail/empyr/store"
+	"github.com/playbymail/empyr/store/sqlc"
+	"math"
 	"math/rand/v2"
 )
 
 // this file implements the commands to create assets such as games, systems, and planets.
 
-func CreateCluster(r *rand.Rand) (*Cluster_t, error) {
+func Open(db *store.Store) (*Engine_t, error) {
+	return &Engine_t{Store: db}, nil
+}
+
+func Close(e *Engine_t) error {
+	if e != nil && e.Store != nil {
+		err := e.Store.Close()
+		e.Store = nil
+		return err
+	}
+	return nil
+}
+
+func (e *Engine_t) CreateGame(code, name, displayName string, r *rand.Rand) (int64, error) {
+	cluster, err := e.CreateCluster(r)
+	if err != nil {
+		return 0, errors.Join(fmt.Errorf("create cluster"), err)
+	}
+	//for _, obj := range []struct {
+	//	name string
+	//	ptr  any
+	//}{
+	//	{name: "systems", ptr: cluster.Systems[1:]},
+	//	{name: "stars", ptr: cluster.Stars[1:]},
+	//	{name: "orbits", ptr: cluster.Orbits[1:]},
+	//	{name: "planets", ptr: cluster.Planets[1:]},
+	//} {
+	//	if data, err := json.MarshalIndent(obj.ptr, "", "  "); err != nil {
+	//		return 0, err
+	//	} else if err = os.WriteFile(obj.name+".json", data, 0644); err != nil {
+	//		log.Fatalf("cluster: %s: %v\n", obj.name, err)
+	//	} else {
+	//		log.Printf("cluster: %s: wrote %s\n", obj.name, obj.name+".json")
+	//	}
+	//}
+
+	q, tx, err := e.Store.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	err = q.DeleteGame(e.Store.Context, code)
+	if err != nil {
+		return 0, errors.Join(fmt.Errorf("delete game"), err)
+	}
+
+	id, err := q.CreateGame(e.Store.Context, sqlc.CreateGameParams{
+		Code:        code,
+		Name:        name,
+		DisplayName: displayName,
+	})
+	if err != nil {
+		return 0, errors.Join(fmt.Errorf("create game"), err)
+	}
+
+	dbSystemIds := map[int64]int64{}
+	for _, system := range cluster.Systems {
+		if system == nil {
+			continue
+		}
+		systemId, err := q.CreateSystem(e.Store.Context, sqlc.CreateSystemParams{
+			GameID:   id,
+			X:        system.Coordinates.X,
+			Y:        system.Coordinates.Y,
+			Z:        system.Coordinates.Z,
+			Scarcity: int64(system.Scarcity),
+		})
+		if err != nil {
+			return 0, errors.Join(fmt.Errorf("create system"), err)
+		}
+		dbSystemIds[system.Id] = systemId
+	}
+
+	dbStarIds := map[int64]int64{}
+	for _, star := range cluster.Stars {
+		if star == nil {
+			continue
+		}
+		starId, err := q.CreateStar(e.Store.Context, sqlc.CreateStarParams{
+			SystemID: dbSystemIds[star.SystemId],
+			Sequence: star.Sequence,
+			Scarcity: int64(star.Scarcity),
+		})
+		if err != nil {
+			return 0, errors.Join(fmt.Errorf("create star"), err)
+		}
+		dbStarIds[star.Id] = starId
+	}
+
+	for _, star := range cluster.Stars {
+		if star == nil {
+			continue
+		}
+		err := q.CreateSystemStarLink(e.Store.Context, sqlc.CreateSystemStarLinkParams{
+			SystemID: dbSystemIds[star.SystemId],
+			StarID:   dbStarIds[star.Id],
+		})
+		if err != nil {
+			return 0, errors.Join(fmt.Errorf("link system with star"), err)
+		}
+	}
+
+	dbOrbitIds := map[int64]int64{}
+	for _, orbit := range cluster.Orbits {
+		if orbit == nil {
+			continue
+		}
+		var kind string
+		switch orbit.Kind {
+		case EmptyOrbit:
+			kind = "empty"
+		case AsteroidBelt:
+			kind = "asteroid-belt"
+		case EarthlikePlant:
+			kind = "terrestrial"
+		case GasGiant:
+			kind = "gas-giant"
+		case IceGiant:
+			kind = "gas-giant"
+		case RockyPlanet:
+			kind = "terrestrial"
+		default:
+			panic(fmt.Sprintf("assert(orbit.kind != %d)", orbit.Kind))
+		}
+		orbitId, err := q.CreateOrbit(e.Store.Context, sqlc.CreateOrbitParams{
+			StarID:  dbStarIds[orbit.StarId],
+			OrbitNo: orbit.OrbitNo,
+			Kind:    kind,
+		})
+		if err != nil {
+			return 0, errors.Join(fmt.Errorf("create orbit"), err)
+		}
+		dbOrbitIds[orbit.Id] = orbitId
+	}
+
+	for _, orbit := range cluster.Orbits {
+		if orbit == nil {
+			continue
+		}
+		err := q.CreateStarOrbitLink(e.Store.Context, sqlc.CreateStarOrbitLinkParams{
+			StarID:  dbStarIds[orbit.StarId],
+			OrbitID: dbOrbitIds[orbit.Id],
+		})
+		if err != nil {
+			return 0, errors.Join(fmt.Errorf("link star with orbit"), err)
+		}
+	}
+
+	// clean up the orbits table. we added empty orbits to keep players from
+	// guessing system resources based on the number of orbits they have seen.
+	// if constraints are implemented properly, this should also delete the planets.
+	err = q.DeleteEmptyOrbits(e.Store.Context)
+	if err != nil {
+		return 0, errors.Join(fmt.Errorf("delete empty orbits"), err)
+	}
+
+	// calculate the system distances to help reporting
+	for _, from := range cluster.Systems {
+		for _, to := range cluster.Systems {
+			if from == nil || to == nil {
+				continue
+			}
+			distance := int64(0)
+			if from.Id != to.Id {
+				dx := from.Coordinates.X - to.Coordinates.X
+				dy := from.Coordinates.Y - to.Coordinates.Y
+				dz := from.Coordinates.Z - to.Coordinates.Z
+				distance = int64(math.Ceil(math.Sqrt(float64(dx*dx + dy*dy + dz*dz))))
+			}
+			err := q.CreateSystemDistance(e.Store.Context, sqlc.CreateSystemDistanceParams{
+				FromSystemID: dbSystemIds[from.Id],
+				ToSystemID:   dbSystemIds[to.Id],
+				Distance:     distance,
+			})
+			if err != nil {
+				return 0, errors.Join(fmt.Errorf("create system distance"), err)
+			}
+		}
+	}
+
+	return id, tx.Commit()
+}
+
+func (e *Engine_t) CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 	// create a slice of points to randomly place most of the systems
 	var points []Point_t
 	var point Point_t
@@ -47,8 +235,8 @@ func CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 		Planets: []*Planet_t{nil},
 	}
 	// create 100 systems for the cluster
-	for i := 1; len(points) != 0; i++ {
-		var numberOfStars int
+	for i := int64(1); len(points) != 0; i++ {
+		var numberOfStars int64
 		var scarcity Scarcity_e
 		switch i {
 		case 1: // 1 4-star system
@@ -65,15 +253,15 @@ func CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 		// create the system using the point and number of stars
 		system := &System_t{Id: i, Coordinates: Point_t{X: point.X + 15, Y: point.Y + 15, Z: point.Z + 15}}
 		// create the stars for the system
-		for j := 0; j < numberOfStars; j++ {
-			star := &Star_t{Id: len(cluster.Stars), System: system.Id, Sequence: string(rune(65 + j)), Scarcity: scarcity}
+		for j := int64(0); j < numberOfStars; j++ {
+			star := &Star_t{Id: int64(len(cluster.Stars)), SystemId: system.Id, Sequence: string(rune(65 + j)), Scarcity: scarcity}
 			// all stars have 10 orbits but not all orbits have planets
 			numberOfPlanets := r.IntN(5) + r.IntN(6) + 1 // normalRandInRange(r, 1, 10)
 			// generate the rings for the star based on the number of planets
 			rings := generateRings(r, numberOfPlanets)
 			// generate the planet for each orbit
-			for k := 1; k <= 10; k++ {
-				orbit := &Orbit_t{Id: len(cluster.Orbits), Star: star.Id, OrbitNo: k, Kind: rings[k]}
+			for k := int64(1); k <= 10; k++ {
+				orbit := &Orbit_t{Id: int64(len(cluster.Orbits)), StarId: star.Id, OrbitNo: k, Kind: rings[k]}
 				cluster.Orbits = append(cluster.Orbits, orbit)
 				planet := &Planet_t{Id: orbit.Id, Star: star.Id}
 				switch orbit.Kind {
@@ -110,7 +298,7 @@ func CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 
 // createDeposits creates natural resource deposits for a planet.
 func createDeposits(r *rand.Rand, scarcity Scarcity_e) ([]*Deposit_t, error) {
-	var numberOfDeposits int
+	var numberOfDeposits int64
 	switch scarcity {
 	case TYPICAL:
 		numberOfDeposits = normalRandInRange(r, 1, 35)
@@ -120,7 +308,7 @@ func createDeposits(r *rand.Rand, scarcity Scarcity_e) ([]*Deposit_t, error) {
 		numberOfDeposits = normalRandInRange(r, 1, 17)
 	}
 	var deposits []*Deposit_t
-	for i := 0; i < numberOfDeposits; i++ {
+	for i := int64(0); i < numberOfDeposits; i++ {
 		deposit, err := createDeposit(r, scarcity)
 		if err != nil {
 			return nil, fmt.Errorf("deposit: %w", err)
