@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"log"
 	"math"
+	"math/rand/v2"
 	"time"
 )
 
@@ -154,4 +156,19 @@ func CreateClusterStarListCommand(e *Engine_t, cfg *CreateClusterStarListParams_
 	}
 
 	return buffer.Bytes(), data, nil
+}
+
+type CreateGameParams_t struct {
+	Code                        string
+	Name                        string
+	DisplayName                 string
+	NumberOfEmpires             int64
+	PopulateSystemDistanceTable bool
+	Rand                        *rand.Rand
+}
+
+// CreateGameCommand creates a new game.
+func CreateGameCommand(e *Engine_t, cfg *CreateGameParams_t) (int64, error) {
+	log.Printf("create: game: code %q: name %q: display %q\n", cfg.Code, cfg.Name, cfg.DisplayName)
+	return e.CreateGame(cfg.Code, cfg.Name, cfg.DisplayName, cfg.NumberOfEmpires, cfg.PopulateSystemDistanceTable, cfg.Rand)
 }

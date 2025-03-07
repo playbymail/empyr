@@ -297,7 +297,7 @@ func runCreateDatabase(env *config.Environment, args []string) error {
 }
 
 func runCreateGame(env *config.Environment, args []string) error {
-	calculateSystemDistances := false
+	populateSystemDistances := false
 	numberOfEmpires := int64(8)
 	var arg string
 	for len(args) > 0 && args[0] != "-- " {
@@ -309,8 +309,8 @@ func runCreateGame(env *config.Environment, args []string) error {
 			log.Printf("     : --verbose       enhance logging             [false]\n")
 			log.Printf("     : --path          path to database            [required]\n")
 			return nil
-		} else if flag, ok := argOptBool(arg, "calculate-system-distances"); ok {
-			calculateSystemDistances = flag
+		} else if flag, ok := argOptBool(arg, "populate-system-distances"); ok {
+			populateSystemDistances = flag
 		} else if flag, ok := argOptInt(arg, "number-of-empires"); ok {
 			numberOfEmpires = int64(flag)
 		} else if flag, ok := argOptString(arg, "code"); ok {
@@ -325,6 +325,7 @@ func runCreateGame(env *config.Environment, args []string) error {
 			return fmt.Errorf("unknown argument: %q", arg)
 		}
 	}
+
 	var err error
 	if env.Database.Path == "" {
 		return fmt.Errorf("missing path to database")
@@ -338,11 +339,9 @@ func runCreateGame(env *config.Environment, args []string) error {
 	} else if strings.TrimSpace(env.Game.Code) != env.Game.Code {
 		return fmt.Errorf("%q: code must not contain whitespace", env.Game.Code)
 	}
-	log.Printf("game: code: %q\n", env.Game.Code)
 	if env.Game.Name == "" {
 		return fmt.Errorf("missing game name")
 	}
-	log.Printf("game: name: %q\n", env.Game.Name)
 
 	if env.Store, err = store.Open(env.Database.Path, context.Background()); err != nil {
 		return fmt.Errorf("%q: %w", env.Database.Path, err)
@@ -352,12 +351,15 @@ func runCreateGame(env *config.Environment, args []string) error {
 	if err != nil {
 		return fmt.Errorf("%q: %w", env.Database.Path, err)
 	}
-	log.Printf("%q: engine %+v\n", env.Database.Path, e)
 
-	r := rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed))
-
-	log.Printf("%q: creating game\n", env.Database.Path)
-	gameId, err := e.CreateGame(env.Game.Code, env.Game.Name, env.Game.Name, numberOfEmpires, calculateSystemDistances, r)
+	gameId, err := engine.CreateGameCommand(e, &engine.CreateGameParams_t{
+		Code:                        env.Game.Code,
+		Name:                        env.Game.Name,
+		DisplayName:                 fmt.Sprintf("EC-%s", env.Game.Code),
+		NumberOfEmpires:             numberOfEmpires,
+		PopulateSystemDistanceTable: populateSystemDistances,
+		Rand:                        rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed)),
+	})
 	if err != nil {
 		return fmt.Errorf("game: %w", err)
 	}
