@@ -108,6 +108,31 @@
             mesh.material = createStandardMaterial("sphereMaterial", {diffuseColor: system.color}, scene);
         });
 
+        const makeCoordinatesPlane = function (text, color, size) {
+            const dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+            dynamicTexture.hasAlpha = true;
+            dynamicTexture.drawText(text, 5, 40, "bold 12px Arial", color, "transparent", true);
+            const plane = BABYLON.MeshBuilder.CreatePlane("TextPlane", {width: size, height: size}, scene);
+            plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+            plane.material.backFaceCulling = false;
+            plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+            plane.material.diffuseTexture = dynamicTexture;
+            return plane;
+        };
+
+        // Add coordinate label for each system
+        sector.systems.forEach((system, ndx) => {
+            const labelText = `${system.x+15},${system.y+15},${system.z+15}`;
+            const coordLabel = makeCoordinatesPlane(labelText, "white", 0.8);
+            coordLabel.position = new BABYLON.Vector3(
+                system.x + 0.5,
+                system.y + 0.5,
+                system.z + 0.5
+            );
+            // Make label always face the camera
+            coordLabel.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+        });
+
         const cubeSize = 15;
         const points = [
             new BABYLON.Vector3(-cubeSize, -cubeSize, -cubeSize),
@@ -172,12 +197,15 @@
 
         const axisLabel = makeTextPlane("X", "yellow", 1);
         axisLabel.position = new BABYLON.Vector3(axisLength + 0.5, 0, 0);
+        axisLabel.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
 
         const yLabel = makeTextPlane("Y", "yellow", 1);
         yLabel.position = new BABYLON.Vector3(0, axisLength + 0.5, 0);
+        yLabel.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
 
         const zLabel = makeTextPlane("Z", "yellow", 1);
         zLabel.position = new BABYLON.Vector3(0, 0, axisLength + 0.5);
+        zLabel.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
 
         return scene;
     };
