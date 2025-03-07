@@ -197,6 +197,65 @@ func runCreateCluster(env *config.Environment, args []string) error {
 	return fmt.Errorf("missing command")
 }
 
+func runCreateClusterStarList(env *config.Environment, args []string) error {
+	var arg string
+	for len(args) > 0 && args[0] != "-- " {
+		arg, args = args[0], args[1:]
+		if argOptHelp(arg) {
+			log.Printf("usage: empyr create star-lists [options]\n")
+			log.Printf("  opt: --help          show help for the command   [false]\n")
+			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
+			log.Printf("     : --verbose       enhance logging             [false]\n")
+			log.Printf("     : --path          path to database            [required]\n")
+			return nil
+		} else if flag, ok := argOptString(arg, "code"); ok {
+			env.Game.Code = flag
+		} else if flag, ok := argOptString(arg, "path"); ok {
+			env.Database.Path = flag
+		} else if strings.HasPrefix(arg, "-") {
+			return fmt.Errorf("unknown option: %q", arg)
+		} else {
+			return fmt.Errorf("unknown argument: %q", arg)
+		}
+	}
+
+	if env.Database.Path == "" {
+		return fmt.Errorf("missing path to database")
+	} else if !stdlib.IsFileExists(env.Database.Path) {
+		return fmt.Errorf("%q: does not exist", env.Database.Path)
+	}
+	if env.Game.Code == "" {
+		return fmt.Errorf("missing game code")
+	} else if strings.ToUpper(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must be uppercase", env.Game.Code)
+	} else if strings.TrimSpace(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must not contain whitespace", env.Game.Code)
+	}
+
+	var err error
+	if env.Store, err = store.Open(env.Database.Path, context.Background()); err != nil {
+		return fmt.Errorf("%q: %w", env.Database.Path, err)
+	}
+	defer env.Store.Close()
+	e, err := engine.Open(env.Store)
+	if err != nil {
+		return err
+	}
+
+	dataHtml, dataJson, err := engine.CreateClusterStarListCommand(e, &engine.CreateClusterStarListParams_t{Code: env.Game.Code})
+	if err != nil {
+		return err
+	} else if err = os.WriteFile("cluster-star-list.html", dataHtml, 0644); err != nil {
+		return err
+	} else if err = os.WriteFile("cluster-star-list.json", dataJson, 0644); err != nil {
+		return err
+	}
+
+	log.Printf("create: cluster-star-list: created %q\n", "cluster-star-list.html")
+	log.Printf("create: cluster-star-list: created %q\n", "cluster-star-list.json")
+	return nil
+}
+
 func runCreateClusterSystemMap(env *config.Environment, args []string) error {
 	var arg string
 	for len(args) > 0 && args[0] != "-- " {
@@ -372,65 +431,6 @@ var (
 	//go:embed templates/turn-report.gohtml
 	turnReportTmpl string
 )
-
-func runCreateClusterStarList(env *config.Environment, args []string) error {
-	var arg string
-	for len(args) > 0 && args[0] != "-- " {
-		arg, args = args[0], args[1:]
-		if argOptHelp(arg) {
-			log.Printf("usage: empyr create star-lists [options]\n")
-			log.Printf("  opt: --help          show help for the command   [false]\n")
-			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
-			log.Printf("     : --verbose       enhance logging             [false]\n")
-			log.Printf("     : --path          path to database            [required]\n")
-			return nil
-		} else if flag, ok := argOptString(arg, "code"); ok {
-			env.Game.Code = flag
-		} else if flag, ok := argOptString(arg, "path"); ok {
-			env.Database.Path = flag
-		} else if strings.HasPrefix(arg, "-") {
-			return fmt.Errorf("unknown option: %q", arg)
-		} else {
-			return fmt.Errorf("unknown argument: %q", arg)
-		}
-	}
-
-	if env.Database.Path == "" {
-		return fmt.Errorf("missing path to database")
-	} else if !stdlib.IsFileExists(env.Database.Path) {
-		return fmt.Errorf("%q: does not exist", env.Database.Path)
-	}
-	if env.Game.Code == "" {
-		return fmt.Errorf("missing game code")
-	} else if strings.ToUpper(env.Game.Code) != env.Game.Code {
-		return fmt.Errorf("%q: code must be uppercase", env.Game.Code)
-	} else if strings.TrimSpace(env.Game.Code) != env.Game.Code {
-		return fmt.Errorf("%q: code must not contain whitespace", env.Game.Code)
-	}
-
-	var err error
-	if env.Store, err = store.Open(env.Database.Path, context.Background()); err != nil {
-		return fmt.Errorf("%q: %w", env.Database.Path, err)
-	}
-	defer env.Store.Close()
-	e, err := engine.Open(env.Store)
-	if err != nil {
-		return err
-	}
-
-	dataHtml, dataJson, err := engine.CreateClusterStarListCommand(e, &engine.CreateClusterStarListParams_t{Code: env.Game.Code})
-	if err != nil {
-		return err
-	} else if err = os.WriteFile("cluster-star-list.html", dataHtml, 0644); err != nil {
-		return err
-	} else if err = os.WriteFile("cluster-star-list.json", dataJson, 0644); err != nil {
-		return err
-	}
-
-	log.Printf("create: cluster-star-list: created %q\n", "cluster-star-list.html")
-	log.Printf("create: cluster-star-list: created %q\n", "cluster-star-list.json")
-	return nil
-}
 
 func runCreateTurnReports(env *config.Environment, args []string) error {
 	foundTurnId := false
