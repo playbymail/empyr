@@ -9,6 +9,36 @@ import (
 	"context"
 )
 
+const createDeposit = `-- name: CreateDeposit :one
+INSERT INTO deposits (planet_id, deposit_no, kind, yield_pct, initial_qty, remaining_qty)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+RETURNING id
+`
+
+type CreateDepositParams struct {
+	PlanetID     int64
+	DepositNo    int64
+	Kind         string
+	YieldPct     int64
+	InitialQty   int64
+	RemainingQty int64
+}
+
+// CreateDeposit creates a new deposit.
+func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createDeposit,
+		arg.PlanetID,
+		arg.DepositNo,
+		arg.Kind,
+		arg.YieldPct,
+		arg.InitialQty,
+		arg.RemainingQty,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createGame = `-- name: CreateGame :one
 
 INSERT INTO games (code, name, display_name)
@@ -33,20 +63,52 @@ func (q *Queries) CreateGame(ctx context.Context, arg CreateGameParams) (int64, 
 }
 
 const createOrbit = `-- name: CreateOrbit :one
-INSERT INTO orbits (star_id, orbit_no, kind)
-VALUES (?1, ?2, ?3)
+INSERT INTO orbits (star_id, orbit_no, kind, scarcity)
+VALUES (?1, ?2, ?3, ?4)
 RETURNING id
 `
 
 type CreateOrbitParams struct {
-	StarID  int64
-	OrbitNo int64
-	Kind    string
+	StarID   int64
+	OrbitNo  int64
+	Kind     string
+	Scarcity int64
 }
 
 // CreateOrbit creates a new orbit.
 func (q *Queries) CreateOrbit(ctx context.Context, arg CreateOrbitParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createOrbit, arg.StarID, arg.OrbitNo, arg.Kind)
+	row := q.db.QueryRowContext(ctx, createOrbit,
+		arg.StarID,
+		arg.OrbitNo,
+		arg.Kind,
+		arg.Scarcity,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createPlanet = `-- name: CreatePlanet :one
+INSERT INTO planets (orbit_id, kind, scarcity, habitability)
+VALUES (?1, ?2, ?3, ?4)
+RETURNING id
+`
+
+type CreatePlanetParams struct {
+	OrbitID      int64
+	Kind         string
+	Scarcity     int64
+	Habitability int64
+}
+
+// CreatePlanet creates a new planet.
+func (q *Queries) CreatePlanet(ctx context.Context, arg CreatePlanetParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createPlanet,
+		arg.OrbitID,
+		arg.Kind,
+		arg.Scarcity,
+		arg.Habitability,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -114,6 +176,17 @@ type CreateSystemDistanceParams struct {
 // CreateSystemDistance inserts the distance between two systems.
 func (q *Queries) CreateSystemDistance(ctx context.Context, arg CreateSystemDistanceParams) error {
 	_, err := q.db.ExecContext(ctx, createSystemDistance, arg.FromSystemID, arg.ToSystemID, arg.Distance)
+	return err
+}
+
+const deleteEmptyDeposits = `-- name: DeleteEmptyDeposits :exec
+DELETE FROM deposits
+WHERE kind = 'none'
+`
+
+// DeleteEmptyOrbits deletes all orbits with no planets.
+func (q *Queries) DeleteEmptyDeposits(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteEmptyDeposits)
 	return err
 }
 

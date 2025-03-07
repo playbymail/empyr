@@ -15,6 +15,25 @@ type Colonies struct {
 	Location string
 }
 
+type Deposit struct {
+	DepositID int64
+	Quantity  int64
+	YieldPct  int64
+	EffTurn   int64
+	EndTurn   int64
+	Active    int64
+}
+
+type Deposits struct {
+	ID           int64
+	PlanetID     int64
+	DepositNo    int64
+	Kind         string
+	YieldPct     int64
+	InitialQty   int64
+	RemainingQty int64
+}
+
 type Games struct {
 	ID          int64
 	Code        string
@@ -26,32 +45,19 @@ type Games struct {
 }
 
 type Orbits struct {
-	ID      int64
-	StarID  int64
-	OrbitNo int64
-	Kind    string
-}
-
-type PlanetDeposit struct {
-	DepositID int64
-	Quantity  int64
-	YieldPct  int64
-	EffTurn   int64
-	EndTurn   int64
-	Active    int64
-}
-
-type PlanetDeposits struct {
-	ID        int64
-	PlanetID  int64
-	DepositNo int64
-	Kind      string
+	ID       int64
+	StarID   int64
+	OrbitNo  int64
+	Kind     string
+	Scarcity int64
 }
 
 type Planets struct {
 	ID           int64
 	OrbitID      int64
+	Kind         string
 	Habitability int64
+	Scarcity     int64
 }
 
 type Stars struct {

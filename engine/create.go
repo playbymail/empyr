@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"github.com/playbymail/empyr/store"
 	"github.com/playbymail/empyr/store/sqlc"
+	"log"
 	"math"
 	"math/rand/v2"
+	"sort"
 )
 
 // this file implements the commands to create assets such as games, systems, and planets.
@@ -69,7 +71,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDis
 		return 0, errors.Join(fmt.Errorf("create game"), err)
 	}
 
-	dbSystemIds := map[int64]int64{}
+	log.Printf("create: systems: %8d systems\n", len(cluster.Systems)-1)
 	for _, system := range cluster.Systems {
 		if system == nil {
 			continue
@@ -84,26 +86,28 @@ func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDis
 		if err != nil {
 			return 0, errors.Join(fmt.Errorf("create system"), err)
 		}
-		dbSystemIds[system.Id] = systemId
+		// update the system with the id from the database
+		system.Id = systemId
 	}
 
-	dbStarIds := map[int64]int64{}
+	log.Printf("create: stars: %8d stars\n", len(cluster.Stars)-1)
 	for _, star := range cluster.Stars {
 		if star == nil {
 			continue
 		}
 		starId, err := q.CreateStar(e.Store.Context, sqlc.CreateStarParams{
-			SystemID: dbSystemIds[star.SystemId],
+			SystemID: star.System.Id,
 			Sequence: star.Sequence,
 			Scarcity: int64(star.Scarcity),
 		})
 		if err != nil {
 			return 0, errors.Join(fmt.Errorf("create star"), err)
 		}
-		dbStarIds[star.Id] = starId
+		// update the star with the id from the database
+		star.Id = starId
 	}
 
-	dbOrbitIds := map[int64]int64{}
+	log.Printf("create: orbits: %8d orbits\n", len(cluster.Orbits)-1)
 	for _, orbit := range cluster.Orbits {
 		if orbit == nil {
 			continue
@@ -126,19 +130,96 @@ func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDis
 			panic(fmt.Sprintf("assert(orbit.kind != %d)", orbit.Kind))
 		}
 		orbitId, err := q.CreateOrbit(e.Store.Context, sqlc.CreateOrbitParams{
-			StarID:  dbStarIds[orbit.StarId],
-			OrbitNo: orbit.OrbitNo,
-			Kind:    kind,
+			StarID:   orbit.Star.Id,
+			OrbitNo:  orbit.OrbitNo,
+			Kind:     kind,
+			Scarcity: int64(orbit.Scarcity),
 		})
 		if err != nil {
 			return 0, errors.Join(fmt.Errorf("create orbit"), err)
 		}
-		dbOrbitIds[orbit.Id] = orbitId
+		// update the orbit with the id from the database
+		orbit.Id = orbitId
+	}
+
+	log.Printf("create: planets: %8d planets\n", len(cluster.Planets)-1)
+	for _, planet := range cluster.Planets {
+		if planet == nil {
+			continue
+		}
+		var kind string
+		switch planet.Kind {
+		case NoPlanet:
+			kind = "empty"
+		case AsteroidBeltPlanet:
+			kind = "asteroid-belt"
+		case GasGiantPlanet:
+			kind = "gas-giant"
+		case TerrestrialPlanet:
+			kind = "terrestrial"
+		default:
+			panic(fmt.Sprintf("assert(planet.kind != %d)", planet.Kind))
+		}
+		planetId, err := q.CreatePlanet(e.Store.Context, sqlc.CreatePlanetParams{
+			OrbitID:      planet.Orbit.Id,
+			Kind:         kind,
+			Scarcity:     int64(planet.Scarcity),
+			Habitability: planet.Habitability,
+		})
+		if err != nil {
+			return 0, errors.Join(fmt.Errorf("create planet"), err)
+		}
+		// update the planet with the id from the database
+		planet.Id = planetId
+	}
+
+	log.Printf("create: deposits: %8d deposits\n", len(cluster.Deposits))
+	for _, deposit := range cluster.Deposits {
+		if deposit == nil {
+			continue
+		}
+		var resource string
+		switch deposit.Resource {
+		case NONE:
+			resource = "none"
+		case FUEL:
+			resource = "fuel"
+		case GOLD:
+			resource = "gold"
+		case METALLICS:
+			resource = "metallic"
+		case NON_METALLICS:
+			resource = "non-metallic"
+		default:
+			panic(fmt.Sprintf("assert(deposit.resource != %d)", deposit.Resource))
+		}
+		depositId, err := q.CreateDeposit(e.Store.Context, sqlc.CreateDepositParams{
+			PlanetID:     deposit.Planet.Id,
+			DepositNo:    deposit.DepositNo,
+			Kind:         resource,
+			YieldPct:     int64(deposit.Yield),
+			InitialQty:   int64(deposit.Quantity),
+			RemainingQty: int64(deposit.Quantity),
+		})
+		if err != nil {
+			return 0, errors.Join(fmt.Errorf("create deposit"), err)
+		}
+		// update the deposit with the id from the database
+		deposit.Id = depositId
+	}
+
+	// clean up the deposits table. we added empty deposits to keep players
+	// from guessing system resources based on the number of deposits they have
+	// seen.
+	err = q.DeleteEmptyDeposits(e.Store.Context)
+	if err != nil {
+		return 0, errors.Join(fmt.Errorf("delete empty deposits"), err)
 	}
 
 	// clean up the orbits table. we added empty orbits to keep players from
 	// guessing system resources based on the number of orbits they have seen.
-	// if constraints are implemented properly, this should also delete the planets.
+	// if constraints are implemented properly, this should also delete the
+	// planets and deposits.
 	err = q.DeleteEmptyOrbits(e.Store.Context)
 	if err != nil {
 		return 0, errors.Join(fmt.Errorf("delete empty orbits"), err)
@@ -159,8 +240,8 @@ func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDis
 					distance = int64(math.Ceil(math.Sqrt(float64(dx*dx + dy*dy + dz*dz))))
 				}
 				err := q.CreateSystemDistance(e.Store.Context, sqlc.CreateSystemDistanceParams{
-					FromSystemID: dbSystemIds[from.Id],
-					ToSystemID:   dbSystemIds[to.Id],
+					FromSystemID: from.Id,
+					ToSystemID:   to.Id,
 					Distance:     distance,
 				})
 				if err != nil {
@@ -203,6 +284,8 @@ func (e *Engine_t) CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 		points = append(points, point)
 	}
 
+	var err error
+
 	// create a cluster
 	cluster := &Cluster_t{
 		Systems: []*System_t{nil},
@@ -230,36 +313,32 @@ func (e *Engine_t) CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 		system := &System_t{Id: i, Coordinates: Point_t{X: point.X + 15, Y: point.Y + 15, Z: point.Z + 15}}
 		// create the stars for the system
 		for j := int64(0); j < numberOfStars; j++ {
-			star := &Star_t{Id: int64(len(cluster.Stars)), SystemId: system.Id, Sequence: string(rune(65 + j)), Scarcity: scarcity}
+			star := &Star_t{Id: int64(len(cluster.Stars)), System: system, Sequence: string(rune(65 + j)), Scarcity: scarcity}
 			// all stars have 10 orbits but not all orbits have planets
 			numberOfPlanets := r.IntN(5) + r.IntN(6) + 1 // normalRandInRange(r, 1, 10)
 			// generate the rings for the star based on the number of planets
 			rings := generateRings(r, numberOfPlanets)
 			// generate the planet for each orbit
 			for k := int64(1); k <= 10; k++ {
-				orbit := &Orbit_t{Id: int64(len(cluster.Orbits)), StarId: star.Id, OrbitNo: k, Kind: rings[k]}
+				orbit := &Orbit_t{Id: int64(len(cluster.Orbits)), System: system, Star: star, OrbitNo: k, Kind: rings[k], Scarcity: scarcity}
 				cluster.Orbits = append(cluster.Orbits, orbit)
-				planet := &Planet_t{Id: orbit.Id, Star: star.Id}
-				switch orbit.Kind {
-				case EmptyOrbit:
-					planet.Kind = NoPlanet
-				case AsteroidBelt:
-					planet.Kind = AsteroidBeltPlanet
-				case EarthlikePlant, RockyPlanet:
-					planet.Kind = TerrestrialPlanet
-				case GasGiant, IceGiant:
-					planet.Kind = GasGiantPlanet
-				default:
-					panic(fmt.Sprintf("assert(orbit.Kind != %d)", orbit.Kind))
+				orbit.Planet, err = createPlanet(r, orbit)
+				if err != nil {
+					return nil, fmt.Errorf("planet: %w", err)
 				}
-				//orbit.Planet, err = createPlanet(r, rings[k], scarcity)
-				//if err != nil {
-				//	return nil, fmt.Errorf("planet: %w", err)
-				//}
-				cluster.Planets = append(cluster.Planets, planet)
+				if err = createDeposits(r, orbit.Planet); err != nil {
+					return nil, fmt.Errorf("deposits: %w", err)
+				}
+				for _, deposit := range orbit.Planet.Deposits {
+					if deposit == nil {
+						continue
+					}
+					cluster.Deposits = append(cluster.Deposits, deposit)
+				}
+				cluster.Planets = append(cluster.Planets, orbit.Planet)
 			}
 			cluster.Stars = append(cluster.Stars, star)
-			system.Stars = append(system.Stars, star.Id)
+			system.Stars = append(system.Stars, star)
 		}
 		cluster.Systems = append(cluster.Systems, system)
 	}
@@ -272,10 +351,28 @@ func (e *Engine_t) CreateCluster(r *rand.Rand) (*Cluster_t, error) {
 	return cluster, nil
 }
 
+// createPlanet creates a planet.
+func createPlanet(r *rand.Rand, orbit *Orbit_t) (*Planet_t, error) {
+	planet := &Planet_t{System: orbit.System, Star: orbit.Star, Orbit: orbit, Scarcity: orbit.Scarcity}
+	switch orbit.Kind {
+	case EmptyOrbit:
+		planet.Kind = NoPlanet
+	case AsteroidBelt:
+		planet.Kind = AsteroidBeltPlanet
+	case EarthlikePlant, RockyPlanet:
+		planet.Kind = TerrestrialPlanet
+	case GasGiant, IceGiant:
+		planet.Kind = GasGiantPlanet
+	default:
+		panic(fmt.Sprintf("assert(orbit.Kind != %d)", orbit.Kind))
+	}
+	return planet, nil
+}
+
 // createDeposits creates natural resource deposits for a planet.
-func createDeposits(r *rand.Rand, scarcity Scarcity_e) ([]*Deposit_t, error) {
+func createDeposits(r *rand.Rand, planet *Planet_t) error {
 	var numberOfDeposits int64
-	switch scarcity {
+	switch planet.Scarcity {
 	case TYPICAL:
 		numberOfDeposits = normalRandInRange(r, 1, 35)
 	case RICH:
@@ -283,21 +380,51 @@ func createDeposits(r *rand.Rand, scarcity Scarcity_e) ([]*Deposit_t, error) {
 	case POOR:
 		numberOfDeposits = normalRandInRange(r, 1, 17)
 	}
-	var deposits []*Deposit_t
-	for i := int64(0); i < numberOfDeposits; i++ {
-		deposit, err := createDeposit(r, scarcity)
+	for i := int64(1); i <= numberOfDeposits; i++ {
+		deposit, err := createDeposit(r, planet)
 		if err != nil {
-			return nil, fmt.Errorf("deposit: %w", err)
+			return fmt.Errorf("deposit: %w", err)
 		}
-		deposits = append(deposits, deposit)
+		planet.Deposits[i] = deposit
 	}
-	return deposits, nil
+
+	// sort deposits by resource type
+	// create a temporary slice to hold non-nil deposits (excluding index 0)
+	var deposits []*Deposit_t
+	for i := int64(1); i < 36; i++ {
+		if deposit := planet.Deposits[i]; deposit != nil {
+			deposits = append(deposits, deposit)
+		}
+	}
+	// sort the slice by resource type. assumes that we have not yet inserted any NONE deposits!
+	sort.Slice(deposits, func(i, j int) bool {
+		if deposits[i].Resource == deposits[j].Resource {
+			if deposits[i].Quantity == deposits[j].Quantity {
+				return deposits[i].Yield > deposits[j].Yield
+			}
+			return deposits[i].Quantity > deposits[j].Quantity
+		}
+		return deposits[i].Resource < deposits[j].Resource
+	})
+	// number the deposits and put them back into the planet's deposits
+	for n, deposit := range deposits {
+		deposit.DepositNo = int64(n + 1)
+		planet.Deposits[deposit.DepositNo] = deposit
+	}
+	// fill in the remaining deposits with NONE
+	for i := int64(1); i <= 35; i++ {
+		if planet.Deposits[i] == nil {
+			planet.Deposits[i] = &Deposit_t{Planet: planet, Resource: NONE}
+		}
+		planet.Deposits[i].DepositNo = i
+	}
+	return nil
 }
 
 // createDeposit creates a natural resource deposit.
-func createDeposit(r *rand.Rand, scarcity Scarcity_e) (deposit *Deposit_t, err error) {
+func createDeposit(r *rand.Rand, planet *Planet_t) (deposit *Deposit_t, err error) {
 	var resource Resource_e
-	switch scarcity {
+	switch planet.Scarcity {
 	case TYPICAL:
 		switch n := r.IntN(100); true {
 		case n < 3:
@@ -332,8 +459,10 @@ func createDeposit(r *rand.Rand, scarcity Scarcity_e) (deposit *Deposit_t, err e
 	}
 	var minQuantity, maxQuantity, minYield, maxYield int
 	switch resource {
+	case NONE: // should never happen
+		return &Deposit_t{Planet: planet, Resource: resource}, nil
 	case GOLD:
-		switch scarcity {
+		switch planet.Scarcity {
 		case TYPICAL:
 			minQuantity, maxQuantity = 1_000_000, 35_000_000
 			minYield, maxYield = 1, 9
@@ -345,7 +474,7 @@ func createDeposit(r *rand.Rand, scarcity Scarcity_e) (deposit *Deposit_t, err e
 			minYield, maxYield = 1, 3
 		}
 	case FUEL:
-		switch scarcity {
+		switch planet.Scarcity {
 		case TYPICAL:
 			minQuantity, maxQuantity = 1_000_000, 50_000_000
 			minYield, maxYield = 1, 12
@@ -357,7 +486,7 @@ func createDeposit(r *rand.Rand, scarcity Scarcity_e) (deposit *Deposit_t, err e
 			minYield, maxYield = 1, 8
 		}
 	case METALLICS:
-		switch scarcity {
+		switch planet.Scarcity {
 		case TYPICAL:
 			minQuantity, maxQuantity = 1_000_000, 99_000_000
 			minYield, maxYield = 1, 36
@@ -369,7 +498,7 @@ func createDeposit(r *rand.Rand, scarcity Scarcity_e) (deposit *Deposit_t, err e
 			minYield, maxYield = 1, 18
 		}
 	case NON_METALLICS:
-		switch scarcity {
+		switch planet.Scarcity {
 		case TYPICAL:
 			minQuantity, maxQuantity = 1_000_000, 99_000_000
 			minYield, maxYield = 1, 36
@@ -382,6 +511,7 @@ func createDeposit(r *rand.Rand, scarcity Scarcity_e) (deposit *Deposit_t, err e
 		}
 	}
 	return &Deposit_t{
+		Planet:   planet,
 		Resource: resource,
 		Quantity: normalRandInRange(r, minQuantity, maxQuantity),
 		Yield:    normalRandInRange(r, minYield, maxYield),

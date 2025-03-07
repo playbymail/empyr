@@ -52,8 +52,8 @@ VALUES (:from_system_id, :to_system_id, :distance);
 -- CreateOrbit creates a new orbit.
 --
 -- name: CreateOrbit :one
-INSERT INTO orbits (star_id, orbit_no, kind)
-VALUES (:star_id, :orbit_no, :kind)
+INSERT INTO orbits (star_id, orbit_no, kind, scarcity)
+VALUES (:star_id, :orbit_no, :kind, :scarcity)
 RETURNING id;
 
 -- DeleteEmptyOrbits deletes all orbits with no planets.
@@ -61,3 +61,23 @@ RETURNING id;
 -- name: DeleteEmptyOrbits :exec
 DELETE FROM orbits
 WHERE kind = 'empty';
+
+-- CreatePlanet creates a new planet.
+--
+-- name: CreatePlanet :one
+INSERT INTO planets (orbit_id, kind, scarcity, habitability)
+VALUES (:orbit_id, :kind, :scarcity, :habitability)
+RETURNING id;
+
+-- CreateDeposit creates a new deposit.
+--
+-- name: CreateDeposit :one
+INSERT INTO deposits (planet_id, deposit_no, kind, yield_pct, initial_qty, remaining_qty)
+VALUES (:planet_id, :deposit_no, :kind, :yield_pct, :initial_qty, :remaining_qty)
+RETURNING id;
+
+-- DeleteEmptyOrbits deletes all orbits with no planets.
+--
+-- name: DeleteEmptyDeposits :exec
+DELETE FROM deposits
+WHERE kind = 'none';

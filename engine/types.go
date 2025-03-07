@@ -11,17 +11,32 @@ type Engine_t struct {
 type Resource_e int64
 
 const (
-	GOLD Resource_e = iota
+	NONE Resource_e = iota
+	GOLD
 	FUEL
 	METALLICS
 	NON_METALLICS
 )
 
 type Deposit_t struct {
-	Id       int64
-	Resource Resource_e
-	Quantity int64
-	Yield    int64
+	Id        int64
+	Planet    *Planet_t
+	DepositNo int64
+	Resource  Resource_e
+	Quantity  int64
+	Yield     int64
+}
+
+// Less is a helper for sorting deposits.
+// It is used to sort deposits by resource type.
+// It sorts NONE last, and everything else by resource type.
+func (d *Deposit_t) Less(d2 *Deposit_t) bool {
+	if d.Resource == NONE {
+		return false
+	} else if d2.Resource == NONE {
+		return true
+	}
+	return d.Resource < d2.Resource
 }
 
 type Scarcity_e int64
@@ -33,10 +48,11 @@ const (
 )
 
 type Cluster_t struct {
-	Systems []*System_t
-	Stars   []*Star_t
-	Orbits  []*Orbit_t
-	Planets []*Planet_t
+	Systems  []*System_t
+	Stars    []*Star_t
+	Orbits   []*Orbit_t
+	Planets  []*Planet_t
+	Deposits []*Deposit_t
 }
 
 type Point_t struct {
@@ -47,22 +63,25 @@ type System_t struct {
 	Id          int64
 	Coordinates Point_t
 	Scarcity    Scarcity_e
-	Stars       []int64 // index into Stars
+	Stars       []*Star_t
 }
 
 type Star_t struct {
 	Id       int64
-	SystemId int64  // index into Systems
+	System   *System_t
 	Sequence string // A ... D for the four stars in the system
 	Scarcity Scarcity_e
-	Orbits   [11]int64 // index into Orbits
+	Orbits   [11]*Orbit_t
 }
 
 type Orbit_t struct {
-	Id      int64
-	StarId  int64 // index into Stars
-	OrbitNo int64 // value from 1 to 10 for this orbit
-	Kind    Orbit_e
+	Id       int64
+	System   *System_t
+	Star     *Star_t
+	OrbitNo  int64 // value from 1 to 10 for this orbit
+	Kind     Orbit_e
+	Scarcity Scarcity_e
+	Planet   *Planet_t
 }
 
 type Orbit_e int64
@@ -77,9 +96,14 @@ const (
 )
 
 type Planet_t struct {
-	Id   int64
-	Star int64 // index into Stars
-	Kind Planet_e
+	Id           int64
+	System       *System_t
+	Star         *Star_t
+	Orbit        *Orbit_t
+	Kind         Planet_e
+	Habitability int64 // 0..25
+	Scarcity     Scarcity_e
+	Deposits     [36]*Deposit_t
 }
 
 type Planet_e int64
