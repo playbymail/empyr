@@ -84,21 +84,6 @@ CREATE TABLE stars
             ON DELETE CASCADE
 );
 
-CREATE TABLE system_stars
-(
-    system_id INTEGER NOT NULL,
-    star_id   INTEGER NOT NULL,
-    UNIQUE (system_id, star_id),
-    CONSTRAINT fk_system_id
-        FOREIGN KEY (system_id)
-            REFERENCES systems (id)
-            ON DELETE CASCADE,
-    CONSTRAINT fk_star_id
-        FOREIGN KEY (star_id)
-            REFERENCES stars (id)
-            ON DELETE CASCADE
-);
-
 CREATE TABLE orbits
 (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -109,21 +94,6 @@ CREATE TABLE orbits
     CONSTRAINT fk_star_id
         FOREIGN KEY (star_id)
             REFERENCES stars (id)
-            ON DELETE CASCADE
-);
-
-CREATE TABLE star_orbits
-(
-    star_id  INTEGER NOT NULL,
-    orbit_id INTEGER NOT NULL,
-    UNIQUE (star_id, orbit_id),
-    CONSTRAINT fk_star_id
-        FOREIGN KEY (star_id)
-            REFERENCES stars (id)
-            ON DELETE CASCADE,
-    CONSTRAINT fk_orbit_id
-        FOREIGN KEY (orbit_id)
-            REFERENCES orbits (id)
             ON DELETE CASCADE
 );
 

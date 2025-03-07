@@ -26,7 +26,7 @@ func Close(e *Engine_t) error {
 	return nil
 }
 
-func (e *Engine_t) CreateGame(code, name, displayName string, r *rand.Rand) (int64, error) {
+func (e *Engine_t) CreateGame(code, name, displayName string, calculateSystemDistances bool, r *rand.Rand) (int64, error) {
 	cluster, err := e.CreateCluster(r)
 	if err != nil {
 		return 0, errors.Join(fmt.Errorf("create cluster"), err)
@@ -103,19 +103,6 @@ func (e *Engine_t) CreateGame(code, name, displayName string, r *rand.Rand) (int
 		dbStarIds[star.Id] = starId
 	}
 
-	for _, star := range cluster.Stars {
-		if star == nil {
-			continue
-		}
-		err := q.CreateSystemStarLink(e.Store.Context, sqlc.CreateSystemStarLinkParams{
-			SystemID: dbSystemIds[star.SystemId],
-			StarID:   dbStarIds[star.Id],
-		})
-		if err != nil {
-			return 0, errors.Join(fmt.Errorf("link system with star"), err)
-		}
-	}
-
 	dbOrbitIds := map[int64]int64{}
 	for _, orbit := range cluster.Orbits {
 		if orbit == nil {
@@ -149,19 +136,6 @@ func (e *Engine_t) CreateGame(code, name, displayName string, r *rand.Rand) (int
 		dbOrbitIds[orbit.Id] = orbitId
 	}
 
-	for _, orbit := range cluster.Orbits {
-		if orbit == nil {
-			continue
-		}
-		err := q.CreateStarOrbitLink(e.Store.Context, sqlc.CreateStarOrbitLinkParams{
-			StarID:  dbStarIds[orbit.StarId],
-			OrbitID: dbOrbitIds[orbit.Id],
-		})
-		if err != nil {
-			return 0, errors.Join(fmt.Errorf("link star with orbit"), err)
-		}
-	}
-
 	// clean up the orbits table. we added empty orbits to keep players from
 	// guessing system resources based on the number of orbits they have seen.
 	// if constraints are implemented properly, this should also delete the planets.
@@ -171,25 +145,27 @@ func (e *Engine_t) CreateGame(code, name, displayName string, r *rand.Rand) (int
 	}
 
 	// calculate the system distances to help reporting
-	for _, from := range cluster.Systems {
-		for _, to := range cluster.Systems {
-			if from == nil || to == nil {
-				continue
-			}
-			distance := int64(0)
-			if from.Id != to.Id {
-				dx := from.Coordinates.X - to.Coordinates.X
-				dy := from.Coordinates.Y - to.Coordinates.Y
-				dz := from.Coordinates.Z - to.Coordinates.Z
-				distance = int64(math.Ceil(math.Sqrt(float64(dx*dx + dy*dy + dz*dz))))
-			}
-			err := q.CreateSystemDistance(e.Store.Context, sqlc.CreateSystemDistanceParams{
-				FromSystemID: dbSystemIds[from.Id],
-				ToSystemID:   dbSystemIds[to.Id],
-				Distance:     distance,
-			})
-			if err != nil {
-				return 0, errors.Join(fmt.Errorf("create system distance"), err)
+	if calculateSystemDistances {
+		for _, from := range cluster.Systems {
+			for _, to := range cluster.Systems {
+				if from == nil || to == nil {
+					continue
+				}
+				distance := int64(0)
+				if from.Id != to.Id {
+					dx := from.Coordinates.X - to.Coordinates.X
+					dy := from.Coordinates.Y - to.Coordinates.Y
+					dz := from.Coordinates.Z - to.Coordinates.Z
+					distance = int64(math.Ceil(math.Sqrt(float64(dx*dx + dy*dy + dz*dz))))
+				}
+				err := q.CreateSystemDistance(e.Store.Context, sqlc.CreateSystemDistanceParams{
+					FromSystemID: dbSystemIds[from.Id],
+					ToSystemID:   dbSystemIds[to.Id],
+					Distance:     distance,
+				})
+				if err != nil {
+					return 0, errors.Join(fmt.Errorf("create system distance"), err)
+				}
 			}
 		}
 	}

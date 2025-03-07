@@ -49,24 +49,12 @@ RETURNING id;
 INSERT INTO system_distances (from_system_id, to_system_id, distance)
 VALUES (:from_system_id, :to_system_id, :distance);
 
--- CreatSystemStarLink creates a join table entry for a system+star combination.
---
--- name: CreateSystemStarLink :exec
-INSERT INTO system_stars (system_id, star_id)
-VALUES (:system_id, :star_id);
-
 -- CreateOrbit creates a new orbit.
 --
 -- name: CreateOrbit :one
 INSERT INTO orbits (star_id, orbit_no, kind)
 VALUES (:star_id, :orbit_no, :kind)
 RETURNING id;
-
--- CreateStarOrbitLink creates a join table entry for a star+orbit combination.
---
--- name: CreateStarOrbitLink :exec
-INSERT INTO star_orbits (star_id, orbit_id)
-VALUES (:star_id, :orbit_id);
 
 -- DeleteEmptyOrbits deletes all orbits with no planets.
 --

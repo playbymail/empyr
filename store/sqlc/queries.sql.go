@@ -72,22 +72,6 @@ func (q *Queries) CreateStar(ctx context.Context, arg CreateStarParams) (int64, 
 	return id, err
 }
 
-const createStarOrbitLink = `-- name: CreateStarOrbitLink :exec
-INSERT INTO star_orbits (star_id, orbit_id)
-VALUES (?1, ?2)
-`
-
-type CreateStarOrbitLinkParams struct {
-	StarID  int64
-	OrbitID int64
-}
-
-// CreateStarOrbitLink creates a join table entry for a star+orbit combination.
-func (q *Queries) CreateStarOrbitLink(ctx context.Context, arg CreateStarOrbitLinkParams) error {
-	_, err := q.db.ExecContext(ctx, createStarOrbitLink, arg.StarID, arg.OrbitID)
-	return err
-}
-
 const createSystem = `-- name: CreateSystem :one
 INSERT INTO systems (game_id, x, y, z, scarcity)
 VALUES (?1, ?2, ?3, ?4, ?5)
@@ -130,22 +114,6 @@ type CreateSystemDistanceParams struct {
 // CreateSystemDistance inserts the distance between two systems.
 func (q *Queries) CreateSystemDistance(ctx context.Context, arg CreateSystemDistanceParams) error {
 	_, err := q.db.ExecContext(ctx, createSystemDistance, arg.FromSystemID, arg.ToSystemID, arg.Distance)
-	return err
-}
-
-const createSystemStarLink = `-- name: CreateSystemStarLink :exec
-INSERT INTO system_stars (system_id, star_id)
-VALUES (?1, ?2)
-`
-
-type CreateSystemStarLinkParams struct {
-	SystemID int64
-	StarID   int64
-}
-
-// CreatSystemStarLink creates a join table entry for a system+star combination.
-func (q *Queries) CreateSystemStarLink(ctx context.Context, arg CreateSystemStarLinkParams) error {
-	_, err := q.db.ExecContext(ctx, createSystemStarLink, arg.SystemID, arg.StarID)
 	return err
 }
 

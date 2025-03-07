@@ -54,11 +54,6 @@ type Planets struct {
 	Habitability int64
 }
 
-type StarOrbits struct {
-	StarID  int64
-	OrbitID int64
-}
-
 type Stars struct {
 	ID       int64
 	SystemID int64
@@ -70,11 +65,6 @@ type SystemDistances struct {
 	FromSystemID int64
 	ToSystemID   int64
 	Distance     int64
-}
-
-type SystemStars struct {
-	SystemID int64
-	StarID   int64
 }
 
 type Systems struct {

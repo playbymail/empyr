@@ -215,6 +215,7 @@ func runCreateDatabase(env *config.Environment, args []string) error {
 }
 
 func runCreateGame(env *config.Environment, args []string) error {
+	calculateSystemDistances := false
 	var arg string
 	for len(args) > 0 && args[0] != "-- " {
 		arg, args = args[0], args[1:]
@@ -225,6 +226,8 @@ func runCreateGame(env *config.Environment, args []string) error {
 			log.Printf("     : --verbose       enhance logging             [false]\n")
 			log.Printf("     : --path          path to database            [required]\n")
 			return nil
+		} else if flag, ok := argOptBool(arg, "calculate-system-distances"); ok {
+			calculateSystemDistances = flag
 		} else if flag, ok := argOptString(arg, "code"); ok {
 			env.Game.Code = flag
 		} else if flag, ok := argOptString(arg, "name"); ok {
@@ -269,46 +272,12 @@ func runCreateGame(env *config.Environment, args []string) error {
 	r := rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed))
 
 	log.Printf("%q: creating game\n", env.Database.Path)
-	gameId, err := e.CreateGame(env.Game.Code, env.Game.Name, env.Game.Name, r)
+	gameId, err := e.CreateGame(env.Game.Code, env.Game.Name, env.Game.Name, calculateSystemDistances, r)
 	if err != nil {
 		return fmt.Errorf("game: %w", err)
 	}
+
 	log.Printf("create: game: created game %d\n", gameId)
-
-	//gc, err := e.CreateCluster(r)
-	//if err != nil {
-	//	return fmt.Errorf("cluster: %w", err)
-	//}
-	//for _, obj := range []struct {
-	//	name string
-	//	ptr  any
-	//}{
-	//	{name: "systems", ptr: gc.Systems[1:]},
-	//	{name: "stars", ptr: gc.Stars[1:]},
-	//	{name: "orbits", ptr: gc.Orbits[1:]},
-	//	{name: "planets", ptr: gc.Planets[1:]},
-	//} {
-	//	if data, err := json.MarshalIndent(obj.ptr, "", "  "); err != nil {
-	//		return err
-	//	} else if err = os.WriteFile(obj.name+".json", data, 0644); err != nil {
-	//		log.Fatalf("cluster: %s: %v\n", obj.name, err)
-	//	} else {
-	//		log.Printf("cluster: %s: wrote %s\n", obj.name, obj.name+".json")
-	//	}
-	//}
-
-	//log.Printf("%q: creating cluster %p\n", env.Database.Path, gc)
-	//g, err := empyr.NewGame(env.Game.Code, env.Game.Name)
-	//if err != nil {
-	//	return fmt.Errorf("code: %q: %w", err)
-	//}
-	//if data, err := json.MarshalIndent(g, "", "  "); err != nil {
-	//	return err
-	//} else {
-	//	log.Printf("game: %s\n", string(data))
-	//}
-
-	log.Printf("%q: created game\n", env.Database.Path)
 	return nil
 }
 
