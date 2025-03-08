@@ -10,9 +10,59 @@ import (
 
 type Colonies struct {
 	ID       int64
+	EmpireID int64
 	PlanetID int64
 	Kind     string
-	Location string
+}
+
+type ColonyDetails struct {
+	ID        int64
+	ColonyID  int64
+	TurnNo    int64
+	TechLevel int64
+	Name      string
+	UemQty    int64
+	UemPay    float64
+	UskQty    int64
+	UskPay    float64
+	ProQty    int64
+	ProPay    float64
+	SldQty    int64
+	SldPay    float64
+	CnwQty    int64
+	SpyQty    int64
+	Rations   int64
+	BirthRate float64
+	DeathRate float64
+	Sol       float64
+}
+
+type ColonyInfrastructure struct {
+	ColonyDetailID int64
+	Kind           string
+	TechLevel      int64
+	Qty            int64
+}
+
+type ColonyInventory struct {
+	ColonyDetailID int64
+	Kind           string
+	TechLevel      int64
+	QtyAssembled   int64
+	QtyStored      int64
+}
+
+type ColonyPopulation struct {
+	ColonyDetailID int64
+	Kind           string
+	Qty            int64
+}
+
+type ColonySuperstructure struct {
+	ColonyDetailID int64
+	Kind           string
+	TechLevel      int64
+	Qty            int64
 }
 
 type Deposit struct {
@@ -43,16 +93,22 @@ type Empires struct {
 	HomeStarID   int64
 	HomeOrbitID  int64
 	HomePlanetID int64
+	Handle       string
 }
 
 type Games struct {
-	ID          int64
-	Code        string
-	Name        string
-	DisplayName string
-	CurrentTurn int64
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID           int64
+	Code         string
+	Name         string
+	DisplayName  string
+	CurrentTurn  int64
+	LastEmpireNo int64
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
+	HomePlanetID int64
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 type Orbits struct {
@@ -91,4 +147,10 @@ type Systems struct {
 	Y        int64
 	Z        int64
 	Scarcity int64
+}
+
+type Units struct {
+	Code          string
+	Mass          int64
+	IsOperational int64
 }

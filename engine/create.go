@@ -62,6 +62,11 @@ func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires in
 	}
 	defer tx.Rollback()
 
+	var homeSystem *System_t
+	var homeStar *Star_t
+	var homeOrbit *Orbit_t
+	var homePlanet *Planet_t
+
 	id, err := q.CreateGame(e.Store.Context, sqlc.CreateGameParams{
 		Code:        code,
 		Name:        name,
@@ -77,6 +82,9 @@ func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires in
 		if system == nil {
 			continue
 		}
+		if homeSystem == nil {
+			homeSystem = system
+		}
 		systemId, err := q.CreateSystem(e.Store.Context, sqlc.CreateSystemParams{
 			GameID:   id,
 			X:        system.Coordinates.X,
@@ -90,11 +98,17 @@ func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires in
 		// update the system with the id from the database
 		system.Id = systemId
 	}
+	if homeSystem == nil {
+		return 0, errors.New("home system not found")
+	}
 
 	log.Printf("create: stars: %8d stars\n", len(cluster.Stars)-1)
 	for _, star := range cluster.Stars {
 		if star == nil {
 			continue
+		}
+		if homeStar == nil && star.System == homeSystem {
+			homeStar = star
 		}
 		starId, err := q.CreateStar(e.Store.Context, sqlc.CreateStarParams{
 			SystemID: star.System.Id,
@@ -107,11 +121,17 @@ func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires in
 		// update the star with the id from the database
 		star.Id = starId
 	}
+	if homeStar == nil {
+		return 0, errors.New("home star not found")
+	}
 
 	log.Printf("create: orbits: %8d orbits\n", len(cluster.Orbits)-1)
 	for _, orbit := range cluster.Orbits {
 		if orbit == nil {
 			continue
+		}
+		if homeOrbit == nil && orbit.Star == homeStar && orbit.Kind == EarthlikePlanet {
+			homeOrbit = orbit
 		}
 		var kind string
 		switch orbit.Kind {
@@ -119,7 +139,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires in
 			kind = "empty"
 		case AsteroidBelt:
 			kind = "asteroid-belt"
-		case EarthlikePlant:
+		case EarthlikePlanet:
 			kind = "terrestrial"
 		case GasGiant:
 			kind = "gas-giant"
@@ -142,11 +162,17 @@ func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires in
 		// update the orbit with the id from the database
 		orbit.Id = orbitId
 	}
+	if homeOrbit == nil {
+		return 0, errors.New("home orbit not found")
+	}
 
 	log.Printf("create: planets: %8d planets\n", len(cluster.Planets)-1)
 	for _, planet := range cluster.Planets {
 		if planet == nil {
 			continue
+		}
+		if homePlanet == nil && planet.Orbit == homeOrbit {
+			homePlanet = planet
 		}
 		var kind string
 		switch planet.Kind {
@@ -172,6 +198,9 @@ func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires in
 		}
 		// update the planet with the id from the database
 		planet.Id = planetId
+	}
+	if homePlanet == nil {
+		return 0, errors.New("home planet not found")
 	}
 
 	log.Printf("create: deposits: %8d deposits\n", len(cluster.Deposits))
@@ -274,6 +303,19 @@ func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires in
 		}
 	}
 
+	// update some game meta data
+	err = q.UpdateGameEmpireMetadata(e.Store.Context, sqlc.UpdateGameEmpireMetadataParams{
+		GameID:       id,
+		EmpireNo:     0,
+		HomeSystemID: homeSystem.Id,
+		HomeStarID:   homeStar.Id,
+		HomeOrbitID:  homeOrbit.Id,
+		HomePlanetID: homePlanet.Id,
+	})
+	if err != nil {
+		return 0, errors.Join(fmt.Errorf("update game empire metadata"), err)
+	}
+
 	return id, tx.Commit()
 }
 
@@ -371,16 +413,20 @@ func (e *Engine_t) CreateCluster(r *rand.Rand, numberOfEmpires int64) (*Cluster_
 		cluster.Systems = append(cluster.Systems, system)
 	}
 
-	for i := int64(1); i <= numberOfEmpires; i++ {
-		empire := &Empire_t{
-			EmpireNo:   i,
-			Name:       fmt.Sprintf("Empire %03d", i),
-			HomeSystem: cluster.Systems[1],
-			HomeStar:   cluster.Stars[1],
-			HomeOrbit:  cluster.Orbits[3],
-			HomePlanet: cluster.Planets[3],
+	if true {
+		log.Printf("create: cluster: skipping empire creation!\n")
+	} else {
+		for i := int64(1); i <= numberOfEmpires; i++ {
+			empire := &Empire_t{
+				EmpireNo:   i,
+				Name:       fmt.Sprintf("Empire %03d", i),
+				HomeSystem: cluster.Systems[1],
+				HomeStar:   cluster.Stars[1],
+				HomeOrbit:  cluster.Orbits[3],
+				HomePlanet: cluster.Planets[3],
+			}
+			cluster.Empires = append(cluster.Empires, empire)
 		}
-		cluster.Empires = append(cluster.Empires, empire)
 	}
 
 	if len(points) != 0 {
@@ -399,7 +445,7 @@ func createPlanet(r *rand.Rand, orbit *Orbit_t) (*Planet_t, error) {
 		planet.Kind = NoPlanet
 	case AsteroidBelt:
 		planet.Kind = AsteroidBeltPlanet
-	case EarthlikePlant, RockyPlanet:
+	case EarthlikePlanet, RockyPlanet:
 		planet.Kind = TerrestrialPlanet
 	case GasGiant, IceGiant:
 		planet.Kind = GasGiantPlanet

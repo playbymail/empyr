@@ -174,14 +174,19 @@ func runCreateCluster(env *config.Environment, args []string) error {
 			log.Printf("     : --verbose       enhance logging             [false]\n")
 			log.Printf("     : --path          path to database            [required]\n")
 			return nil
-		} else if arg == "system-map" {
-			if err := runCreateClusterSystemMap(env, args); err != nil {
-				return fmt.Errorf("system-map: %w", err)
+		} else if arg == "empire" {
+			if err := runCreateClusterEmpire(env, args); err != nil {
+				return fmt.Errorf("empire: %w", err)
 			}
 			return nil
 		} else if arg == "star-list" {
 			if err := runCreateClusterStarList(env, args); err != nil {
 				return fmt.Errorf("star-list: %w", err)
+			}
+			return nil
+		} else if arg == "system-map" {
+			if err := runCreateClusterSystemMap(env, args); err != nil {
+				return fmt.Errorf("system-map: %w", err)
 			}
 			return nil
 		} else if flag, ok := argOptString(arg, "code"); ok {
@@ -195,6 +200,72 @@ func runCreateCluster(env *config.Environment, args []string) error {
 		}
 	}
 	return fmt.Errorf("missing command")
+}
+
+func runCreateClusterEmpire(env *config.Environment, args []string) error {
+	var playerHandle string
+	var arg string
+	for len(args) > 0 && args[0] != "-- " {
+		arg, args = args[0], args[1:]
+		if argOptHelp(arg) {
+			log.Printf("usage: empyr create empire [options]\n")
+			log.Printf("  opt: --help          show help for the command   [false]\n")
+			log.Printf("     : --debug=flag    enable various debug flags  [off]\n")
+			log.Printf("     : --verbose       enhance logging             [false]\n")
+			log.Printf("     : --path          path to database            [required]\n")
+			log.Printf("     : --handle        player handle.              [required]\n")
+			return nil
+		} else if flag, ok := argOptString(arg, "code"); ok {
+			env.Game.Code = flag
+		} else if flag, ok := argOptString(arg, "handle"); ok {
+			playerHandle = flag
+		} else if flag, ok := argOptString(arg, "path"); ok {
+			env.Database.Path = flag
+		} else if strings.HasPrefix(arg, "-") {
+			return fmt.Errorf("unknown option: %q", arg)
+		} else {
+			return fmt.Errorf("unknown argument: %q", arg)
+		}
+	}
+	if playerHandle == "" {
+		return fmt.Errorf("missing player handle")
+	} else if strings.TrimSpace(playerHandle) != playerHandle {
+		return fmt.Errorf("player handle: must not have whitespace at head or tail")
+	}
+
+	if env.Database.Path == "" {
+		return fmt.Errorf("missing path to database")
+	} else if !stdlib.IsFileExists(env.Database.Path) {
+		return fmt.Errorf("%q: does not exist", env.Database.Path)
+	}
+	if env.Game.Code == "" {
+		return fmt.Errorf("missing game code")
+	} else if strings.ToUpper(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must be uppercase", env.Game.Code)
+	} else if strings.TrimSpace(env.Game.Code) != env.Game.Code {
+		return fmt.Errorf("%q: code must not contain whitespace", env.Game.Code)
+	}
+
+	var err error
+	if env.Store, err = store.Open(env.Database.Path, context.Background()); err != nil {
+		return fmt.Errorf("%q: %w", env.Database.Path, err)
+	}
+	defer env.Store.Close()
+	e, err := engine.Open(env.Store)
+	if err != nil {
+		return err
+	}
+
+	empireId, empireNo, err := engine.CreateEmpireCommand(e, &engine.CreateEmpireParams_t{
+		Code:   env.Game.Code,
+		Handle: playerHandle,
+	})
+	if err != nil {
+		return fmt.Errorf("create empire: %w", err)
+	}
+
+	log.Printf("create: cluster: empire: created: id %d: no %d\n", empireId, empireNo)
+	return nil
 }
 
 func runCreateClusterStarList(env *config.Environment, args []string) error {
@@ -447,8 +518,6 @@ func runCreateTurnReports(env *config.Environment, args []string) error {
 			return nil
 		} else if flag, ok := argOptString(arg, "code"); ok {
 			env.Game.Code = flag
-		} else if flag, ok := argOptString(arg, "name"); ok {
-			env.Game.Name = flag
 		} else if flag, ok := argOptString(arg, "path"); ok {
 			env.Database.Path = flag
 		} else if no, ok := argOptInt(arg, "turn"); ok {
@@ -464,6 +533,30 @@ func runCreateTurnReports(env *config.Environment, args []string) error {
 	}
 	if !foundTurnId {
 		return fmt.Errorf("turn id required")
+	}
+
+	var err error
+	if env.Store, err = store.Open(env.Database.Path, context.Background()); err != nil {
+		return fmt.Errorf("%q: %w", env.Database.Path, err)
+	}
+	defer env.Store.Close()
+	e, err := engine.Open(env.Store)
+	if err != nil {
+		return fmt.Errorf("%q: %w", env.Database.Path, err)
+	}
+
+	if data, err := engine.CreateTurnReportCommand(e, &engine.CreateTurnReportParams_t{
+		Code:     env.Game.Code,
+		TurnNo:   env.Game.TurnNo,
+		EmpireNo: 1,
+	}); err != nil {
+		return fmt.Errorf("turn report: %w", err)
+	} else {
+		reportName := fmt.Sprintf("e%03d-turn-%04d-db.html", 1, env.Game.TurnNo)
+		if err := os.WriteFile(reportName, data, 0644); err != nil {
+			return err
+		}
+		log.Printf("created turn report empire %3d as %s\n", 1, reportName)
 	}
 
 	ts, err := template.New("turn-report").Parse(turnReportTmpl)
@@ -630,11 +723,11 @@ func argOptHelp(arg string) bool {
 	return arg == "--help" || arg == "-h" || arg == "help" || arg == "?" || arg == "-?" || arg == "/?"
 }
 
-func argOptInt(arg, flag string) (value int, ok bool) {
+func argOptInt(arg, flag string) (value int64, ok bool) {
 	flag = "--" + flag + "="
 	if strings.HasPrefix(arg, flag) {
-		if value, err := strconv.Atoi(strings.TrimPrefix(arg, flag)); err == nil {
-			return value, true
+		if n, err := strconv.Atoi(strings.TrimPrefix(arg, flag)); err == nil {
+			return int64(n), true
 		}
 	}
 	return 0, false

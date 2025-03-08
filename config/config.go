@@ -26,7 +26,7 @@ type Environment struct {
 	Game struct {
 		Code   string
 		Name   string
-		TurnNo int
+		TurnNo int64
 	}
 	Store   *store.Store
 	Verbose bool

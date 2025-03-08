@@ -10,6 +10,153 @@ import (
 	"database/sql"
 )
 
+const createColony = `-- name: CreateColony :one
+INSERT INTO colonies (empire_id, planet_id, kind)
+VALUES (?1, ?2, ?3)
+RETURNING id
+`
+
+type CreateColonyParams struct {
+	EmpireID int64
+	PlanetID int64
+	Kind     string
+}
+
+// CreateColony creates a new colony.
+func (q *Queries) CreateColony(ctx context.Context, arg CreateColonyParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createColony, arg.EmpireID, arg.PlanetID, arg.Kind)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createColonyDetails = `-- name: CreateColonyDetails :one
+INSERT INTO colony_details (colony_id, turn_no, tech_level, name, uem_qty, uem_pay, usk_qty, usk_pay, pro_qty, pro_pay,
+                            sld_qty, sld_pay, cnw_qty, spy_qty, rations, birth_rate, death_rate, sol)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
+        ?12, ?13, ?14, ?15, ?16, ?17, ?18)
+RETURNING id
+`
+
+type CreateColonyDetailsParams struct {
+	ColonyID  int64
+	TurnNo    int64
+	TechLevel int64
+	Name      string
+	UemQty    int64
+	UemPay    float64
+	UskQty    int64
+	UskPay    float64
+	ProQty    int64
+	ProPay    float64
+	SldQty    int64
+	SldPay    float64
+	CnwQty    int64
+	SpyQty    int64
+	Rations   int64
+	BirthRate float64
+	DeathRate float64
+	Sol       float64
+}
+
+// CreateColonyDetails creates a new colony details entry.
+func (q *Queries) CreateColonyDetails(ctx context.Context, arg CreateColonyDetailsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createColonyDetails,
+		arg.ColonyID,
+		arg.TurnNo,
+		arg.TechLevel,
+		arg.Name,
+		arg.UemQty,
+		arg.UemPay,
+		arg.UskQty,
+		arg.UskPay,
+		arg.ProQty,
+		arg.ProPay,
+		arg.SldQty,
+		arg.SldPay,
+		arg.CnwQty,
+		arg.SpyQty,
+		arg.Rations,
+		arg.BirthRate,
+		arg.DeathRate,
+		arg.Sol,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createColonyInfrastructure = `-- name: CreateColonyInfrastructure :exec
+INSERT INTO colony_infrastructure (colony_detail_id, kind, tech_level, qty)
+VALUES (?1, ?2, ?3, ?4)
+`
+
+type CreateColonyInfrastructureParams struct {
+	ColonyID  int64
+	Kind      string
+	TechLevel int64
+	Qty       int64
+}
+
+// CreateColonyInfrastructure creates a new colony infrastructure entry.
+func (q *Queries) CreateColonyInfrastructure(ctx context.Context, arg CreateColonyInfrastructureParams) error {
+	_, err := q.db.ExecContext(ctx, createColonyInfrastructure,
+		arg.ColonyID,
+		arg.Kind,
+		arg.TechLevel,
+		arg.Qty,
+	)
+	return err
+}
+
+const createColonyInventory = `-- name: CreateColonyInventory :exec
+INSERT INTO colony_inventory (colony_detail_id, kind, tech_level, qty_assembled, qty_stored)
+VALUES (?1, ?2, ?3, ?4, ?5)
+`
+
+type CreateColonyInventoryParams struct {
+	ColonyID     int64
+	Kind         string
+	TechLevel    int64
+	QtyAssembled int64
+	QtyStored    int64
+}
+
+// CreateColonyInventory creates a new colony inventory entry.
+func (q *Queries) CreateColonyInventory(ctx context.Context, arg CreateColonyInventoryParams) error {
+	_, err := q.db.ExecContext(ctx, createColonyInventory,
+		arg.ColonyID,
+		arg.Kind,
+		arg.TechLevel,
+		arg.QtyAssembled,
+		arg.QtyStored,
+	)
+	return err
+}
+
+const createColonySuperstructure = `-- name: CreateColonySuperstructure :exec
+INSERT INTO colony_superstructure (colony_detail_id, kind, tech_level, qty)
+VALUES (?1, ?2, ?3, ?4)
+`
+
+type CreateColonySuperstructureParams struct {
+	ColonyID  int64
+	Kind      string
+	TechLevel int64
+	Qty       int64
+}
+
+// CreateColonySuperstructure creates a new colony infrastructure entry.
+func (q *Queries) CreateColonySuperstructure(ctx context.Context, arg CreateColonySuperstructureParams) error {
+	_, err := q.db.ExecContext(ctx, createColonySuperstructure,
+		arg.ColonyID,
+		arg.Kind,
+		arg.TechLevel,
+		arg.Qty,
+	)
+	return err
+}
+
 const createDeposit = `-- name: CreateDeposit :one
 INSERT INTO deposits (planet_id, deposit_no, kind, yield_pct, initial_qty, remaining_qty)
 VALUES (?1, ?2, ?3, ?4, ?5, ?6)
@@ -41,8 +188,8 @@ func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (i
 }
 
 const createEmpire = `-- name: CreateEmpire :one
-INSERT INTO empires (game_id, empire_no, name, home_system_id, home_star_id, home_orbit_id, home_planet_id)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+INSERT INTO empires (game_id, empire_no, name, handle, home_system_id, home_star_id, home_orbit_id, home_planet_id)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
 RETURNING id
 `
 
@@ -50,6 +197,7 @@ type CreateEmpireParams struct {
 	GameID       int64
 	EmpireNo     int64
 	Name         string
+	Handle       string
 	HomeSystemID int64
 	HomeStarID   int64
 	HomeOrbitID  int64
@@ -62,6 +210,7 @@ func (q *Queries) CreateEmpire(ctx context.Context, arg CreateEmpireParams) (int
 		arg.GameID,
 		arg.EmpireNo,
 		arg.Name,
+		arg.Handle,
 		arg.HomeSystemID,
 		arg.HomeStarID,
 		arg.HomeOrbitID,
@@ -263,14 +412,14 @@ func (q *Queries) GetCurrentGameTurn(ctx context.Context, gameID int64) (int64, 
 }
 
 const readClusterMap = `-- name: ReadClusterMap :many
-SELECT systems.id AS id,
-       systems.x as x,
-       systems.y as y,
-       systems.z as z,
+SELECT systems.id      AS id,
+       systems.x       as x,
+       systems.y       as y,
+       systems.z       as z,
        count(stars.id) AS number_of_stars
 FROM games
-LEFT JOIN systems on games.id = systems.game_id
-LEFT JOIN stars  on systems.id = stars.system_id
+         LEFT JOIN systems on games.id = systems.game_id
+         LEFT JOIN stars on systems.id = stars.system_id
 WHERE games.code = ?1
 GROUP BY systems.id, systems.x, systems.y, systems.z
 ORDER BY systems.id
@@ -312,6 +461,179 @@ func (q *Queries) ReadClusterMap(ctx context.Context, gameCode string) ([]ReadCl
 		return nil, err
 	}
 	return items, nil
+}
+
+const readGameByCode = `-- name: ReadGameByCode :one
+SELECT id,
+       code,
+       name,
+       display_name,
+       current_turn,
+       last_empire_no,
+       home_system_id,
+       home_star_id,
+       home_orbit_id,
+       home_planet_id
+FROM games
+WHERE code = ?1
+`
+
+type ReadGameByCodeRow struct {
+	ID           int64
+	Code         string
+	Name         string
+	DisplayName  string
+	CurrentTurn  int64
+	LastEmpireNo int64
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
+	HomePlanetID int64
+}
+
+// ReadGameByCode gets a game by its code.
+func (q *Queries) ReadGameByCode(ctx context.Context, code string) (ReadGameByCodeRow, error) {
+	row := q.db.QueryRowContext(ctx, readGameByCode, code)
+	var i ReadGameByCodeRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.DisplayName,
+		&i.CurrentTurn,
+		&i.LastEmpireNo,
+		&i.HomeSystemID,
+		&i.HomeStarID,
+		&i.HomeOrbitID,
+		&i.HomePlanetID,
+	)
+	return i, err
+}
+
+const readGameEmpire = `-- name: ReadGameEmpire :one
+SELECT game_id, id AS empire_id, empire_no
+FROM empires
+WHERE empire_no = ?1
+  AND game_id = (SELECT id FROM games WHERE code = ?2)
+`
+
+type ReadGameEmpireParams struct {
+	EmpireNo int64
+	GameCode string
+}
+
+type ReadGameEmpireRow struct {
+	GameID   int64
+	EmpireID int64
+	EmpireNo int64
+}
+
+// ReadGameEmpire returns the data for a single empire in a game.
+func (q *Queries) ReadGameEmpire(ctx context.Context, arg ReadGameEmpireParams) (ReadGameEmpireRow, error) {
+	row := q.db.QueryRowContext(ctx, readGameEmpire, arg.EmpireNo, arg.GameCode)
+	var i ReadGameEmpireRow
+	err := row.Scan(&i.GameID, &i.EmpireID, &i.EmpireNo)
+	return i, err
+}
+
+const readGameEmpires = `-- name: ReadGameEmpires :many
+SELECT game_id, id AS empire_id, empire_no
+FROM empires
+WHERE game_id = (SELECT id FROM games WHERE code = ?1)
+`
+
+type ReadGameEmpiresRow struct {
+	GameID   int64
+	EmpireID int64
+	EmpireNo int64
+}
+
+// ReadGameEmpires returns the data for all empires in a game.
+func (q *Queries) ReadGameEmpires(ctx context.Context, gameCode string) ([]ReadGameEmpiresRow, error) {
+	rows, err := q.db.QueryContext(ctx, readGameEmpires, gameCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadGameEmpiresRow
+	for rows.Next() {
+		var i ReadGameEmpiresRow
+		if err := rows.Scan(&i.GameID, &i.EmpireID, &i.EmpireNo); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readNextEmpireNumber = `-- name: ReadNextEmpireNumber :one
+UPDATE games
+SET last_empire_no = last_empire_no + 1
+WHERE id = ?1
+RETURNING last_empire_no as next_empire_no
+`
+
+// ReadNextEmpireNumber reads the next empire number.
+func (q *Queries) ReadNextEmpireNumber(ctx context.Context, gameID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, readNextEmpireNumber, gameID)
+	var last_empire_no int64
+	err := row.Scan(&last_empire_no)
+	return last_empire_no, err
+}
+
+const updateGameEmpireCounter = `-- name: UpdateGameEmpireCounter :exec
+UPDATE games
+SET last_empire_no = ?1
+WHERE id = ?2
+`
+
+type UpdateGameEmpireCounterParams struct {
+	EmpireNo int64
+	GameID   int64
+}
+
+// UpdateGameEmpireCounter updates the last empire number in the games table.
+func (q *Queries) UpdateGameEmpireCounter(ctx context.Context, arg UpdateGameEmpireCounterParams) error {
+	_, err := q.db.ExecContext(ctx, updateGameEmpireCounter, arg.EmpireNo, arg.GameID)
+	return err
+}
+
+const updateGameEmpireMetadata = `-- name: UpdateGameEmpireMetadata :exec
+UPDATE games
+SET last_empire_no = ?1,
+    home_system_id = ?2,
+    home_star_id   = ?3,
+    home_orbit_id  = ?4,
+    home_planet_id = ?5
+WHERE id = ?6
+`
+
+type UpdateGameEmpireMetadataParams struct {
+	EmpireNo     int64
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
+	HomePlanetID int64
+	GameID       int64
+}
+
+// UpdateGameEmpireMetadata updates the empire metadata in the games table.
+func (q *Queries) UpdateGameEmpireMetadata(ctx context.Context, arg UpdateGameEmpireMetadataParams) error {
+	_, err := q.db.ExecContext(ctx, updateGameEmpireMetadata,
+		arg.EmpireNo,
+		arg.HomeSystemID,
+		arg.HomeStarID,
+		arg.HomeOrbitID,
+		arg.HomePlanetID,
+		arg.GameID,
+	)
+	return err
 }
 
 const updateGameTurn = `-- name: UpdateGameTurn :exec

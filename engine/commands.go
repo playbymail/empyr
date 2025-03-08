@@ -7,10 +7,12 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/playbymail/empyr/store/sqlc"
 	"html/template"
 	"log"
 	"math"
 	"math/rand/v2"
+	"strings"
 	"time"
 )
 
@@ -142,7 +144,7 @@ func CreateClusterStarListCommand(e *Engine_t, cfg *CreateClusterStarListParams_
 		})
 	}
 
-	// buffer will hold the cluster star ist
+	// buffer will hold the cluster star list
 	buffer := &bytes.Buffer{}
 
 	// execute the template, writing the result to the buffer
@@ -158,6 +160,128 @@ func CreateClusterStarListCommand(e *Engine_t, cfg *CreateClusterStarListParams_
 	return buffer.Bytes(), data, nil
 }
 
+type CreateEmpireParams_t struct {
+	Code   string
+	Handle string
+}
+
+func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, error) {
+	log.Printf("create: empire: code %q\n", cfg.Code)
+
+	if cfg.Handle == "" {
+		return 0, 0, fmt.Errorf("handle: missing")
+	} else if strings.TrimSpace(cfg.Handle) != cfg.Handle {
+		return 0, 0, fmt.Errorf("handle: invalid")
+	}
+
+	q, tx, err := e.Store.Begin()
+	if err != nil {
+		return 0, 0, err
+	}
+	defer tx.Rollback()
+
+	gameRow, err := q.ReadGameByCode(e.Store.Context, cfg.Code)
+	if err != nil {
+		return 0, 0, err
+	}
+	parms := sqlc.CreateEmpireParams{
+		GameID:       gameRow.ID,
+		EmpireNo:     gameRow.LastEmpireNo + 1,
+		Name:         fmt.Sprintf("Empire %03d", gameRow.LastEmpireNo+1),
+		Handle:       cfg.Handle,
+		HomeSystemID: gameRow.HomeSystemID,
+		HomeStarID:   gameRow.HomeStarID,
+		HomeOrbitID:  gameRow.HomeOrbitID,
+		HomePlanetID: gameRow.HomePlanetID,
+	}
+	if parms.Handle == "player1" {
+		parms.Handle = fmt.Sprintf("player-%03d", parms.EmpireNo)
+	}
+	empireId, err := q.CreateEmpire(e.Store.Context, parms)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// create a home colony
+	colonyId, err := q.CreateColony(e.Store.Context, sqlc.CreateColonyParams{
+		EmpireID: empireId,
+		PlanetID: gameRow.HomePlanetID,
+		Kind:     "open",
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+	log.Printf("create: empire: id %d: no %d: colony %d\n", empireId, parms.EmpireNo, colonyId)
+
+	detailsId, err := q.CreateColonyDetails(e.Store.Context, sqlc.CreateColonyDetailsParams{
+		ColonyID:  colonyId,
+		TurnNo:    0,
+		TechLevel: 1,
+		Name:      "Not Named",
+		UemQty:    59_000_000,
+		UskQty:    60_000_000,
+		UskPay:    0.125,
+		ProQty:    15_000_000,
+		ProPay:    0.3750,
+		SldQty:    2_500_000,
+		SldPay:    0.25,
+		CnwQty:    10_000,
+		SpyQty:    20,
+		BirthRate: 0.0,
+		DeathRate: 0.00625,
+		Sol:       0.481,
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+	log.Printf("create: empire: id %d: no %d: colony %d: details %d\n", empireId, parms.EmpireNo, colonyId, detailsId)
+
+	for _, unit := range []struct {
+		kind      string
+		techLevel int64
+		qty       int64
+	}{
+		{"STUN", 0, 60_000_000},
+	} {
+		err = q.CreateColonyInfrastructure(e.Store.Context, sqlc.CreateColonyInfrastructureParams{
+			ColonyID:  colonyId,
+			Kind:      unit.kind,
+			TechLevel: unit.techLevel,
+			Qty:       unit.qty,
+		})
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	for _, unit := range []struct {
+		kind      string
+		techLevel int64
+		qty       int64
+	}{
+		{"FRM", 1, 130_000},
+		{"MSL", 1, 50_000},
+		{"SEN", 1, 20},
+	} {
+		err = q.CreateColonySuperstructure(e.Store.Context, sqlc.CreateColonySuperstructureParams{
+			ColonyID:  colonyId,
+			Kind:      unit.kind,
+			TechLevel: unit.techLevel,
+			Qty:       unit.qty,
+		})
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	err = q.UpdateGameEmpireCounter(e.Store.Context, sqlc.UpdateGameEmpireCounterParams{GameID: gameRow.ID, EmpireNo: parms.EmpireNo})
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return empireId, parms.EmpireNo, tx.Commit()
+}
+
 type CreateGameParams_t struct {
 	Code                        string
 	Name                        string
@@ -171,4 +295,130 @@ type CreateGameParams_t struct {
 func CreateGameCommand(e *Engine_t, cfg *CreateGameParams_t) (int64, error) {
 	log.Printf("create: game: code %q: name %q: display %q\n", cfg.Code, cfg.Name, cfg.DisplayName)
 	return e.CreateGame(cfg.Code, cfg.Name, cfg.DisplayName, cfg.NumberOfEmpires, cfg.PopulateSystemDistanceTable, cfg.Rand)
+}
+
+var (
+	//go:embed templates/turn-report.gohtml
+	turnReportTmpl string
+)
+
+type CreateTurnReportParams_t struct {
+	Code     string // code of the game to create the turn report for
+	TurnNo   int64  // turn number to create the turn report for
+	EmpireNo int64  // empire number to create the turn report for
+}
+
+// CreateTurnReportCommand creates a turn report for a game.
+// It returns a byte array containing the turn report as HTML.
+func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte, error) {
+	ts, err := template.New("turn-report").Parse(turnReportTmpl)
+	if err != nil {
+		return nil, err
+	}
+
+	var gameId int64
+	var empireId int64
+	if row, err := e.Store.Queries.ReadGameEmpire(e.Store.Context, sqlc.ReadGameEmpireParams{GameCode: cfg.Code, EmpireNo: cfg.EmpireNo}); err != nil {
+		log.Printf("error: %v\n", err)
+		return nil, err
+	} else {
+		gameId = row.GameID
+		empireId = row.EmpireID
+	}
+	log.Printf("game: %d: empire: %d\n", gameId, empireId)
+
+	type turn_report_inventory_t struct {
+		Unit      string
+		Qty       int
+		Assembled bool
+		Storage   bool
+	}
+
+	type turn_report_system_t struct {
+		Id          int
+		Coordinates struct {
+			X int
+			Y int
+			Z int
+		}
+	}
+
+	type turn_report_star_t struct {
+		Id          int
+		System      *turn_report_system_t
+		Sequence    string
+		Coordinates string
+	}
+
+	type turn_report_orbit_t struct {
+		Id        int
+		Star      *turn_report_star_t
+		OrbitNo   int
+		Kind      string
+		Habitable bool
+	}
+
+	type turn_report_planet_t struct {
+		Id           int64
+		Orbit        *turn_report_orbit_t
+		Habitability int64
+	}
+
+	type turn_report_colony_t struct {
+		Id              int64
+		StarCoordinates string
+		OrbitNo         int64
+		Name            string
+		Kind            string
+		TL              string
+		SOL             string
+		Vitals          struct {
+			BirthRate string
+			DeathRate string
+			Rations   string
+			PayRates  struct {
+				USK string
+				PRO string
+				SLD string
+			}
+			Census []int64
+		}
+		Inventory []*turn_report_inventory_t
+		Factories []int64
+		Mines     []int64
+	}
+
+	payload := struct {
+		Site struct {
+			CSS string
+		}
+		Game            string
+		CreatedDate     string
+		CreatedDateTime string
+		TurnNo          int64
+		TurnCode        string
+		EmpireNo        int64
+		EmpireCode      string
+		Colonies        []*turn_report_colony_t
+	}{
+		Game:            cfg.Code,
+		CreatedDate:     time.Now().UTC().Format("2006-01-02"),
+		CreatedDateTime: time.Now().UTC().Format(time.RFC3339),
+		TurnNo:          cfg.TurnNo,
+		TurnCode:        fmt.Sprintf("T%05d", cfg.TurnNo),
+		EmpireNo:        cfg.EmpireNo,
+		EmpireCode:      fmt.Sprintf("E%03d", cfg.EmpireNo),
+	}
+	payload.Site.CSS = "a02/css/monospace.css"
+
+	payload.Colonies = append(payload.Colonies, &turn_report_colony_t{})
+	// buffer will hold the rendered turn report
+	buffer := &bytes.Buffer{}
+
+	// execute the template, writing the result to the buffer
+	if err = ts.Execute(buffer, payload); err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
 }

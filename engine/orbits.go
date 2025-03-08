@@ -54,10 +54,10 @@ func generateRings(r *rand.Rand, numPlanets int) (orbits [11]Orbit_e) {
 	// 50% chance of another asteroid belt
 	assignOrbit(numPlanets > 4 && r.IntN(2) == 0, AsteroidBelt, 1, 4, 5, 6, 10)
 	// 33% chance habitable, earth like planets (four attempts!)
-	assignOrbit(r.IntN(3) == 0, EarthlikePlant, 2, 3, 4, 5, 6)
-	assignOrbit(r.IntN(3) == 0, EarthlikePlant, 2, 3, 4, 5, 6)
-	assignOrbit(r.IntN(3) == 0, EarthlikePlant, 2, 3, 4, 5, 6)
-	assignOrbit(r.IntN(3) == 0, EarthlikePlant, 2, 3, 4, 5, 6)
+	assignOrbit(r.IntN(3) == 0, EarthlikePlanet, 2, 3, 4, 5, 6)
+	assignOrbit(r.IntN(3) == 0, EarthlikePlanet, 2, 3, 4, 5, 6)
+	assignOrbit(r.IntN(3) == 0, EarthlikePlanet, 2, 3, 4, 5, 6)
+	assignOrbit(r.IntN(3) == 0, EarthlikePlanet, 2, 3, 4, 5, 6)
 
 	// any remaining orbits are kind of random
 	var rings []int // will hold the rings that are not assigned
@@ -74,7 +74,7 @@ func generateRings(r *rand.Rand, numPlanets int) (orbits [11]Orbit_e) {
 			orbits[ring] = RockyPlanet
 		} else if ring < 6 {
 			if r.IntN(10) == 0 {
-				orbits[ring] = EarthlikePlant
+				orbits[ring] = EarthlikePlanet
 			} else if r.IntN(10) < 2 {
 				orbits[ring] = AsteroidBelt
 			} else {
@@ -101,7 +101,7 @@ func generateRings(r *rand.Rand, numPlanets int) (orbits [11]Orbit_e) {
 	for i := 1; i <= 10; i++ {
 		if orbits[i] == AsteroidBelt && orbits[i-1] == AsteroidBelt {
 			if 2 <= i && i <= 5 && r.IntN(10) == 0 {
-				orbits[i] = EarthlikePlant
+				orbits[i] = EarthlikePlanet
 			} else {
 				orbits[i] = RockyPlanet
 			}
@@ -116,7 +116,7 @@ func generateHomeSystemOrbits(r *rand.Rand, star *Star_t) (orbits [11]*Orbit_t, 
 	for i := 1; i <= 10; i++ {
 		orbits[i] = &Orbit_t{System: star.System, Star: star, OrbitNo: int64(i)}
 	}
-	for k, v := range []Orbit_e{RockyPlanet, RockyPlanet, EarthlikePlant, RockyPlanet, AsteroidBelt, GasGiant, IceGiant, IceGiant, AsteroidBelt} {
+	for k, v := range []Orbit_e{RockyPlanet, RockyPlanet, EarthlikePlanet, RockyPlanet, AsteroidBelt, GasGiant, IceGiant, IceGiant, AsteroidBelt} {
 		orbits[k+1].Kind = v
 	}
 	for k, v := range []Scarcity_e{POOR, POOR, RICH, POOR, RICH, POOR, POOR, POOR, RICH, RICH} {
@@ -129,10 +129,10 @@ func generateHomeSystemOrbits(r *rand.Rand, star *Star_t) (orbits [11]*Orbit_t, 
 		if err != nil {
 			return orbits, fmt.Errorf("planet: %w", err)
 		}
-		if orbit.Kind == EarthlikePlant {
+		if orbit.Kind == EarthlikePlanet {
 			orbit.Planet.Habitability = 25
 		}
-		if err = createDeposits(r, orbit.Planet, orbit.Kind == EarthlikePlant); err != nil {
+		if err = createDeposits(r, orbit.Planet, orbit.Kind == EarthlikePlanet); err != nil {
 			return orbits, fmt.Errorf("deposits: %w", err)
 		}
 	}

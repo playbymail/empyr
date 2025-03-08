@@ -90,7 +90,7 @@ type Orbit_e int64
 const (
 	EmptyOrbit Orbit_e = iota
 	AsteroidBelt
-	EarthlikePlant
+	EarthlikePlanet
 	GasGiant
 	IceGiant
 	RockyPlanet
