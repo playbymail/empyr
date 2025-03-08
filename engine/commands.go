@@ -203,38 +203,39 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 	}
 
 	// create a home colony
-	colonyId, err := q.CreateColony(e.Store.Context, sqlc.CreateColonyParams{
+	sorcId, err := q.CreateSorC(e.Store.Context, sqlc.CreateSorCParams{
 		EmpireID: empireId,
-		PlanetID: gameRow.HomePlanetID,
-		Kind:     "open",
+		Kind:     "open-colony",
 	})
 	if err != nil {
 		return 0, 0, err
 	}
-	log.Printf("create: empire: id %d: no %d: colony %d\n", empireId, parms.EmpireNo, colonyId)
+	log.Printf("create: empire: id %d: no %d: colony %d\n", empireId, parms.EmpireNo, sorcId)
 
-	detailsId, err := q.CreateColonyDetails(e.Store.Context, sqlc.CreateColonyDetailsParams{
-		ColonyID:  colonyId,
-		TurnNo:    0,
-		TechLevel: 1,
-		Name:      "Not Named",
-		UemQty:    59_000_000,
-		UskQty:    60_000_000,
-		UskPay:    0.125,
-		ProQty:    15_000_000,
-		ProPay:    0.3750,
-		SldQty:    2_500_000,
-		SldPay:    0.25,
-		CnwQty:    10_000,
-		SpyQty:    20,
-		BirthRate: 0.0,
-		DeathRate: 0.00625,
-		Sol:       0.481,
+	detailsId, err := q.CreateSorCDetails(e.Store.Context, sqlc.CreateSorCDetailsParams{
+		SorcID:      sorcId,
+		TurnNo:      0,
+		TechLevel:   1,
+		Name:        "Not Named",
+		UemQty:      59_000_000,
+		UskQty:      60_000_000,
+		UskPay:      0.125,
+		ProQty:      15_000_000,
+		ProPay:      0.3750,
+		SldQty:      2_500_000,
+		SldPay:      0.25,
+		CnwQty:      10_000,
+		SpyQty:      20,
+		BirthRate:   0.0,
+		DeathRate:   0.00625,
+		Sol:         0.481,
+		OrbitID:     parms.HomeOrbitID,
+		IsOnSurface: 1,
 	})
 	if err != nil {
 		return 0, 0, err
 	}
-	log.Printf("create: empire: id %d: no %d: colony %d: details %d\n", empireId, parms.EmpireNo, colonyId, detailsId)
+	log.Printf("create: empire: id %d: no %d: colony %d: details %d\n", empireId, parms.EmpireNo, sorcId, detailsId)
 
 	for _, unit := range []struct {
 		kind      string
@@ -243,8 +244,8 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 	}{
 		{"STUN", 0, 60_000_000},
 	} {
-		err = q.CreateColonyInfrastructure(e.Store.Context, sqlc.CreateColonyInfrastructureParams{
-			ColonyID:  colonyId,
+		err = q.CreateSorCInfrastructure(e.Store.Context, sqlc.CreateSorCInfrastructureParams{
+			SorcID:    sorcId,
 			Kind:      unit.kind,
 			TechLevel: unit.techLevel,
 			Qty:       unit.qty,
@@ -263,8 +264,8 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		{"MSL", 1, 50_000},
 		{"SEN", 1, 20},
 	} {
-		err = q.CreateColonySuperstructure(e.Store.Context, sqlc.CreateColonySuperstructureParams{
-			ColonyID:  colonyId,
+		err = q.CreateSorCSuperstructure(e.Store.Context, sqlc.CreateSorCSuperstructureParams{
+			SorcID:    sorcId,
 			Kind:      unit.kind,
 			TechLevel: unit.techLevel,
 			Qty:       unit.qty,

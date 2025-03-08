@@ -10,153 +10,6 @@ import (
 	"database/sql"
 )
 
-const createColony = `-- name: CreateColony :one
-INSERT INTO colonies (empire_id, planet_id, kind)
-VALUES (?1, ?2, ?3)
-RETURNING id
-`
-
-type CreateColonyParams struct {
-	EmpireID int64
-	PlanetID int64
-	Kind     string
-}
-
-// CreateColony creates a new colony.
-func (q *Queries) CreateColony(ctx context.Context, arg CreateColonyParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createColony, arg.EmpireID, arg.PlanetID, arg.Kind)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
-const createColonyDetails = `-- name: CreateColonyDetails :one
-INSERT INTO colony_details (colony_id, turn_no, tech_level, name, uem_qty, uem_pay, usk_qty, usk_pay, pro_qty, pro_pay,
-                            sld_qty, sld_pay, cnw_qty, spy_qty, rations, birth_rate, death_rate, sol)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
-        ?12, ?13, ?14, ?15, ?16, ?17, ?18)
-RETURNING id
-`
-
-type CreateColonyDetailsParams struct {
-	ColonyID  int64
-	TurnNo    int64
-	TechLevel int64
-	Name      string
-	UemQty    int64
-	UemPay    float64
-	UskQty    int64
-	UskPay    float64
-	ProQty    int64
-	ProPay    float64
-	SldQty    int64
-	SldPay    float64
-	CnwQty    int64
-	SpyQty    int64
-	Rations   int64
-	BirthRate float64
-	DeathRate float64
-	Sol       float64
-}
-
-// CreateColonyDetails creates a new colony details entry.
-func (q *Queries) CreateColonyDetails(ctx context.Context, arg CreateColonyDetailsParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createColonyDetails,
-		arg.ColonyID,
-		arg.TurnNo,
-		arg.TechLevel,
-		arg.Name,
-		arg.UemQty,
-		arg.UemPay,
-		arg.UskQty,
-		arg.UskPay,
-		arg.ProQty,
-		arg.ProPay,
-		arg.SldQty,
-		arg.SldPay,
-		arg.CnwQty,
-		arg.SpyQty,
-		arg.Rations,
-		arg.BirthRate,
-		arg.DeathRate,
-		arg.Sol,
-	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
-const createColonyInfrastructure = `-- name: CreateColonyInfrastructure :exec
-INSERT INTO colony_infrastructure (colony_detail_id, kind, tech_level, qty)
-VALUES (?1, ?2, ?3, ?4)
-`
-
-type CreateColonyInfrastructureParams struct {
-	ColonyID  int64
-	Kind      string
-	TechLevel int64
-	Qty       int64
-}
-
-// CreateColonyInfrastructure creates a new colony infrastructure entry.
-func (q *Queries) CreateColonyInfrastructure(ctx context.Context, arg CreateColonyInfrastructureParams) error {
-	_, err := q.db.ExecContext(ctx, createColonyInfrastructure,
-		arg.ColonyID,
-		arg.Kind,
-		arg.TechLevel,
-		arg.Qty,
-	)
-	return err
-}
-
-const createColonyInventory = `-- name: CreateColonyInventory :exec
-INSERT INTO colony_inventory (colony_detail_id, kind, tech_level, qty_assembled, qty_stored)
-VALUES (?1, ?2, ?3, ?4, ?5)
-`
-
-type CreateColonyInventoryParams struct {
-	ColonyID     int64
-	Kind         string
-	TechLevel    int64
-	QtyAssembled int64
-	QtyStored    int64
-}
-
-// CreateColonyInventory creates a new colony inventory entry.
-func (q *Queries) CreateColonyInventory(ctx context.Context, arg CreateColonyInventoryParams) error {
-	_, err := q.db.ExecContext(ctx, createColonyInventory,
-		arg.ColonyID,
-		arg.Kind,
-		arg.TechLevel,
-		arg.QtyAssembled,
-		arg.QtyStored,
-	)
-	return err
-}
-
-const createColonySuperstructure = `-- name: CreateColonySuperstructure :exec
-INSERT INTO colony_superstructure (colony_detail_id, kind, tech_level, qty)
-VALUES (?1, ?2, ?3, ?4)
-`
-
-type CreateColonySuperstructureParams struct {
-	ColonyID  int64
-	Kind      string
-	TechLevel int64
-	Qty       int64
-}
-
-// CreateColonySuperstructure creates a new colony infrastructure entry.
-func (q *Queries) CreateColonySuperstructure(ctx context.Context, arg CreateColonySuperstructureParams) error {
-	_, err := q.db.ExecContext(ctx, createColonySuperstructure,
-		arg.ColonyID,
-		arg.Kind,
-		arg.TechLevel,
-		arg.Qty,
-	)
-	return err
-}
-
 const createDeposit = `-- name: CreateDeposit :one
 INSERT INTO deposits (planet_id, deposit_no, kind, yield_pct, initial_qty, remaining_qty)
 VALUES (?1, ?2, ?3, ?4, ?5, ?6)
@@ -294,6 +147,157 @@ func (q *Queries) CreatePlanet(ctx context.Context, arg CreatePlanetParams) (int
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const createSorC = `-- name: CreateSorC :one
+INSERT INTO sorcs (empire_id, kind)
+VALUES (?1, ?2)
+RETURNING id
+`
+
+type CreateSorCParams struct {
+	EmpireID int64
+	Kind     string
+}
+
+// CreateSorC creates a new ship or colony.
+func (q *Queries) CreateSorC(ctx context.Context, arg CreateSorCParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSorC, arg.EmpireID, arg.Kind)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createSorCDetails = `-- name: CreateSorCDetails :one
+INSERT INTO sorc_details (sorc_id, turn_no, tech_level, name, uem_qty, uem_pay, usk_qty, usk_pay, pro_qty, pro_pay,
+                          sld_qty, sld_pay, cnw_qty, spy_qty, rations, birth_rate, death_rate, sol, orbit_id,
+                          is_on_surface)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
+        ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+RETURNING id
+`
+
+type CreateSorCDetailsParams struct {
+	SorcID      int64
+	TurnNo      int64
+	TechLevel   int64
+	Name        string
+	UemQty      int64
+	UemPay      float64
+	UskQty      int64
+	UskPay      float64
+	ProQty      int64
+	ProPay      float64
+	SldQty      int64
+	SldPay      float64
+	CnwQty      int64
+	SpyQty      int64
+	Rations     int64
+	BirthRate   float64
+	DeathRate   float64
+	Sol         float64
+	OrbitID     int64
+	IsOnSurface int64
+}
+
+// CreateSorCDetails creates a new ship or colony details entry.
+func (q *Queries) CreateSorCDetails(ctx context.Context, arg CreateSorCDetailsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSorCDetails,
+		arg.SorcID,
+		arg.TurnNo,
+		arg.TechLevel,
+		arg.Name,
+		arg.UemQty,
+		arg.UemPay,
+		arg.UskQty,
+		arg.UskPay,
+		arg.ProQty,
+		arg.ProPay,
+		arg.SldQty,
+		arg.SldPay,
+		arg.CnwQty,
+		arg.SpyQty,
+		arg.Rations,
+		arg.BirthRate,
+		arg.DeathRate,
+		arg.Sol,
+		arg.OrbitID,
+		arg.IsOnSurface,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createSorCInfrastructure = `-- name: CreateSorCInfrastructure :exec
+INSERT INTO sorc_infrastructure (sorc_detail_id, kind, tech_level, qty)
+VALUES (?1, ?2, ?3, ?4)
+`
+
+type CreateSorCInfrastructureParams struct {
+	SorcID    int64
+	Kind      string
+	TechLevel int64
+	Qty       int64
+}
+
+// CreateSorCInfrastructure creates a new ship or colony infrastructure entry.
+func (q *Queries) CreateSorCInfrastructure(ctx context.Context, arg CreateSorCInfrastructureParams) error {
+	_, err := q.db.ExecContext(ctx, createSorCInfrastructure,
+		arg.SorcID,
+		arg.Kind,
+		arg.TechLevel,
+		arg.Qty,
+	)
+	return err
+}
+
+const createSorCInventory = `-- name: CreateSorCInventory :exec
+INSERT INTO sorc_inventory (sorc_detail_id, kind, tech_level, qty_assembled, qty_stored)
+VALUES (?1, ?2, ?3, ?4, ?5)
+`
+
+type CreateSorCInventoryParams struct {
+	SorcID       int64
+	Kind         string
+	TechLevel    int64
+	QtyAssembled int64
+	QtyStored    int64
+}
+
+// CreateSorCInventory creates a new ship or colony inventory entry.
+func (q *Queries) CreateSorCInventory(ctx context.Context, arg CreateSorCInventoryParams) error {
+	_, err := q.db.ExecContext(ctx, createSorCInventory,
+		arg.SorcID,
+		arg.Kind,
+		arg.TechLevel,
+		arg.QtyAssembled,
+		arg.QtyStored,
+	)
+	return err
+}
+
+const createSorCSuperstructure = `-- name: CreateSorCSuperstructure :exec
+INSERT INTO sorc_superstructure (sorc_detail_id, kind, tech_level, qty)
+VALUES (?1, ?2, ?3, ?4)
+`
+
+type CreateSorCSuperstructureParams struct {
+	SorcID    int64
+	Kind      string
+	TechLevel int64
+	Qty       int64
+}
+
+// CreateSorCSuperstructure creates a new ship or colony infrastructure entry.
+func (q *Queries) CreateSorCSuperstructure(ctx context.Context, arg CreateSorCSuperstructureParams) error {
+	_, err := q.db.ExecContext(ctx, createSorCSuperstructure,
+		arg.SorcID,
+		arg.Kind,
+		arg.TechLevel,
+		arg.Qty,
+	)
+	return err
 }
 
 const createStar = `-- name: CreateStar :one

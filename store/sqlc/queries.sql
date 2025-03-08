@@ -163,37 +163,38 @@ SELECT game_id, id AS empire_id, empire_no
 FROM empires
 WHERE game_id = (SELECT id FROM games WHERE code = :game_code);
 
--- CreateColony creates a new colony.
+-- CreateSorC creates a new ship or colony.
 --
--- name: CreateColony :one
-INSERT INTO colonies (empire_id, planet_id, kind)
-VALUES (:empire_id, :planet_id, :kind)
+-- name: CreateSorC :one
+INSERT INTO sorcs (empire_id, kind)
+VALUES (:empire_id, :kind)
 RETURNING id;
 
--- CreateColonyDetails creates a new colony details entry.
+-- CreateSorCDetails creates a new ship or colony details entry.
 --
--- name: CreateColonyDetails :one
-INSERT INTO colony_details (colony_id, turn_no, tech_level, name, uem_qty, uem_pay, usk_qty, usk_pay, pro_qty, pro_pay,
-                            sld_qty, sld_pay, cnw_qty, spy_qty, rations, birth_rate, death_rate, sol)
-VALUES (:colony_id, :turn_no, :tech_level, :name, :uem_qty, :uem_pay, :usk_qty, :usk_pay, :pro_qty, :pro_pay, :sld_qty,
-        :sld_pay, :cnw_qty, :spy_qty, :rations, :birth_rate, :death_rate, :sol)
+-- name: CreateSorCDetails :one
+INSERT INTO sorc_details (sorc_id, turn_no, tech_level, name, uem_qty, uem_pay, usk_qty, usk_pay, pro_qty, pro_pay,
+                          sld_qty, sld_pay, cnw_qty, spy_qty, rations, birth_rate, death_rate, sol, orbit_id,
+                          is_on_surface)
+VALUES (:sorc_id, :turn_no, :tech_level, :name, :uem_qty, :uem_pay, :usk_qty, :usk_pay, :pro_qty, :pro_pay, :sld_qty,
+        :sld_pay, :cnw_qty, :spy_qty, :rations, :birth_rate, :death_rate, :sol, :orbit_id, :is_on_surface)
 RETURNING id;
 
--- CreateColonyInfrastructure creates a new colony infrastructure entry.
+-- CreateSorCInfrastructure creates a new ship or colony infrastructure entry.
 --
--- name: CreateColonyInfrastructure :exec
-INSERT INTO colony_infrastructure (colony_detail_id, kind, tech_level, qty)
-VALUES (:colony_id, :kind, :tech_level, :qty);
+-- name: CreateSorCInfrastructure :exec
+INSERT INTO sorc_infrastructure (sorc_detail_id, kind, tech_level, qty)
+VALUES (:sorc_id, :kind, :tech_level, :qty);
 
--- CreateColonyInventory creates a new colony inventory entry.
+-- CreateSorCInventory creates a new ship or colony inventory entry.
 --
--- name: CreateColonyInventory :exec
-INSERT INTO colony_inventory (colony_detail_id, kind, tech_level, qty_assembled, qty_stored)
-VALUES (:colony_id, :kind, :tech_level, :qty_assembled, :qty_stored);
+-- name: CreateSorCInventory :exec
+INSERT INTO sorc_inventory (sorc_detail_id, kind, tech_level, qty_assembled, qty_stored)
+VALUES (:sorc_id, :kind, :tech_level, :qty_assembled, :qty_stored);
 
--- CreateColonySuperstructure creates a new colony infrastructure entry.
+-- CreateSorCSuperstructure creates a new ship or colony infrastructure entry.
 --
--- name: CreateColonySuperstructure :exec
-INSERT INTO colony_superstructure (colony_detail_id, kind, tech_level, qty)
-VALUES (:colony_id, :kind, :tech_level, :qty);
+-- name: CreateSorCSuperstructure :exec
+INSERT INTO sorc_superstructure (sorc_detail_id, kind, tech_level, qty)
+VALUES (:sorc_id, :kind, :tech_level, :qty);
 

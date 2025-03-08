@@ -4,11 +4,11 @@
 PRAGMA foreign_keys = OFF;
 DROP TABLE IF EXISTS meta_migrations;
 DROP TABLE IF EXISTS colonies;
-DROP TABLE IF EXISTS colony_details;
-DROP TABLE IF EXISTS colony_infrastructure;
-DROP TABLE IF EXISTS colony_inventory;
-DROP TABLE IF EXISTS colony_population;
-DROP TABLE IF EXISTS colony_superstructure;
+DROP TABLE IF EXISTS sorc_details;
+DROP TABLE IF EXISTS sorc_infrastructure;
+DROP TABLE IF EXISTS sorc_inventory;
+DROP TABLE IF EXISTS sorc_population;
+DROP TABLE IF EXISTS sorc_superstructure;
 DROP TABLE IF EXISTS deposit;
 DROP TABLE IF EXISTS deposits;
 DROP TABLE IF EXISTS empires;
@@ -197,102 +197,95 @@ CREATE TABLE empires
             ON DELETE CASCADE
 );
 
-CREATE TABLE colonies
+CREATE TABLE sorcs
 (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     empire_id INTEGER NOT NULL,
-    planet_id INTEGER NOT NULL,
-    kind      TEXT    NOT NULL CHECK (kind IN ('open', 'enclosed', 'orbital')),
-    UNIQUE (empire_id, planet_id, kind),
+    kind      TEXT    NOT NULL CHECK (kind IN ('ship', 'open-colony', 'enclosed-colony', 'orbital-colony')),
     CONSTRAINT fk_empire_id
         FOREIGN KEY (empire_id)
             REFERENCES empires (id)
-            ON DELETE CASCADE,
-    CONSTRAINT fk_planet_id
-        FOREIGN KEY (planet_id)
-            REFERENCES planets (id)
             ON DELETE CASCADE
 );
 
-CREATE TABLE colony_details
+CREATE TABLE sorc_details
 (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    colony_id  INTEGER NOT NULL,
-    turn_no    INTEGER NOT NULL CHECK (turn_no >= 0),
-    tech_level INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
-    name       TEXT    NOT NULL,
-    uem_qty    INTEGER NOT NULL CHECK (uem_qty >= 0),
-    uem_pay    REAL    NOT NULL CHECK (uem_pay >= 0),
-    usk_qty    INTEGER NOT NULL CHECK (usk_qty >= 0),
-    usk_pay    REAL    NOT NULL CHECK (usk_pay >= 0),
-    pro_qty    INTEGER NOT NULL CHECK (pro_qty >= 0),
-    pro_pay    REAL    NOT NULL CHECK (pro_pay >= 0),
-    sld_qty    INTEGER NOT NULL CHECK (sld_qty >= 0),
-    sld_pay    REAL    NOT NULL CHECK (sld_pay >= 0),
-    cnw_qty    INTEGER NOT NULL CHECK (cnw_qty >= 0),
-    spy_qty    INTEGER NOT NULL CHECK (spy_qty >= 0),
-    rations    INTEGER NOT NULL CHECK (rations >= 0),
-    birth_rate REAL    NOT NULL CHECK (birth_rate >= 0),
-    death_rate REAL    NOT NULL CHECK (death_rate >= 0),
-    sol        REAL    NOT NULL CHECK (sol >= 0),
-    UNIQUE (colony_id, turn_no),
-    CONSTRAINT fk_colony_id
-        FOREIGN KEY (colony_id)
-            REFERENCES colonies (id)
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    sorc_id       INTEGER NOT NULL,
+    turn_no       INTEGER NOT NULL CHECK (turn_no >= 0),
+    tech_level    INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
+    name          TEXT    NOT NULL,
+    uem_qty       INTEGER NOT NULL CHECK (uem_qty >= 0),
+    uem_pay       REAL    NOT NULL CHECK (uem_pay >= 0),
+    usk_qty       INTEGER NOT NULL CHECK (usk_qty >= 0),
+    usk_pay       REAL    NOT NULL CHECK (usk_pay >= 0),
+    pro_qty       INTEGER NOT NULL CHECK (pro_qty >= 0),
+    pro_pay       REAL    NOT NULL CHECK (pro_pay >= 0),
+    sld_qty       INTEGER NOT NULL CHECK (sld_qty >= 0),
+    sld_pay       REAL    NOT NULL CHECK (sld_pay >= 0),
+    cnw_qty       INTEGER NOT NULL CHECK (cnw_qty >= 0),
+    spy_qty       INTEGER NOT NULL CHECK (spy_qty >= 0),
+    rations       INTEGER NOT NULL CHECK (rations >= 0),
+    birth_rate    REAL    NOT NULL CHECK (birth_rate >= 0),
+    death_rate    REAL    NOT NULL CHECK (death_rate >= 0),
+    sol           REAL    NOT NULL CHECK (sol >= 0),
+    orbit_id      INTEGER NOT NULL,
+    is_on_surface INTEGER NOT NULL CHECK (is_on_surface IN (0, 1)),
+    UNIQUE (sorc_id, turn_no),
+    CONSTRAINT fk_sorc_id
+        FOREIGN KEY (sorc_id)
+            REFERENCES sorcs (id)
             ON DELETE CASCADE
 );
 
-CREATE TABLE colony_infrastructure
+CREATE TABLE sorc_infrastructure
 (
-    colony_detail_id INTEGER NOT NULL,
-    kind             TEXT    NOT NULL,
-    tech_level       INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
-    qty              INTEGER NOT NULL CHECK (qty >= 0),
-    UNIQUE (colony_detail_id, kind),
-    CONSTRAINT fk_colony_detail_id
-        FOREIGN KEY (colony_detail_id)
-            REFERENCES colony_details (id)
+    sorc_detail_id INTEGER NOT NULL,
+    kind           TEXT    NOT NULL,
+    tech_level     INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
+    qty            INTEGER NOT NULL CHECK (qty >= 0),
+    UNIQUE (sorc_detail_id, kind),
+    CONSTRAINT fk_sorc_detail_id
+        FOREIGN KEY (sorc_detail_id)
+            REFERENCES sorc_details (id)
             ON DELETE CASCADE
 );
 
-CREATE TABLE colony_inventory
+CREATE TABLE sorc_inventory
 (
-    colony_detail_id INTEGER NOT NULL,
-    kind             TEXT    NOT NULL,
-    tech_level       INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
-    qty_assembled    INTEGER NOT NULL CHECK (qty_assembled >= 0),
-    qty_stored       INTEGER NOT NULL CHECK (qty_stored >= 0),
-    UNIQUE (colony_detail_id, kind),
-    CONSTRAINT fk_colony_detail_id
-        FOREIGN KEY (colony_detail_id)
-            REFERENCES colony_details (id)
+    sorc_detail_id INTEGER NOT NULL,
+    kind           TEXT    NOT NULL,
+    tech_level     INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
+    qty_assembled  INTEGER NOT NULL CHECK (qty_assembled >= 0),
+    qty_stored     INTEGER NOT NULL CHECK (qty_stored >= 0),
+    UNIQUE (sorc_detail_id, kind),
+    CONSTRAINT fk_sorc_detail_id
+        FOREIGN KEY (sorc_detail_id)
+            REFERENCES sorc_details (id)
             ON DELETE CASCADE
 );
 
-CREATE TABLE colony_population
+CREATE TABLE sorc_population
 (
-    colony_detail_id INTEGER NOT NULL,
-    kind             TEXT    NOT NULL,
-    qty              INTEGER NOT NULL CHECK (qty >= 0),
-    UNIQUE (colony_detail_id, kind),
-    CONSTRAINT fk_colony_detail_id
-        FOREIGN KEY (colony_detail_id)
-            REFERENCES colony_details (id)
+    sorc_detail_id INTEGER NOT NULL,
+    kind           TEXT    NOT NULL,
+    qty            INTEGER NOT NULL CHECK (qty >= 0),
+    UNIQUE (sorc_detail_id, kind),
+    CONSTRAINT fk_sorc_detail_id
+        FOREIGN KEY (sorc_detail_id)
+            REFERENCES sorc_details (id)
             ON DELETE CASCADE
 );
 
-CREATE TABLE colony_superstructure
+CREATE TABLE sorc_superstructure
 (
-    colony_detail_id INTEGER NOT NULL,
-    kind             TEXT    NOT NULL,
-    tech_level       INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
-    qty              INTEGER NOT NULL CHECK (qty >= 0),
-    UNIQUE (colony_detail_id, kind),
-    CONSTRAINT fk_colony_detail_id
-        FOREIGN KEY (colony_detail_id)
-            REFERENCES colony_details (id)
+    sorc_detail_id INTEGER NOT NULL,
+    kind           TEXT    NOT NULL,
+    tech_level     INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
+    qty            INTEGER NOT NULL CHECK (qty >= 0),
+    UNIQUE (sorc_detail_id, kind),
+    CONSTRAINT fk_sorc_detail_id
+        FOREIGN KEY (sorc_detail_id)
+            REFERENCES sorc_details (id)
             ON DELETE CASCADE
 );
-
-
--- 5,900,000 UEM-0     6,000,000 USK-0     1,500,000 PRO-0     2,500,000 SLD-0      10,000 CNW-0

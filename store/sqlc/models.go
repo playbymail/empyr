@@ -8,63 +8,6 @@ import (
 	"time"
 )
 
-type Colonies struct {
-	ID       int64
-	EmpireID int64
-	PlanetID int64
-	Kind     string
-}
-
-type ColonyDetails struct {
-	ID        int64
-	ColonyID  int64
-	TurnNo    int64
-	TechLevel int64
-	Name      string
-	UemQty    int64
-	UemPay    float64
-	UskQty    int64
-	UskPay    float64
-	ProQty    int64
-	ProPay    float64
-	SldQty    int64
-	SldPay    float64
-	CnwQty    int64
-	SpyQty    int64
-	Rations   int64
-	BirthRate float64
-	DeathRate float64
-	Sol       float64
-}
-
-type ColonyInfrastructure struct {
-	ColonyDetailID int64
-	Kind           string
-	TechLevel      int64
-	Qty            int64
-}
-
-type ColonyInventory struct {
-	ColonyDetailID int64
-	Kind           string
-	TechLevel      int64
-	QtyAssembled   int64
-	QtyStored      int64
-}
-
-type ColonyPopulation struct {
-	ColonyDetailID int64
-	Kind           string
-	Qty            int64
-}
-
-type ColonySuperstructure struct {
-	ColonyDetailID int64
-	Kind           string
-	TechLevel      int64
-	Qty            int64
-}
-
 type Deposit struct {
 	DepositID int64
 	Quantity  int64
@@ -125,6 +68,64 @@ type Planets struct {
 	Kind         string
 	Habitability int64
 	Scarcity     int64
+}
+
+type SorcDetails struct {
+	ID          int64
+	SorcID      int64
+	TurnNo      int64
+	TechLevel   int64
+	Name        string
+	UemQty      int64
+	UemPay      float64
+	UskQty      int64
+	UskPay      float64
+	ProQty      int64
+	ProPay      float64
+	SldQty      int64
+	SldPay      float64
+	CnwQty      int64
+	SpyQty      int64
+	Rations     int64
+	BirthRate   float64
+	DeathRate   float64
+	Sol         float64
+	OrbitID     int64
+	IsOnSurface int64
+}
+
+type SorcInfrastructure struct {
+	SorcDetailID int64
+	Kind         string
+	TechLevel    int64
+	Qty          int64
+}
+
+type SorcInventory struct {
+	SorcDetailID int64
+	Kind         string
+	TechLevel    int64
+	QtyAssembled int64
+	QtyStored    int64
+}
+
+type SorcPopulation struct {
+	SorcDetailID int64
+	Kind         string
+	Qty          int64
+}
+
+type SorcSuperstructure struct {
+	SorcDetailID int64
+	Kind         string
+	TechLevel    int64
+	Qty          int64
+}
+
+type Sorcs struct {
+	ID       int64
+	EmpireID int64
+	Kind     string
 }
 
 type Stars struct {
