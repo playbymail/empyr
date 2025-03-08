@@ -225,7 +225,7 @@ CREATE TABLE sorc_details
     sld_pay       REAL    NOT NULL CHECK (sld_pay >= 0),
     cnw_qty       INTEGER NOT NULL CHECK (cnw_qty >= 0),
     spy_qty       INTEGER NOT NULL CHECK (spy_qty >= 0),
-    rations       INTEGER NOT NULL CHECK (rations >= 0),
+    rations       REAL    NOT NULL CHECK (rations >= 0),
     birth_rate    REAL    NOT NULL CHECK (birth_rate >= 0),
     death_rate    REAL    NOT NULL CHECK (death_rate >= 0),
     sol           REAL    NOT NULL CHECK (sol >= 0),

@@ -192,7 +192,7 @@ type CreateSorCDetailsParams struct {
 	SldPay      float64
 	CnwQty      int64
 	SpyQty      int64
-	Rations     int64
+	Rations     float64
 	BirthRate   float64
 	DeathRate   float64
 	Sol         float64
@@ -453,6 +453,122 @@ func (q *Queries) ReadClusterMap(ctx context.Context, gameCode string) ([]ReadCl
 			&i.Y,
 			&i.Z,
 			&i.NumberOfStars,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readEmpireAllColoniesForTurn = `-- name: ReadEmpireAllColoniesForTurn :many
+SELECT sorc_id,
+       sorcs.kind,
+       tech_level,
+       name,
+       uem_qty,
+       uem_pay,
+       usk_qty,
+       usk_pay,
+       pro_qty,
+       pro_pay,
+       sld_qty,
+       sld_pay,
+       cnw_qty,
+       spy_qty,
+       rations,
+       birth_rate,
+       death_rate,
+       sol,
+       systems.x,
+       systems.y,
+       systems.z,
+       stars.sequence as suffix,
+       orbits.orbit_no,
+       is_on_surface
+FROM sorcs
+         LEFT JOIN sorc_details ON sorcs.id = sorc_details.sorc_id AND sorc_details.turn_no = ?1
+         LEFT JOIN orbits ON orbits.id = sorc_details.orbit_id
+         LEFT JOIN stars ON stars.id = orbits.star_id
+         LEFT JOIN systems ON systems.id = stars.system_id
+WHERE sorcs.empire_id = ?2
+  AND sorcs.kind in ('open-colony', 'enclosed-colony', 'orbital-colony')
+ORDER BY sorcs.id, sorcs.kind
+`
+
+type ReadEmpireAllColoniesForTurnParams struct {
+	TurnNo   int64
+	EmpireID int64
+}
+
+type ReadEmpireAllColoniesForTurnRow struct {
+	SorcID      sql.NullInt64
+	Kind        string
+	TechLevel   sql.NullInt64
+	Name        sql.NullString
+	UemQty      sql.NullInt64
+	UemPay      sql.NullFloat64
+	UskQty      sql.NullInt64
+	UskPay      sql.NullFloat64
+	ProQty      sql.NullInt64
+	ProPay      sql.NullFloat64
+	SldQty      sql.NullInt64
+	SldPay      sql.NullFloat64
+	CnwQty      sql.NullInt64
+	SpyQty      sql.NullInt64
+	Rations     sql.NullFloat64
+	BirthRate   sql.NullFloat64
+	DeathRate   sql.NullFloat64
+	Sol         sql.NullFloat64
+	X           sql.NullInt64
+	Y           sql.NullInt64
+	Z           sql.NullInt64
+	Suffix      sql.NullString
+	OrbitNo     sql.NullInt64
+	IsOnSurface sql.NullInt64
+}
+
+// ReadEmpireAllColoniesForTurn reads the colonies for a given empire and turn in a game.
+func (q *Queries) ReadEmpireAllColoniesForTurn(ctx context.Context, arg ReadEmpireAllColoniesForTurnParams) ([]ReadEmpireAllColoniesForTurnRow, error) {
+	rows, err := q.db.QueryContext(ctx, readEmpireAllColoniesForTurn, arg.TurnNo, arg.EmpireID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadEmpireAllColoniesForTurnRow
+	for rows.Next() {
+		var i ReadEmpireAllColoniesForTurnRow
+		if err := rows.Scan(
+			&i.SorcID,
+			&i.Kind,
+			&i.TechLevel,
+			&i.Name,
+			&i.UemQty,
+			&i.UemPay,
+			&i.UskQty,
+			&i.UskPay,
+			&i.ProQty,
+			&i.ProPay,
+			&i.SldQty,
+			&i.SldPay,
+			&i.CnwQty,
+			&i.SpyQty,
+			&i.Rations,
+			&i.BirthRate,
+			&i.DeathRate,
+			&i.Sol,
+			&i.X,
+			&i.Y,
+			&i.Z,
+			&i.Suffix,
+			&i.OrbitNo,
+			&i.IsOnSurface,
 		); err != nil {
 			return nil, err
 		}

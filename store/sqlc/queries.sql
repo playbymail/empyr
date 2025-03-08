@@ -198,3 +198,38 @@ VALUES (:sorc_id, :kind, :tech_level, :qty_assembled, :qty_stored);
 INSERT INTO sorc_superstructure (sorc_detail_id, kind, tech_level, qty)
 VALUES (:sorc_id, :kind, :tech_level, :qty);
 
+-- ReadEmpireAllColoniesForTurn reads the colonies for a given empire and turn in a game.
+--
+-- name: ReadEmpireAllColoniesForTurn :many
+SELECT sorc_id,
+       sorcs.kind,
+       tech_level,
+       name,
+       uem_qty,
+       uem_pay,
+       usk_qty,
+       usk_pay,
+       pro_qty,
+       pro_pay,
+       sld_qty,
+       sld_pay,
+       cnw_qty,
+       spy_qty,
+       rations,
+       birth_rate,
+       death_rate,
+       sol,
+       systems.x,
+       systems.y,
+       systems.z,
+       stars.sequence as suffix,
+       orbits.orbit_no,
+       is_on_surface
+FROM sorcs
+         LEFT JOIN sorc_details ON sorcs.id = sorc_details.sorc_id AND sorc_details.turn_no = :turn_no
+         LEFT JOIN orbits ON orbits.id = sorc_details.orbit_id
+         LEFT JOIN stars ON stars.id = orbits.star_id
+         LEFT JOIN systems ON systems.id = stars.system_id
+WHERE sorcs.empire_id = :empire_id
+  AND sorcs.kind in ('open-colony', 'enclosed-colony', 'orbital-colony')
+ORDER BY sorcs.id, sorcs.kind;

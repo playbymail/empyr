@@ -86,7 +86,7 @@ type SorcDetails struct {
 	SldPay      float64
 	CnwQty      int64
 	SpyQty      int64
-	Rations     int64
+	Rations     float64
 	BirthRate   float64
 	DeathRate   float64
 	Sol         float64

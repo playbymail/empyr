@@ -226,9 +226,10 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		SldPay:      0.25,
 		CnwQty:      10_000,
 		SpyQty:      20,
+		Rations:     100.0,
 		BirthRate:   0.0,
-		DeathRate:   0.00625,
-		Sol:         0.481,
+		DeathRate:   0.0625,
+		Sol:         0.4881,
 		OrbitID:     parms.HomeOrbitID,
 		IsOnSurface: 1,
 	})
@@ -365,28 +366,48 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 		Habitability int64
 	}
 
-	type turn_report_colony_t struct {
-		Id              int64
-		StarCoordinates string
-		OrbitNo         int64
-		Name            string
-		Kind            string
-		TL              string
-		SOL             string
-		Vitals          struct {
-			BirthRate string
-			DeathRate string
-			Rations   string
-			PayRates  struct {
-				USK string
-				PRO string
-				SLD string
-			}
-			Census []int64
-		}
-		Inventory []*turn_report_inventory_t
-		Factories []int64
-		Mines     []int64
+	type pay_rates_t struct {
+		USK     string
+		PRO     string
+		SLD     string
+		Rations string
+	}
+
+	type census_t struct {
+		TotalPopulation int64
+		UemQty          int64
+		UemPct          string
+		UskQty          int64
+		UskPct          string
+		ProQty          int64
+		ProPct          string
+		SldQty          int64
+		SldPct          string
+		CnwQty          int64
+		CnwPct          string
+		SpyQty          int64
+		SpyPct          string
+		BirthRate       string
+		DeathRate       string
+	}
+
+	type colony_vitals_t struct {
+		Census *census_t
+	}
+
+	type colony_t struct {
+		Id          int64
+		Coordinates string
+		OrbitNo     int64
+		Name        string
+		Kind        string
+		TL          int64
+		SOL         string
+		Census      *census_t
+		PayRates    *pay_rates_t
+		Inventory   []*turn_report_inventory_t
+		Factories   []int64
+		Mines       []int64
 	}
 
 	payload := struct {
@@ -400,7 +421,7 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 		TurnCode        string
 		EmpireNo        int64
 		EmpireCode      string
-		Colonies        []*turn_report_colony_t
+		Colonies        []*colony_t
 	}{
 		Game:            cfg.Code,
 		CreatedDate:     time.Now().UTC().Format("2006-01-02"),
@@ -412,7 +433,55 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 	}
 	payload.Site.CSS = "a02/css/monospace.css"
 
-	payload.Colonies = append(payload.Colonies, &turn_report_colony_t{})
+	colonyRows, err := e.Store.Queries.ReadEmpireAllColoniesForTurn(e.Store.Context, sqlc.ReadEmpireAllColoniesForTurnParams{EmpireID: empireId, TurnNo: cfg.TurnNo})
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range colonyRows {
+		colony := &colony_t{
+			Id:      row.SorcID.Int64,
+			Name:    row.Name.String,
+			Kind:    row.Kind,
+			OrbitNo: row.OrbitNo.Int64,
+			TL:      row.TechLevel.Int64,
+			SOL:     fmt.Sprintf("%5.4f", row.Sol.Float64),
+			Census: &census_t{
+				BirthRate: fmt.Sprintf("%5.4f", row.BirthRate.Float64),
+				DeathRate: fmt.Sprintf("%5.4f", row.DeathRate.Float64),
+				UemQty:    row.UemQty.Int64,
+				UskQty:    row.UskQty.Int64,
+				ProQty:    row.ProQty.Int64,
+				SldQty:    row.SldQty.Int64,
+				CnwQty:    row.CnwQty.Int64,
+				SpyQty:    row.SpyQty.Int64,
+			},
+			PayRates: &pay_rates_t{
+				USK:     fmt.Sprintf("%5.4f", row.UskPay.Float64),
+				PRO:     fmt.Sprintf("%5.4f", row.ProPay.Float64),
+				SLD:     fmt.Sprintf("%5.4f", row.SldPay.Float64),
+				Rations: fmt.Sprintf("%5.4f", row.Rations.Float64),
+			},
+		}
+		colony.Coordinates = fmt.Sprintf("%02d/%02d/%02d%s", row.X.Int64, row.Y.Int64, row.Z.Int64, row.Suffix.String)
+		switch row.Kind {
+		case "open-colony":
+			colony.Kind = "Open Colony"
+		case "enclosed-colony":
+			colony.Kind = "Enclosed Colony"
+		case "orbital-colony":
+			colony.Kind = "Orbital Colony"
+		}
+		colony.Census.TotalPopulation = colony.Census.UemQty + colony.Census.UskQty + colony.Census.ProQty + colony.Census.SldQty + 2*colony.Census.CnwQty + 2*colony.Census.SpyQty
+		colony.Census.UemPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.UemQty)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.UskPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.UskQty)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.ProPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.ProQty)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.SldPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.SldQty)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.CnwPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.CnwQty)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.SpyPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.SpyQty)/float64(colony.Census.TotalPopulation)*100)
+
+		payload.Colonies = append(payload.Colonies, colony)
+	}
+
 	// buffer will hold the rendered turn report
 	buffer := &bytes.Buffer{}
 
