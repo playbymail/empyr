@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mdhender/semver"
+	"github.com/playbymail/empyr/cli"
 	"github.com/playbymail/empyr/config"
 	"github.com/playbymail/empyr/engine"
 	"github.com/playbymail/empyr/pkg/dotenv"
@@ -29,7 +30,28 @@ var (
 )
 
 func main() {
+	// versions hack
+	for _, arg := range os.Args {
+		if arg == "version" || arg == "-version" || arg == "--version" {
+			fmt.Printf("%s\n", version.String())
+			os.Exit(0)
+		}
+	}
+
 	log.SetFlags(log.Lshortfile)
+
+	if command, err := cli.Initialize(
+		cli.WithVersion(version),
+		cli.WithEnvPrefix("EMPYR"),
+	); err != nil {
+		log.Fatalf("main: %+v\n", err)
+	} else if err = command.Execute(); err != nil {
+		log.Fatalf("\n%+v\n", err)
+	}
+	if version.String() != "0.0.0" {
+		log.Printf("empyr version %s\n", version.String())
+		os.Exit(0)
+	}
 
 	started := time.Now()
 	defer func() {
@@ -65,14 +87,6 @@ func main() {
 	if err := runRoot(env, args); err != nil {
 		log.Fatalf("main: %+v\n", err)
 	}
-
-	//if command, err := cli.Initialize(
-	//	cli.WithVersion(version),
-	//); err != nil {
-	//	log.Fatalf("main: %+v\n", err)
-	//} else if err = command.Execute(); err != nil {
-	//	log.Fatalf("\n%+v\n", err)
-	//}
 
 	log.Printf("completed in %v\n", time.Now().Sub(started))
 }

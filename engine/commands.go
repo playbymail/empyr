@@ -291,12 +291,13 @@ type CreateGameParams_t struct {
 	NumberOfEmpires             int64
 	PopulateSystemDistanceTable bool
 	Rand                        *rand.Rand
+	ForceCreate                 bool
 }
 
 // CreateGameCommand creates a new game.
 func CreateGameCommand(e *Engine_t, cfg *CreateGameParams_t) (int64, error) {
 	log.Printf("create: game: code %q: name %q: display %q\n", cfg.Code, cfg.Name, cfg.DisplayName)
-	return e.CreateGame(cfg.Code, cfg.Name, cfg.DisplayName, cfg.NumberOfEmpires, cfg.PopulateSystemDistanceTable, cfg.Rand)
+	return e.CreateGame(cfg.Code, cfg.Name, cfg.DisplayName, cfg.NumberOfEmpires, cfg.PopulateSystemDistanceTable, cfg.Rand, cfg.ForceCreate)
 }
 
 var (
@@ -699,6 +700,16 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 	}
 
 	return buffer.Bytes(), nil
+}
+
+type DeleteGameParams_t struct {
+	Code string
+}
+
+// DeleteGameCommand deletes an existing game..
+func DeleteGameCommand(e *Engine_t, cfg *DeleteGameParams_t) error {
+	log.Printf("delete: game: code %q\n", cfg.Code)
+	return e.DeleteGame(cfg.Code)
 }
 
 func codeTL(code string, tl int64) string {

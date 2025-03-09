@@ -10,6 +10,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/maloquacious/cerrors v0.0.0-20230521213745-fc509e049165
 	github.com/mdhender/semver v0.0.0-20240121182447-31da48bf9537
+	github.com/mdhender/xii v0.4.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/peterbourgon/ff/v3 v3.4.0
 	github.com/spf13/cobra v1.8.1

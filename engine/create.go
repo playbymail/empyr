@@ -28,32 +28,16 @@ func Close(e *Engine_t) error {
 	return nil
 }
 
-func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires int64, calculateSystemDistances bool, r *rand.Rand) (int64, error) {
+func (e *Engine_t) CreateGame(code, name, displayName string, numberOfEmpires int64, calculateSystemDistances bool, r *rand.Rand, forceCreate bool) (int64, error) {
 	cluster, err := e.CreateCluster(r, numberOfEmpires)
 	if err != nil {
 		return 0, errors.Join(fmt.Errorf("create cluster"), err)
 	}
-	//for _, obj := range []struct {
-	//	name string
-	//	ptr  any
-	//}{
-	//	{name: "systems", ptr: cluster.Systems[1:]},
-	//	{name: "stars", ptr: cluster.Stars[1:]},
-	//	{name: "orbits", ptr: cluster.Orbits[1:]},
-	//	{name: "planets", ptr: cluster.Planets[1:]},
-	//} {
-	//	if data, err := json.MarshalIndent(obj.ptr, "", "  "); err != nil {
-	//		return 0, err
-	//	} else if err = os.WriteFile(obj.name+".json", data, 0644); err != nil {
-	//		log.Fatalf("cluster: %s: %v\n", obj.name, err)
-	//	} else {
-	//		log.Printf("cluster: %s: wrote %s\n", obj.name, obj.name+".json")
-	//	}
-	//}
 
-	err = e.Store.Queries.DeleteGame(e.Store.Context, code)
-	if err != nil {
-		return 0, errors.Join(fmt.Errorf("delete game"), err)
+	if forceCreate {
+		if err := e.DeleteGame(code); err != nil {
+			return 0, errors.Join(fmt.Errorf("force delete game"), err)
+		}
 	}
 
 	q, tx, err := e.Store.Begin()
@@ -435,6 +419,14 @@ func (e *Engine_t) CreateCluster(r *rand.Rand, numberOfEmpires int64) (*Cluster_
 	}
 
 	return cluster, nil
+}
+
+func (e *Engine_t) DeleteGame(code string) error {
+	err := e.Store.Queries.DeleteGame(e.Store.Context, code)
+	if err != nil {
+		return errors.Join(fmt.Errorf("delete game"), err)
+	}
+	return nil
 }
 
 // createPlanet creates a planet.

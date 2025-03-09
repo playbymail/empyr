@@ -3,46 +3,64 @@
 package cli
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"github.com/playbymail/empyr/engine"
 	"github.com/playbymail/empyr/pkg/clean"
-	"github.com/playbymail/empyr/pkg/empyr"
+	"github.com/playbymail/empyr/pkg/stdlib"
+	"github.com/playbymail/empyr/store"
 	"github.com/spf13/cobra"
 	"log"
-	"os"
+	"math/rand/v2"
 	"time"
 )
 
-// this file implements the commands to create assets such as games and assets
+// this file implements the commands to create assets such as databases, games, and assets
 
 // cmdCreate represents the base command when called without any subcommands
 var cmdCreate = &cobra.Command{
-	Use:   "create --path database",
-	Short: "create games and assets",
+	Use:   "create",
+	Short: "create all the things",
 	Long:  `create is the root of the generator commands.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		started := time.Now()
-		defer func() {
-			log.Printf("create: elapsed time: %v\n", time.Now().Sub(started))
-		}()
-	},
 }
 
 // cmdCreateDatabase implements the create database command
 var cmdCreateDatabase = &cobra.Command{
-	Use:   "database --path database",
+	Use:   "database",
 	Short: "create a new database",
 	Long:  `Create a new database.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		started := time.Now()
+		log.Printf("create: database: %q\n", env.Database.Path)
+		if stdlib.IsExists(env.Database.Path) {
+			if !env.Database.ForceCreate {
+				log.Fatalf("error: %v\n", ErrFileExists)
+			}
+			log.Printf("create: database: deleting existing database\n")
+			if err := stdlib.Remove(env.Database.Path); err != nil {
+				log.Fatalf("error: stdlib.remove: %v\n", errors.Join(ErrDeleteFailed, err))
+			}
+		}
+		log.Printf("create: database: %q\n", env.Database.Path)
+		if err := store.Create(env.Database.Path); err != nil {
+			log.Fatalf("error: store.create: %v\n", err)
+		}
+		log.Printf("create: database: completed in %v\n", time.Since(started))
+	},
 }
 
 // cmdCreateGame implements the create game command
 var cmdCreateGame = &cobra.Command{
-	Use:   "game --path database --code code --name name --descr description",
+	Use:   "game --code code --name name --descr description",
 	Short: "create a new game",
-	Long:  `Create a new game (includes the database).`,
+	Long:  `Create a new game.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if _, err := clean.IsValidCode(cmd.Flag("code").Value.String()); err != nil {
 			return err
 		} else if _, err = clean.IsValidName(cmd.Flag("name").Value.String()); err != nil {
+			return err
+		} else if _, err = clean.IsValidDescription(cmd.Flag("descr").Value.String()); err != nil {
 			return err
 		}
 		return nil
@@ -54,19 +72,36 @@ var cmdCreateGame = &cobra.Command{
 		}()
 		code := cmd.Flag("code").Value.String()
 		name := cmd.Flag("name").Value.String()
-		g, err := empyr.NewGame(code, name)
+		descr := cmd.Flag("descr").Value.String()
+		if descr == "" {
+			descr = fmt.Sprintf("A game of %s", name)
+		}
+		log.Printf("create: game: code  %q\n", code)
+		log.Printf("create: game: name  %q\n", name)
+		log.Printf("create: game: descr %q\n", descr)
+
+		repo, err := store.Open(env.Database.Path, context.Background())
 		if err != nil {
-			log.Fatalf("create: game: %v", err)
+			log.Fatalf("error: store.open: %v\n", err)
 		}
-		// save the map as an HTML file
-		if buffer, err := g.ClusterHTML(); err != nil {
-			log.Fatalf("create: game: html: %v", err)
-		} else if err = os.WriteFile("cluster-map.html", buffer.Bytes(), 0644); err != nil {
-			log.Fatalf("create: game: html: %v", err)
-		} else {
-			log.Printf("create: game: html: %q: %d bytes\n", "cluster-map.html", buffer.Len())
+		defer repo.Close()
+		e, err := engine.Open(repo)
+		if err != nil {
+			log.Fatalf("error: engine.open: %v\n", err)
 		}
-		log.Printf("create: game: created game %s (%q)\n", code, name)
+
+		gameId, err := engine.CreateGameCommand(e, &engine.CreateGameParams_t{
+			Code:        env.Game.Code,
+			Name:        env.Game.Name,
+			DisplayName: fmt.Sprintf("EC-%s", env.Game.Code),
+			Rand:        rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed)),
+			ForceCreate: env.Game.ForceCreate,
+		})
+		if err != nil {
+			log.Fatalf("error: engine.CreateGameCommand: %v\n", err)
+		}
+
+		log.Printf("create: game: created game %d in %v\n", gameId, time.Since(started))
 	},
 }
 

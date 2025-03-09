@@ -10,6 +10,10 @@ import (
 	"regexp"
 )
 
+// IsValidCode validates whether a game code meets specific formatting requirements.
+// It checks that the code is between 3 and 5 characters long and starts with uppercase letters,
+// optionally followed by numbers. Returns true if the code is valid, otherwise returns false
+// with an error describing the validation failure.
 func IsValidCode(code string) (bool, error) {
 	var validGameCode = regexp.MustCompile(`^[A-Z]+[0-9]*$`)
 	if !(3 <= len(code) && len(code) <= 5) {
@@ -20,6 +24,27 @@ func IsValidCode(code string) (bool, error) {
 	return true, nil
 }
 
+// IsValidDescription validates whether a description meets the same character requirements as a name.
+// It delegates the validation to IsValidName, checking that the description contains only allowed
+// characters (alphanumeric, underscore, hyphen, dot, and space) and does not contain any special
+// escape sequences or unusual characters.
+//
+// Returns true if the description is valid, otherwise returns false with an error describing
+// the validation failure. The error indicates that the description must not contain special characters.
+func IsValidDescription(descr string) (bool, error) {
+	return IsValidName(descr)
+}
+
+// IsValidName validates whether a name meets specific character requirements.
+// It checks that the name contains only allowed characters (alphanumeric, underscore, hyphen, dot, and space)
+// and does not contain any special escape sequences or unusual characters.
+//
+// The function performs two checks:
+// 1. Each character in the name must be in the predefined goodNameBytes set
+// 2. The name must not be considered "weird" (containing special characters or escape sequences)
+//
+// Returns true if the name is valid, otherwise returns false with an error describing the validation failure.
+// The error indicates that the name must not contain special characters.
 func IsValidName(name string) (bool, error) {
 	for _, ch := range []byte(name) {
 		if !goodNameBytes[ch] {
