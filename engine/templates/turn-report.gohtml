@@ -27,7 +27,7 @@
         </tr>
         <tr>
             <th class="width-min">Author</th>
-            <td class="width-auto"><a href="https://github.com/mdhender/empyr"><cite>Michael D Henderson</cite></a></td>
+            <td class="width-auto"><a href="https://github.com/playbymail/empyr"><cite>Michael D Henderson</cite></a></td>
             <th>Version</th>
             <td class="width-min">0.0.1</td>
         </tr>
@@ -88,12 +88,82 @@
                     <tr><td class="width-min" style="text-align:right">{{.Census.TotalPopulation}}</td><td class="width-auto">Total Population</td><td></td></tr>
                 </table>
 
-            <h4>Storage/Non-Assembly Items ********</h4>
-            <h4>Storage/Unassembled Items *********</h4>
-            <h4>Assembled Items *******************</h4>
+
+            <h4>Storage/Non-Assembly Items</h4>
+            {{with .StorageNonAssemblyItems}}
+                <table>
+                    <tr><th>Quantity</th><th>Unit</th></tr>
+                    {{range .}}
+                        <tr><td style="text-align:right">{{.Qty}}</td><td>{{.Code}}</td></tr>
+                    {{end}}
+                </table>
+            {{end}}
+
+            <h4>Storage/Unassembled Items</h4>
+            {{with .StorageUnassembledItems}}
+                <table>
+                    <tr><th>Quantity</th><th>Unit</th></tr>
+                    {{range .}}
+                        <tr><td style="text-align:right">{{.Qty}}</td><td>{{.Code}}</td></tr>
+                    {{end}}
+                </table>
+            {{end}}
+
+            <h4>Assembled Items</h4>
+            {{with .AssembledItems}}
+            <table>
+                <tr><th>Quantity</th><th>Unit</th></tr>
+                {{range .}}
+                <tr><td style="text-align:right">{{.Qty}}</td><td>{{.Code}}</td></tr>
+                {{end}}
+            </table>
+            {{end}}
+
             <h4>Mining Groups</h4>
+            {{with .MiningGroups}}
+                <table>
+                    <tr><th>Mine #</th><th>Nbr of Units</th><th>TL</th><th>Deposit #</th><th>Deposit Qty</th><th>Type</th><th>Yield</th></tr>
+                    {{range .}}
+                        <tr>
+                            <td style="text-align:right">{{.MineNo}}</td>
+                            <td style="text-align:right">{{.NbrOfUnits}}</td>
+                            <td style="text-align:right">{{.TL}}</td>
+                            <td style="text-align:right">{{.DepositNo}}</td>
+                            <td style="text-align:right">{{.DepositQty}}</td>
+                            <td>{{.Type}}</td>
+                            <td style="text-align:right">{{.YieldPct}}</td></tr>
+                    {{end}}
+                </table>
+            {{end}}
+
             <h4>Factory Groups</h4>
-            <h4>Spies</h4>
+            {{with .FactoryGroups}}
+<pre>
+Group | Nbr Of Units   | TL | ORDERS   | WIP 25% Complete        | WIP 50% Complete        | WIP 75% Complete
+{{range .}}
+{{.GroupNo}} | {{.NbrOfUnits}} | {{.TL}} | {{.OrderCode}} | {{.WIP25.UnitsInProgress}} {{.WIP25.Code}} | {{.WIP50.UnitsInProgress}} {{.WIP50.Code}} | {{.WIP75.UnitsInProgress}} {{.WIP75.Code}}
+{{end}}
+</pre>
+            <p>NB: The table above is really wide and poorly formatted. You must scroll left and right to see all the data.</p>
+            {{end}}
+
+            <h4>Domestic Espionage (Internal Spies)</h4>
+            {{with .InternalSpies}}
+                <table>
+                    <tr><th>Quantity</th><th>Group</th></tr>
+                    {{range .}}
+                        <tr><td style="text-align:right">{{.Qty}}</td><td>{{.Group}}</td></tr>
+                    {{end}}
+                </table>
+                {{range .}}
+                    {{if .Results}}
+                        <h5>Group {{.Group}} Results</h5>
+                        {{range .Results}}
+                            <pre>{{.}}</pre>
+                        {{end}}
+                    {{end}}
+                {{end}}
+            {{end}}
         {{end}}
 
         <h3>Survey Report for Planet # 2 in System 15/15/15A</h3>

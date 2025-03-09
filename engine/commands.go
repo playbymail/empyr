@@ -329,41 +329,145 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 	}
 	log.Printf("game: %d: empire: %d\n", gameId, empireId)
 
-	type turn_report_inventory_t struct {
-		Unit      string
-		Qty       int
-		Assembled bool
-		Storage   bool
+	type inventory_item_data_t struct {
+		Code          string // the code (eg. "STU")
+		TL            int64  // the tech level
+		Qty           int64  // the quantity
+		Mass          int64
+		IsOperational bool
+		InStorage     bool
+		IsAssembled   bool
+	}
+	inventoryItemData := []inventory_item_data_t{
+		// census
+		{"UEM", 0, 59_000_000, 590_000, false, false, false},
+		{"USK", 0, 60_000_000, 600_000, false, false, false},
+		{"PRO", 0, 15_000_000, 150_000, false, false, false},
+		{"SLD", 0, 2_500_000, 25_000, false, false, false},
+		{"CNW", 0, 10_000, 200, false, false, false},
+		{"SPY", 0, 20, 1, false, false, false},
+		// storage/non-assembly
+		{"ASWP", 1, 2_400_000, 2_400_000, false, true, false},
+		{"ANM", 1, 150_000, 150_000, false, true, false},
+		{"MTSP", 1, 150_000, 150_000, false, true, false},
+		{"TPT", 1, 20_000, 20_000, false, true, false},
+		{"METS", 0, 5_354_167, 5_354_167, false, true, false},
+		{"NMTS", 0, 2_645_833, 2_645_833, false, true, false},
+		{"FUEL", 0, 1_360_000, 1_360_000, false, true, false},
+		{"GOLD", 0, 20_000, 20_000, false, true, false},
+		{"FOOD", 0, 4_269_990, 4_269_990, false, true, false},
+		{"CNGD", 0, 940_821, 940_821, false, true, false},
+		// storage/unassembled
+		{"AUT", 1, 93_750, 93_750, true, true, false},
+		{"EWP", 1, 37_500, 37_500, true, true, false},
+		{"MINU", 1, 31_250, 31_250, true, true, false},
+		{"SEN", 1, 20, 20, true, true, false},
+		{"STU", 0, 14_500_000, 14_500_000, true, true, false},
+		// assembled items
+		{"FRMU", 1, 130_000, 0, true, false, true},
+		{"MSL", 1, 50_000, 0, true, false, true},
+		{"SEN", 1, 20, 0, true, false, true},
+		{"STU", 0, 60_000_000, 30_000_000, true, false, true},
 	}
 
-	type turn_report_system_t struct {
-		Id          int
-		Coordinates struct {
-			X int
-			Y int
-			Z int
-		}
+	type fg_wip_data_t struct {
+		Code            string // the code being produced (eg. "FRMU")
+		TL              int64  // optional tech level of the item being produced
+		UnitsInProgress int64  // number of units in the pipeline
 	}
 
-	type turn_report_star_t struct {
-		Id          int
-		System      *turn_report_system_t
-		Sequence    string
-		Coordinates string
+	type factory_group_data_t struct {
+		GroupNo    int64
+		NbrOfUnits int64
+		TL         int64
+		Order      *fg_wip_data_t    // current order for the factory group
+		WIP        [3]*fg_wip_data_t // newest to oldest, next to finish is always last
 	}
-
-	type turn_report_orbit_t struct {
-		Id        int
-		Star      *turn_report_star_t
-		OrbitNo   int
-		Kind      string
-		Habitable bool
+	factoryGroupData := []factory_group_data_t{
+		{GroupNo: 1, NbrOfUnits: 250_000, TL: 1,
+			Order: &fg_wip_data_t{"CNGD", 0, 2_083_334},
+			WIP: [3]*fg_wip_data_t{
+				{"CNGD", 0, 2_083_333},
+				{"CNGD", 0, 2_083_333},
+				{"CNGD", 0, 2_083_333}}},
+		{GroupNo: 2, NbrOfUnits: 75_000, TL: 1,
+			Order: &fg_wip_data_t{"MTSP", 0, 9_375_000},
+			WIP: [3]*fg_wip_data_t{
+				{"MTSP", 0, 9_375_000},
+				{"MTSP", 0, 9_375_000},
+				{"MTSP", 0, 9_375_000}}},
+		{GroupNo: 3, NbrOfUnits: 75_000, TL: 1,
+			Order: &fg_wip_data_t{"AUT", 1, 93_750},
+			WIP: [3]*fg_wip_data_t{
+				{"AUT", 1, 93_750},
+				{"AUT", 1, 93_750},
+				{"AUT", 1, 93_750}}},
+		{GroupNo: 4, NbrOfUnits: 75_000, TL: 1,
+			Order: &fg_wip_data_t{"EWP", 1, 37_500},
+			WIP: [3]*fg_wip_data_t{
+				{"EWP", 1, 37_500},
+				{"EWP", 1, 37_500},
+				{"EWP", 1, 37_500}}},
+		{GroupNo: 5, NbrOfUnits: 75_000, TL: 1,
+			Order: &fg_wip_data_t{"MINU", 1, 31_250},
+			WIP: [3]*fg_wip_data_t{
+				{"MINU", 1, 31_250},
+				{"MINU", 1, 31_250},
+				{"MINU", 1, 31_250}}},
+		{GroupNo: 6, NbrOfUnits: 250_000, TL: 1,
+			Order: &fg_wip_data_t{"STU", 0, 12_500_000},
+			WIP: [3]*fg_wip_data_t{
+				{"STU", 0, 12_500_000},
+				{"STU", 0, 12_500_000},
+				{"STU", 0, 12_500_000}}},
+		{GroupNo: 7, NbrOfUnits: 50_000, TL: 1,
+			Order: &fg_wip_data_t{"RSCH", 0, 12_500},
+			WIP: [3]*fg_wip_data_t{
+				{"RSCH", 0, 12_500},
+				{"RSCH", 0, 12_500},
+				{"RSCH", 0, 12_500}}},
 	}
+	_ = factoryGroupData
 
-	type turn_report_planet_t struct {
-		Id           int64
-		Orbit        *turn_report_orbit_t
-		Habitability int64
+	type mining_group_data_t struct {
+		GroupNo    int64
+		NbrOfUnits int64
+		TL         int64
+		DepositNo  int64
+		DepositQty int64
+		Resource   string
+		YieldPct   int64
+	}
+	miningGroupData := []mining_group_data_t{
+		{1, 100_000, 1, 13, 37_500_000, "FUEL", 20},
+		{2, 200_000, 1, 28, 35_000_000, "METS", 55},
+	}
+	_ = miningGroupData
+
+	type spy_results_data_t struct {
+		Group   string
+		Qty     int64
+		Results []string
+	}
+	spyResultsData := []spy_results_data_t{
+		spy_results_data_t{
+			Group: "A", Qty: 10, Results: []string{
+				"Report on the rebel situation:",
+				"  Rebels         = 0",
+				"  Rebel soldiers = 0",
+			},
+		},
+		spy_results_data_t{
+			Group: "B", Qty: 10, Results: []string{
+				"Report on foreign espionage operations as you requested:",
+				"  Owner: #   0:  Type A Spies:    0",
+				"                 Type B Spies:    0",
+				"                 Type C Spies:    0",
+				"                 Type D Spies:    0",
+				"                 Type E Spies:    0",
+				"                 Type F Spies:    0",
+			},
+		},
 	}
 
 	type pay_rates_t struct {
@@ -375,39 +479,74 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 
 	type census_t struct {
 		TotalPopulation int64
-		UemQty          int64
+		UemQty          string
 		UemPct          string
-		UskQty          int64
+		UskQty          string
 		UskPct          string
-		ProQty          int64
+		ProQty          string
 		ProPct          string
-		SldQty          int64
+		SldQty          string
 		SldPct          string
-		CnwQty          int64
+		CnwQty          string
 		CnwPct          string
-		SpyQty          int64
+		SpyQty          string
 		SpyPct          string
 		BirthRate       string
 		DeathRate       string
 	}
 
-	type colony_vitals_t struct {
-		Census *census_t
+	// mass of population is 1 per 100 people
+	// hard code the inventory items for now
+	type inventory_item_t struct {
+		Qty  string
+		Code string // combined code with optional tech level
+	}
+
+	type fg_wip_result_t struct {
+		Code            string
+		UnitsInProgress string
+		PctComplete     string
+	}
+	type factory_group_result_t struct {
+		GroupNo             string
+		NbrOfUnits          string
+		TL                  string
+		OrderCode           string
+		WIP25, WIP50, WIP75 fg_wip_result_t
+	}
+
+	type mining_group_result_t struct {
+		MineNo     int64
+		NbrOfUnits string
+		TL         int64
+		DepositNo  int64
+		DepositQty string
+		Type       string
+		YieldPct   string
+	}
+
+	type spy_results_t struct {
+		Group   string
+		Qty     string
+		Results []string
 	}
 
 	type colony_t struct {
-		Id          int64
-		Coordinates string
-		OrbitNo     int64
-		Name        string
-		Kind        string
-		TL          int64
-		SOL         string
-		Census      *census_t
-		PayRates    *pay_rates_t
-		Inventory   []*turn_report_inventory_t
-		Factories   []int64
-		Mines       []int64
+		Id                      int64
+		Coordinates             string
+		OrbitNo                 int64
+		Name                    string
+		Kind                    string
+		TL                      int64
+		SOL                     string
+		Census                  *census_t
+		PayRates                *pay_rates_t
+		StorageNonAssemblyItems []*inventory_item_t
+		StorageUnassembledItems []*inventory_item_t
+		AssembledItems          []*inventory_item_t
+		FactoryGroups           []*factory_group_result_t
+		MiningGroups            []*mining_group_result_t
+		InternalSpies           []*spy_results_t
 	}
 
 	payload := struct {
@@ -448,12 +587,12 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 			Census: &census_t{
 				BirthRate: fmt.Sprintf("%5.4f", row.BirthRate.Float64),
 				DeathRate: fmt.Sprintf("%5.4f", row.DeathRate.Float64),
-				UemQty:    row.UemQty.Int64,
-				UskQty:    row.UskQty.Int64,
-				ProQty:    row.ProQty.Int64,
-				SldQty:    row.SldQty.Int64,
-				CnwQty:    row.CnwQty.Int64,
-				SpyQty:    row.SpyQty.Int64,
+				UemQty:    commas(row.UemQty.Int64),
+				UskQty:    commas(row.UskQty.Int64),
+				ProQty:    commas(row.ProQty.Int64),
+				SldQty:    commas(row.SldQty.Int64),
+				CnwQty:    commas(row.CnwQty.Int64),
+				SpyQty:    commas(row.SpyQty.Int64),
 			},
 			PayRates: &pay_rates_t{
 				USK:     fmt.Sprintf("%5.4f", row.UskPay.Float64),
@@ -471,13 +610,82 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 		case "orbital-colony":
 			colony.Kind = "Orbital Colony"
 		}
-		colony.Census.TotalPopulation = colony.Census.UemQty + colony.Census.UskQty + colony.Census.ProQty + colony.Census.SldQty + 2*colony.Census.CnwQty + 2*colony.Census.SpyQty
-		colony.Census.UemPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.UemQty)/float64(colony.Census.TotalPopulation)*100)
-		colony.Census.UskPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.UskQty)/float64(colony.Census.TotalPopulation)*100)
-		colony.Census.ProPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.ProQty)/float64(colony.Census.TotalPopulation)*100)
-		colony.Census.SldPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.SldQty)/float64(colony.Census.TotalPopulation)*100)
-		colony.Census.CnwPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.CnwQty)/float64(colony.Census.TotalPopulation)*100)
-		colony.Census.SpyPct = fmt.Sprintf("%7.4f%%", float64(colony.Census.SpyQty)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.TotalPopulation = row.UemQty.Int64 + row.UskQty.Int64 + row.ProQty.Int64 + row.SldQty.Int64 + 2*row.CnwQty.Int64 + 2*row.SpyQty.Int64
+		colony.Census.UemPct = fmt.Sprintf("%7.4f%%", float64(row.UemQty.Int64)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.UskPct = fmt.Sprintf("%7.4f%%", float64(row.UskQty.Int64)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.ProPct = fmt.Sprintf("%7.4f%%", float64(row.ProQty.Int64)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.SldPct = fmt.Sprintf("%7.4f%%", float64(row.SldQty.Int64)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.CnwPct = fmt.Sprintf("%7.4f%%", float64(row.CnwQty.Int64)/float64(colony.Census.TotalPopulation)*100)
+		colony.Census.SpyPct = fmt.Sprintf("%7.4f%%", float64(row.SpyQty.Int64)/float64(colony.Census.TotalPopulation)*100)
+
+		for _, item := range inventoryItemData {
+			var code string
+			if item.TL == 0 {
+				code = item.Code
+			} else {
+				code = fmt.Sprintf("%s-%d", item.Code, item.TL)
+			}
+			if item.InStorage && !item.IsOperational {
+				colony.StorageNonAssemblyItems = append(colony.StorageNonAssemblyItems, &inventory_item_t{
+					Qty:  commas(item.Qty),
+					Code: code,
+				})
+			} else if item.InStorage && item.IsOperational {
+				colony.StorageUnassembledItems = append(colony.StorageUnassembledItems, &inventory_item_t{
+					Qty:  commas(item.Qty),
+					Code: code,
+				})
+			} else if item.IsOperational && item.IsAssembled {
+				colony.AssembledItems = append(colony.AssembledItems, &inventory_item_t{
+					Qty:  commas(item.Qty),
+					Code: code,
+				})
+			}
+		}
+
+		for _, item := range factoryGroupData {
+			fg := &factory_group_result_t{
+				GroupNo:    fmt.Sprintf("%5d", item.GroupNo),
+				NbrOfUnits: fmt.Sprintf("%14s", commas(item.NbrOfUnits)),
+				TL:         fmt.Sprintf("%2d", item.TL),
+				OrderCode:  fmt.Sprintf("%-8s", codeTL(item.Order.Code, item.Order.TL)),
+			}
+			if wip := item.WIP[0]; wip != nil {
+				fg.WIP25.Code = fmt.Sprintf("%-8s", codeTL(item.Order.Code, item.Order.TL))
+				fg.WIP25.UnitsInProgress = fmt.Sprintf("%14s", commas(wip.UnitsInProgress))
+			}
+			if wip := item.WIP[1]; wip != nil {
+				fg.WIP50.Code = fmt.Sprintf("%-8s", codeTL(item.Order.Code, item.Order.TL))
+				fg.WIP50.UnitsInProgress = fmt.Sprintf("%14s", commas(wip.UnitsInProgress))
+			}
+			if wip := item.WIP[2]; wip != nil {
+				fg.WIP75.Code = fmt.Sprintf("%-8s", codeTL(item.Order.Code, item.Order.TL))
+				fg.WIP75.UnitsInProgress = fmt.Sprintf("%14s", commas(wip.UnitsInProgress))
+			}
+			colony.FactoryGroups = append(colony.FactoryGroups, fg)
+		}
+
+		for _, item := range miningGroupData {
+			mg := &mining_group_result_t{
+				MineNo:     item.GroupNo,
+				NbrOfUnits: commas(item.NbrOfUnits),
+				TL:         item.TL,
+				DepositNo:  item.DepositNo,
+				DepositQty: commas(item.DepositQty),
+				Type:       item.Resource,
+				YieldPct:   fmt.Sprintf("%d %%", item.YieldPct),
+			}
+			colony.MiningGroups = append(colony.MiningGroups, mg)
+		}
+
+		for _, item := range spyResultsData {
+			results := &spy_results_t{
+				Group:   item.Group,
+				Qty:     commas(item.Qty),
+				Results: item.Results,
+			}
+			colony.InternalSpies = append(colony.InternalSpies, results)
+		}
 
 		payload.Colonies = append(payload.Colonies, colony)
 	}
@@ -491,4 +699,36 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 	}
 
 	return buffer.Bytes(), nil
+}
+
+func codeTL(code string, tl int64) string {
+	if tl == 0 {
+		return code
+	}
+	return fmt.Sprintf("%s-%d", code, tl)
+}
+
+func commas(n int64) string {
+	in := fmt.Sprintf("%d", n)
+	numOfDigits := len(in)
+	if n < 0 {
+		numOfDigits-- // First character is the - sign (not a digit)
+	}
+	numOfCommas := (numOfDigits - 1) / 3
+
+	out := make([]byte, len(in)+numOfCommas)
+	if n < 0 {
+		in, out[0] = in[1:], '-'
+	}
+
+	for i, j, k := len(in)-1, len(out)-1, 0; ; i, j = i-1, j-1 {
+		out[j] = in[i]
+		if i == 0 {
+			return string(out)
+		}
+		if k++; k == 3 {
+			j, k = j-1, 0
+			out[j] = ','
+		}
+	}
 }
