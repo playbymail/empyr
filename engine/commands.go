@@ -7,12 +7,14 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/playbymail/empyr/pkg/stdlib"
 	"github.com/playbymail/empyr/store/sqlc"
 	"html/template"
 	"log"
 	"math"
 	"math/rand/v2"
-	"strings"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -22,6 +24,11 @@ import (
 var (
 	//go:embed templates/cluster-map.gohtml
 	clusterMapTmpl string
+)
+
+const (
+	ErrInvalidPath   = Error("invalid path")
+	ErrWritingReport = Error("error writing report")
 )
 
 type CreateClusterMapParams_t struct {
@@ -165,24 +172,24 @@ type CreateEmpireParams_t struct {
 	Handle string
 }
 
-func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, error) {
+func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, string, error) {
 	log.Printf("create: empire: code %q\n", cfg.Code)
 
-	if cfg.Handle == "" {
-		return 0, 0, fmt.Errorf("handle: missing")
-	} else if strings.TrimSpace(cfg.Handle) != cfg.Handle {
-		return 0, 0, fmt.Errorf("handle: invalid")
+	if cfg.Handle != "" {
+		if _, err := isValidHandle(cfg.Handle); err != nil {
+			return 0, 0, "", err
+		}
 	}
 
 	q, tx, err := e.Store.Begin()
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, "", err
 	}
 	defer tx.Rollback()
 
 	gameRow, err := q.ReadGameByCode(e.Store.Context, cfg.Code)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, "", err
 	}
 	parms := sqlc.CreateEmpireParams{
 		GameID:       gameRow.ID,
@@ -194,12 +201,12 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		HomeOrbitID:  gameRow.HomeOrbitID,
 		HomePlanetID: gameRow.HomePlanetID,
 	}
-	if parms.Handle == "player1" {
+	if parms.Handle == "" {
 		parms.Handle = fmt.Sprintf("player-%03d", parms.EmpireNo)
 	}
 	empireId, err := q.CreateEmpire(e.Store.Context, parms)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, "", err
 	}
 
 	// create a home colony
@@ -208,7 +215,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		Kind:     "open-colony",
 	})
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, "", err
 	}
 	log.Printf("create: empire: id %d: no %d: colony %d\n", empireId, parms.EmpireNo, sorcId)
 
@@ -234,7 +241,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		IsOnSurface: 1,
 	})
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, "", err
 	}
 	log.Printf("create: empire: id %d: no %d: colony %d: details %d\n", empireId, parms.EmpireNo, sorcId, detailsId)
 
@@ -252,7 +259,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 			Qty:       unit.qty,
 		})
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, "", err
 		}
 	}
 
@@ -272,16 +279,16 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 			Qty:       unit.qty,
 		})
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, "", err
 		}
 	}
 
 	err = q.UpdateGameEmpireCounter(e.Store.Context, sqlc.UpdateGameEmpireCounterParams{GameID: gameRow.ID, EmpireNo: parms.EmpireNo})
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, "", err
 	}
 
-	return empireId, parms.EmpireNo, tx.Commit()
+	return empireId, parms.EmpireNo, parms.Handle, tx.Commit()
 }
 
 type CreateGameParams_t struct {
@@ -551,9 +558,6 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 	}
 
 	payload := struct {
-		Site struct {
-			CSS string
-		}
 		Game            string
 		CreatedDate     string
 		CreatedDateTime string
@@ -571,7 +575,6 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 		EmpireNo:        cfg.EmpireNo,
 		EmpireCode:      fmt.Sprintf("E%03d", cfg.EmpireNo),
 	}
-	payload.Site.CSS = "a02/css/monospace.css"
 
 	colonyRows, err := e.Store.Queries.ReadEmpireAllColoniesForTurn(e.Store.Context, sqlc.ReadEmpireAllColoniesForTurnParams{EmpireID: empireId, TurnNo: cfg.TurnNo})
 	if err != nil {
@@ -700,6 +703,81 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 	}
 
 	return buffer.Bytes(), nil
+}
+
+type CreateTurnReportsParams_t struct {
+	Code   string
+	TurnNo int64
+	Path   string // path to the output directory
+}
+
+// CreateTurnReportsCommand creates turn reports for all empires in the given game.
+func CreateTurnReportsCommand(e *Engine_t, cfg *CreateTurnReportsParams_t) error {
+	log.Printf("create: turn-reports: code %q\n", cfg.Code)
+	log.Printf("create: turn-reports: path %q\n", cfg.Path)
+	if !stdlib.IsDirExists(cfg.Path) {
+		log.Printf("error: reports path does not exist\n")
+		return ErrInvalidPath
+	}
+
+	var gameId, turnNo int64
+	if row, err := e.Store.Queries.ReadGameByCode(e.Store.Context, cfg.Code); err != nil {
+		return err
+	} else {
+		gameId, turnNo = row.ID, row.CurrentTurn
+	}
+	log.Printf("game: %d: turn: %d\n", gameId, turnNo)
+
+	rows, err := e.Store.Queries.ReadEmpiresInGame(e.Store.Context, gameId)
+	if err != nil {
+		log.Printf("error: %v\n", err)
+		return err
+	}
+
+	// before we start, make sure the output directory exists for each empire
+	errorCount := 0
+	for _, row := range rows {
+		empireNo := row.EmpireNo
+		empireReportPath := filepath.Join(cfg.Path, fmt.Sprintf("e%03d", empireNo), "reports")
+		if !stdlib.IsDirExists(empireReportPath) {
+			log.Printf("error: empire report path does not exist\n")
+			log.Printf("error: %q\n", empireReportPath)
+			errorCount++
+		}
+	}
+	if errorCount > 0 {
+		return ErrInvalidPath
+	}
+
+	// try to build out the reports
+	for _, row := range rows {
+		empireId, empireNo := row.ID, row.EmpireNo
+		log.Printf("game: %d: turn: %d: empire %d (%d)\n", gameId, turnNo, empireId, empireNo)
+		data, err := CreateTurnReportCommand(e, &CreateTurnReportParams_t{
+			Code:     cfg.Code,
+			TurnNo:   cfg.TurnNo,
+			EmpireNo: empireNo,
+		})
+		if err != nil {
+			log.Printf("error: turn report: %v\n", err)
+			errorCount++
+			continue
+		}
+		empireReportPath := filepath.Join(cfg.Path, fmt.Sprintf("e%03d", empireNo), "reports")
+		reportName := filepath.Join(empireReportPath, fmt.Sprintf("e%03d-turn-%04d.html", empireNo, turnNo))
+		if err := os.WriteFile(reportName, data, 0644); err != nil {
+			log.Printf("error: %q\n", reportName)
+			log.Printf("error: os.WriteFile: %v\n", err)
+			errorCount++
+			continue
+		}
+		log.Printf("game: %d: turn: %d: empire %d (%d): created turn report\n", gameId, turnNo, empireId, empireNo)
+	}
+	if errorCount > 0 {
+		return ErrWritingReport
+	}
+
+	return nil
 }
 
 type DeleteGameParams_t struct {

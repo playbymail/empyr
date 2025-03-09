@@ -583,6 +583,42 @@ func (q *Queries) ReadEmpireAllColoniesForTurn(ctx context.Context, arg ReadEmpi
 	return items, nil
 }
 
+const readEmpiresInGame = `-- name: ReadEmpiresInGame :many
+SELECT empire_no, id
+FROM empires
+WHERE game_id = ?1
+ORDER by empire_no
+`
+
+type ReadEmpiresInGameRow struct {
+	EmpireNo int64
+	ID       int64
+}
+
+// ReadEmpiresInGame reads the empires in a game.
+func (q *Queries) ReadEmpiresInGame(ctx context.Context, gameID int64) ([]ReadEmpiresInGameRow, error) {
+	rows, err := q.db.QueryContext(ctx, readEmpiresInGame, gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadEmpiresInGameRow
+	for rows.Next() {
+		var i ReadEmpiresInGameRow
+		if err := rows.Scan(&i.EmpireNo, &i.ID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const readGameByCode = `-- name: ReadGameByCode :one
 SELECT id,
        code,

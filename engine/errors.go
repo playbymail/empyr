@@ -1,6 +1,6 @@
 // Copyright (c) 2025 Michael D Henderson. All rights reserved.
 
-package clean
+package engine
 
 // Error implements Cheney's constant error idiom
 type Error string
@@ -9,10 +9,3 @@ type Error string
 func (e Error) Error() string {
 	return string(e)
 }
-
-const (
-	ErrInvalidCode        = Error("invalid code")
-	ErrInvalidDescription = Error("invalid description")
-	ErrInvalidHandle      = Error("invalid handle")
-	ErrInvalidName        = Error("invalid name")
-)

@@ -198,6 +198,14 @@ VALUES (:sorc_id, :kind, :tech_level, :qty_assembled, :qty_stored);
 INSERT INTO sorc_superstructure (sorc_detail_id, kind, tech_level, qty)
 VALUES (:sorc_id, :kind, :tech_level, :qty);
 
+-- ReadEmpiresInGame reads the empires in a game.
+--
+-- name: ReadEmpiresInGame :many
+SELECT empire_no, id
+FROM empires
+WHERE game_id = :game_id
+ORDER by empire_no;
+
 -- ReadEmpireAllColoniesForTurn reads the colonies for a given empire and turn in a game.
 --
 -- name: ReadEmpireAllColoniesForTurn :many

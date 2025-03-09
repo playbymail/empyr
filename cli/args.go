@@ -28,12 +28,20 @@ var env struct {
 		}
 		DumpEnv bool
 	}
+	Empire struct {
+		Id     int64  // database key
+		No     int64  // empire number in game
+		Handle string // player handle
+	}
 	Game struct {
 		Code        string
 		Name        string
 		Description string
 		TurnNo      int64
 		ForceCreate bool
+	}
+	Reports struct {
+		Path string
 	}
 	Verbose bool
 	Version semver.Version
@@ -49,11 +57,17 @@ func applyEnvironmentVariables() {
 	xiibool(&env.Debug.Database.Close, "_DEBUG_DATABASE_CLOSE")
 	xiibool(&env.Debug.DumpEnv, "_DEBUG_DUMPARGS")
 
+	xiiint(&env.Empire.Id, "_EMPIRE_ID")
+	xiiint(&env.Empire.No, "_EMPIRE_NO")
+	xiistr(&env.Empire.Handle, "_EMPIRE_HANDLE")
+
 	xiistr(&env.Game.Code, "_GAME_CODE")
 	xiistr(&env.Game.Name, "_GAME_NAME")
 	xiistr(&env.Game.Description, "_GAME_DESCRIPTION")
 	xiiint(&env.Game.TurnNo, "_GAME_TURNNO")
 	xiibool(&env.Game.ForceCreate, "_GAME_FORCECREATE")
+
+	xiistr(&env.Reports.Path, "_REPORTS_PATH")
 
 	xiibool(&env.Verbose, "_VERBOSE")
 }

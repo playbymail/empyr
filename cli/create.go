@@ -13,6 +13,9 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"math/rand/v2"
+	"os"
+	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -47,6 +50,51 @@ var cmdCreateDatabase = &cobra.Command{
 			log.Fatalf("error: store.create: %v\n", err)
 		}
 		log.Printf("create: database: completed in %v\n", time.Since(started))
+	},
+}
+
+// cmdCreateEmpire creates a new empire
+var cmdCreateEmpire = &cobra.Command{
+	Use:   "empire --handle",
+	Short: "create a new empire",
+	Long:  `Create a new empire.`,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if handle := cmd.Flag("handle").Value.String(); handle == "" {
+			// will default to the empire number
+		} else if _, err := clean.IsValidHandle(handle); err != nil {
+			return err
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		started := time.Now()
+		defer func() {
+			log.Printf("create: empire: elapsed time: %v\n", time.Now().Sub(started))
+		}()
+		handle := cmd.Flag("handle").Value.String()
+		if handle != "" {
+			log.Printf("create: empire: handle %q\n", handle)
+		}
+
+		repo, err := store.Open(env.Database.Path, context.Background())
+		if err != nil {
+			log.Fatalf("error: store.open: %v\n", err)
+		}
+		defer repo.Close()
+		e, err := engine.Open(repo)
+		if err != nil {
+			log.Fatalf("error: engine.open: %v\n", err)
+		}
+
+		empireId, empireNo, empireHandle, err := engine.CreateEmpireCommand(e, &engine.CreateEmpireParams_t{
+			Code:   env.Game.Code,
+			Handle: handle,
+		})
+		if err != nil {
+			log.Fatalf("error: engine.CreateEmpireCommand: %v\n", err)
+		}
+
+		log.Printf("create: empire: created %d (%d/%s)\n", empireId, empireNo, empireHandle)
 	},
 }
 
@@ -101,39 +149,159 @@ var cmdCreateGame = &cobra.Command{
 			log.Fatalf("error: engine.CreateGameCommand: %v\n", err)
 		}
 
-		log.Printf("create: game: created game %d in %v\n", gameId, time.Since(started))
+		log.Printf("create: game: created game %d\n", gameId)
 	},
 }
 
-// isWeird checks if a string contains any special characters or escape sequences
-// by comparing the raw string with its quoted representation. It's a clever way
-// to detect special characters by leveraging Go's string quoting behavior.
-//
-// Returns true if the string contains special characters, false otherwise.
-// Example: isweird("hello") returns false, isweird("hello\n") returns true
-func isWeird(s string) bool {
-	return `"`+s+`"` != fmt.Sprintf("%q", s)
-}
+// cmdCreateStarList creates a new star list
+var cmdCreateStarList = &cobra.Command{
+	Use:   "star-list",
+	Short: "create a star list for the cluster",
+	Long:  `Create a star list for the cluster.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		started := time.Now()
+		defer func() {
+			log.Printf("create: star-list: elapsed time: %v\n", time.Now().Sub(started))
+		}()
 
-func hasBadBytes(s string) bool {
-	for _, ch := range []byte(s) {
-		if !goodBytes[ch] {
-			return true
+		repo, err := store.Open(env.Database.Path, context.Background())
+		if err != nil {
+			log.Fatalf("error: store.open: %v\n", err)
 		}
-	}
-	return false
+		defer repo.Close()
+		e, err := engine.Open(repo)
+		if err != nil {
+			log.Fatalf("error: engine.open: %v\n", err)
+		}
+
+		dataHtml, dataJson, err := engine.CreateClusterStarListCommand(e, &engine.CreateClusterStarListParams_t{Code: env.Game.Code})
+		if err != nil {
+			log.Fatalf("error: engine.CreateClusterStarListCommand: %v\n", err)
+		} else if err = os.WriteFile("cluster-star-list.html", dataHtml, 0644); err != nil {
+			log.Fatalf("error: os.WriteFile: %v\n", err)
+		} else if err = os.WriteFile("cluster-star-list.json", dataJson, 0644); err != nil {
+			log.Fatalf("error: os.WriteFile: %v\n", err)
+		}
+
+		log.Printf("create: cluster-star-list: created %q\n", "cluster-star-list.html")
+		log.Printf("create: cluster-star-list: created %q\n", "cluster-star-list.json")
+	},
 }
 
-var (
-	goodCodeBytes [256]bool
-	goodBytes     [256]bool
-)
+// cmdCreateSystemMap creates a new system map
+var cmdCreateSystemMap = &cobra.Command{
+	Use:   "system-map",
+	Short: "create a system map for the cluster",
+	Long:  `Create a system map for the cluster.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		started := time.Now()
+		defer func() {
+			log.Printf("create: system-map: elapsed time: %v\n", time.Now().Sub(started))
+		}()
 
-func init() {
-	for _, ch := range []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") {
-		goodCodeBytes[ch] = true
-	}
-	for _, ch := range []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.") {
-		goodBytes[ch] = true
-	}
+		repo, err := store.Open(env.Database.Path, context.Background())
+		if err != nil {
+			log.Fatalf("error: store.open: %v\n", err)
+		}
+		defer repo.Close()
+		e, err := engine.Open(repo)
+		if err != nil {
+			log.Fatalf("error: engine.open: %v\n", err)
+		}
+
+		data, err := engine.CreateClusterMapCommand(e, &engine.CreateClusterMapParams_t{Code: env.Game.Code})
+		if err != nil {
+			log.Fatalf("error: engine.CreateClusterMapCommand: %v\n", err)
+		} else if err = os.WriteFile("cluster-system-map.html", data, 0644); err != nil {
+			log.Fatalf("error: os.WriteFile: %v\n", err)
+		}
+
+		log.Printf("create: system-map: created %q\n", "cluster-system-map.html")
+	},
+}
+
+// cmdCreateTurnReport creates turn report for one empire in a game
+var cmdCreateTurnReport = &cobra.Command{
+	Use:   "turn-report --empire-no --turn-no",
+	Short: "create turn reports for one empire in a game",
+	Long:  `Create turn reports for one empire in a game.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		started := time.Now()
+		defer func() {
+			log.Printf("create: turn-report: elapsed time: %v\n", time.Now().Sub(started))
+		}()
+
+		repo, err := store.Open(env.Database.Path, context.Background())
+		if err != nil {
+			log.Fatalf("error: store.open: %v\n", err)
+		}
+		defer repo.Close()
+		e, err := engine.Open(repo)
+		if err != nil {
+			log.Fatalf("error: engine.open: %v\n", err)
+		}
+
+		var empireNo int64
+		if n, err := strconv.Atoi(cmd.Flag("empire-no").Value.String()); err != nil || n < 1 || n > 256 {
+			log.Fatalf("error: empire-no must be between 1 and 255")
+		} else {
+			empireNo = int64(n)
+		}
+		if env.Game.TurnNo < 0 || env.Game.TurnNo > 9999 {
+			log.Fatalf("error: turn-no must be between 0 and 9999")
+		}
+
+		empireReportPath := filepath.Join(env.Reports.Path, fmt.Sprintf("e%03d", empireNo), "reports")
+		reportName := filepath.Join(empireReportPath, fmt.Sprintf("e%03d-turn-%04d.html", empireNo, env.Game.TurnNo))
+
+		data, err := engine.CreateTurnReportCommand(e, &engine.CreateTurnReportParams_t{
+			Code:     env.Game.Code,
+			TurnNo:   env.Game.TurnNo,
+			EmpireNo: empireNo,
+		})
+		if err != nil {
+			log.Fatalf("error: turn report: %v\n", err)
+		}
+
+		if err := os.WriteFile(reportName, data, 0644); err != nil {
+			log.Fatalf("error: os.WriteFile: %v\n", err)
+		}
+		log.Printf("created turn report empire %3d as %s\n", empireNo, reportName)
+
+		log.Printf("create: turn-reports: completed\n")
+	},
+}
+
+// cmdCreateTurnReports creates turn reports for all the empires in a game
+var cmdCreateTurnReports = &cobra.Command{
+	Use:   "turn-reports --turn-no",
+	Short: "create turn reports for all empires in a game",
+	Long:  `Create turn reports for all empires in a game.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		started := time.Now()
+		defer func() {
+			log.Printf("create: turn-reports: elapsed time: %v\n", time.Now().Sub(started))
+		}()
+
+		repo, err := store.Open(env.Database.Path, context.Background())
+		if err != nil {
+			log.Fatalf("error: store.open: %v\n", err)
+		}
+		defer repo.Close()
+		e, err := engine.Open(repo)
+		if err != nil {
+			log.Fatalf("error: engine.open: %v\n", err)
+		}
+
+		err = engine.CreateTurnReportsCommand(e, &engine.CreateTurnReportsParams_t{
+			Code:   env.Game.Code,
+			TurnNo: env.Game.TurnNo,
+			Path:   env.Reports.Path,
+		})
+		if err != nil {
+			log.Fatalf("error: engine.CreateTurnReportsCommand: %v\n", err)
+		}
+
+		log.Printf("create: turn-reports: completed\n")
+	},
 }

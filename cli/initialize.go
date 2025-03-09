@@ -22,6 +22,7 @@ import (
 func Initialize(options ...Option) (*cobra.Command, error) {
 	// bootstrap the arguments
 	env.Env.Prefix = "EMPYR"
+	env.Reports.Path = "reports"
 
 	// apply the options
 	for _, option := range options {
@@ -40,9 +41,10 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 
 	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdShow, cmdVersion)
 
-	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateGame)
+	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap, cmdCreateTurnReport, cmdCreateTurnReports)
 	cmdCreateDatabase.Flags().BoolVar(&env.Database.ForceCreate, "force-create", env.Database.ForceCreate, "force creation of the database")
 	cmdCreateDatabase.Flags().StringVar(&env.Database.Path, "path", env.Database.Path, "path to the database")
+	cmdCreateEmpire.Flags().StringVar(&env.Empire.Handle, "handle", env.Empire.Handle, "player handle for empire")
 	cmdCreateGame.Flags().StringVar(&env.Game.Code, "code", env.Game.Code, "code for the game")
 	if err := cmdCreateGame.MarkFlagRequired("code"); err != nil {
 		return nil, err
@@ -53,6 +55,12 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	}
 	cmdCreateGame.Flags().StringVar(&env.Game.Description, "descr", env.Game.Description, "description of the game")
 	cmdCreateGame.Flags().BoolVar(&env.Game.ForceCreate, "force-create", env.Game.ForceCreate, "force creation of the game")
+	cmdCreateTurnReport.Flags().Int64("empire-no", 0, "empire number for the report")
+	if err := cmdCreateTurnReport.MarkFlagRequired("empire-no"); err != nil {
+		return nil, err
+	}
+	cmdCreateTurnReport.Flags().Int64Var(&env.Game.TurnNo, "turn-no", env.Game.TurnNo, "turn number for the report")
+	cmdCreateTurnReports.Flags().Int64Var(&env.Game.TurnNo, "turn-no", env.Game.TurnNo, "turn number for the report")
 
 	cmdDB.PersistentFlags().String("path", "", "path to the database")
 	if err := cmdDB.MarkPersistentFlagRequired("path"); err != nil {

@@ -1,8 +1,6 @@
 // Copyright (c) 2025 Michael D Henderson. All rights reserved.
 
-// Package clean implements functions to check for bad characters in
-// codes, names, and descriptions.
-package clean
+package engine
 
 import (
 	"errors"
@@ -10,11 +8,18 @@ import (
 	"regexp"
 )
 
-// IsValidCode validates whether a game code meets specific formatting requirements.
+const (
+	ErrInvalidCode        = Error("invalid code")
+	ErrInvalidDescription = Error("invalid description")
+	ErrInvalidHandle      = Error("invalid handle")
+	ErrInvalidName        = Error("invalid name")
+)
+
+// isValidCode validates whether a game code meets specific formatting requirements.
 // It checks that the code is between 3 and 5 characters long and starts with uppercase letters,
 // optionally followed by numbers. Returns true if the code is valid, otherwise returns false
 // with an error describing the validation failure.
-func IsValidCode(code string) (bool, error) {
+func isValidCode(code string) (bool, error) {
 	var validGameCode = regexp.MustCompile(`^[A-Z]+[0-9]*$`)
 	if !(3 <= len(code) && len(code) <= 5) {
 		return false, errors.Join(fmt.Errorf("code must be between 3...5 characters"), ErrInvalidCode)
@@ -24,19 +29,19 @@ func IsValidCode(code string) (bool, error) {
 	return true, nil
 }
 
-// IsValidDescription validates whether a description meets the same character requirements as a name.
+// isValidDescription validates whether a description meets the same character requirements as a name.
 // It delegates the validation to IsValidName, checking that the description contains only allowed
 // characters (alphanumeric, underscore, hyphen, dot, and space) and does not contain any special
 // escape sequences or unusual characters.
 //
 // Returns true if the description is valid, otherwise returns false with an error describing
 // the validation failure. The error indicates that the description must not contain special characters.
-func IsValidDescription(descr string) (bool, error) {
-	return IsValidName(descr)
+func isValidDescription(descr string) (bool, error) {
+	return isValidName(descr)
 }
 
-// IsValidHandle validates whether a handle meets specific formatting requirements.
-func IsValidHandle(handle string) (bool, error) {
+// isValidHandle validates whether a handle meets specific formatting requirements.
+func isValidHandle(handle string) (bool, error) {
 	var validHandle = regexp.MustCompile(`^[a-z][a-zA-Z0-9_]+$`)
 	if !validHandle.MatchString(handle) {
 		return false, errors.Join(fmt.Errorf("handle must contain only alphanumeric characters, numbers, and underscores"), ErrInvalidHandle)
@@ -44,7 +49,7 @@ func IsValidHandle(handle string) (bool, error) {
 	return true, nil
 }
 
-// IsValidName validates whether a name meets specific character requirements.
+// isValidName validates whether a name meets specific character requirements.
 // It checks that the name contains only allowed characters (alphanumeric, underscore, hyphen, dot, and space)
 // and does not contain any special escape sequences or unusual characters.
 //
@@ -54,7 +59,7 @@ func IsValidHandle(handle string) (bool, error) {
 //
 // Returns true if the name is valid, otherwise returns false with an error describing the validation failure.
 // The error indicates that the name must not contain special characters.
-func IsValidName(name string) (bool, error) {
+func isValidName(name string) (bool, error) {
 	for _, ch := range []byte(name) {
 		if !goodNameBytes[ch] {
 			//log.Printf("name: %q: %q\n", name, string(ch))
