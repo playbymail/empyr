@@ -306,9 +306,10 @@ type CreateGameParams_t struct {
 func CreateGameCommand(e *Engine_t, cfg *CreateGameParams_t) (int64, error) {
 	log.Printf("create: game: code %q: name %q: display %q\n", cfg.Code, cfg.Name, cfg.DisplayName)
 
-	g, _ := newGame(rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed)))
-
 	g, err := e.CreateGame(cfg.Code, cfg.Name, cfg.DisplayName, cfg.IncludeEmptyResources, cfg.PopulateSystemDistanceTable, cfg.Rand, cfg.ForceCreate)
+	if err != nil {
+		return 0, err
+	}
 	return g.Id, err
 }
 
