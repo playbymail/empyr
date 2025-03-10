@@ -43,7 +43,6 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 	for _, system := range cluster.Systems {
 		if system.Id == 1 {
 			homeSystemTemplate(system, r)
-			log.Printf("home system: %p", system)
 		} else {
 			coreSystemTemplate(system, r)
 		}
