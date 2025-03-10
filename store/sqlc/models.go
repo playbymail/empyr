@@ -30,13 +30,13 @@ type Deposits struct {
 type Empires struct {
 	ID           int64
 	GameID       int64
+	PlayerID     int64
 	EmpireNo     int64
 	Name         string
 	HomeSystemID int64
 	HomeStarID   int64
 	HomeOrbitID  int64
 	HomePlanetID int64
-	Handle       string
 }
 
 type Games struct {

@@ -29,9 +29,9 @@ var flags struct {
 		DumpEnv bool
 	}
 	Empire struct {
-		Id     int64  // database key
-		No     int64  // empire number in game
-		Handle string // player handle
+		Id           int64  // database key
+		No           int64  // empire number in game
+		PlayerHandle string // player handle
 	}
 	Game struct {
 		Code        string
@@ -59,7 +59,7 @@ func applyEnvironmentVariables() {
 
 	xiiint(&flags.Empire.Id, "_EMPIRE_ID")
 	xiiint(&flags.Empire.No, "_EMPIRE_NO")
-	xiistr(&flags.Empire.Handle, "_EMPIRE_HANDLE")
+	xiistr(&flags.Empire.PlayerHandle, "_EMPIRE_PLAYERHANDLE")
 
 	xiistr(&flags.Game.Code, "_GAME_CODE")
 	xiistr(&flags.Game.Name, "_GAME_NAME")

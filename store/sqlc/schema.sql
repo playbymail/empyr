@@ -3,6 +3,7 @@
 -- foreign keys must be disabled to drop tables
 PRAGMA foreign_keys = OFF;
 DROP TABLE IF EXISTS meta_migrations;
+DROP TABLE IF EXISTS codes;
 DROP TABLE IF EXISTS colonies;
 DROP TABLE IF EXISTS sorc_details;
 DROP TABLE IF EXISTS sorc_infrastructure;
@@ -34,6 +35,15 @@ CREATE TABLE meta_migrations
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE codes
+(
+    category TEXT    NOT NULL,
+    code     TEXT    NOT NULL,
+    value    INTEGER NOT NULL,
+    display  TEXT    NOT NULL,
+    UNIQUE (category, code),
+    UNIQUE (category, value)
+);
 
 CREATE TABLE players
 (
@@ -175,17 +185,22 @@ CREATE TABLE empires
 (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id        INTEGER NOT NULL,
+    player_id      INTEGER NOT NULL,
     empire_no      INTEGER NOT NULL CHECK (empire_no BETWEEN 1 AND 256),
     name           TEXT    NOT NULL,
     home_system_id INTEGER NOT NULL,
     home_star_id   INTEGER NOT NULL,
     home_orbit_id  INTEGER NOT NULL,
     home_planet_id INTEGER NOT NULL,
-    handle         TEXT    NOT NULL, -- way to identify the player
+    UNIQUE (game_id, player_id),
     UNIQUE (game_id, empire_no),
     CONSTRAINT fk_game_id
         FOREIGN KEY (game_id)
             REFERENCES games (id)
+            ON DELETE CASCADE,
+    CONSTRAINT fk_player_id
+        FOREIGN KEY (player_id)
+            REFERENCES players (id)
             ON DELETE CASCADE,
     CONSTRAINT fk_system_id
         FOREIGN KEY (home_system_id)

@@ -40,40 +40,6 @@ func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (i
 	return id, err
 }
 
-const createEmpire = `-- name: CreateEmpire :one
-INSERT INTO empires (game_id, empire_no, name, handle, home_system_id, home_star_id, home_orbit_id, home_planet_id)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-RETURNING id
-`
-
-type CreateEmpireParams struct {
-	GameID       int64
-	EmpireNo     int64
-	Name         string
-	Handle       string
-	HomeSystemID int64
-	HomeStarID   int64
-	HomeOrbitID  int64
-	HomePlanetID int64
-}
-
-// CreateEmpire creates a new empire.
-func (q *Queries) CreateEmpire(ctx context.Context, arg CreateEmpireParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createEmpire,
-		arg.GameID,
-		arg.EmpireNo,
-		arg.Name,
-		arg.Handle,
-		arg.HomeSystemID,
-		arg.HomeStarID,
-		arg.HomeOrbitID,
-		arg.HomePlanetID,
-	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
 const createGame = `-- name: CreateGame :one
 INSERT INTO games (code, name, display_name)
 VALUES (?1, ?2, ?3)
@@ -743,21 +709,6 @@ func (q *Queries) ReadGameEmpires(ctx context.Context, gameCode string) ([]ReadG
 		return nil, err
 	}
 	return items, nil
-}
-
-const readNextEmpireNumber = `-- name: ReadNextEmpireNumber :one
-UPDATE games
-SET last_empire_no = last_empire_no + 1
-WHERE id = ?1
-RETURNING last_empire_no as next_empire_no
-`
-
-// ReadNextEmpireNumber reads the next empire number.
-func (q *Queries) ReadNextEmpireNumber(ctx context.Context, gameID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, readNextEmpireNumber, gameID)
-	var last_empire_no int64
-	err := row.Scan(&last_empire_no)
-	return last_empire_no, err
 }
 
 const updateGameEmpireCounter = `-- name: UpdateGameEmpireCounter :exec

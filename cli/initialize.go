@@ -44,7 +44,10 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap, cmdCreateTurnReport, cmdCreateTurnReports)
 	cmdCreateDatabase.Flags().BoolVar(&flags.Database.ForceCreate, "force-create", flags.Database.ForceCreate, "force creation of the database")
 	cmdCreateDatabase.Flags().StringVar(&flags.Database.Path, "path", flags.Database.Path, "path to the database")
-	cmdCreateEmpire.Flags().StringVar(&flags.Empire.Handle, "handle", flags.Empire.Handle, "player handle for empire")
+	cmdCreateEmpire.Flags().StringVar(&flags.Empire.PlayerHandle, "player", flags.Empire.PlayerHandle, "player handle for empire")
+	if err := cmdCreateEmpire.MarkFlagRequired("player"); err != nil {
+		return nil, err
+	}
 	cmdCreateGame.Flags().StringVar(&flags.Game.Code, "code", flags.Game.Code, "code for the game")
 	if err := cmdCreateGame.MarkFlagRequired("code"); err != nil {
 		return nil, err

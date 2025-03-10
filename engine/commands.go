@@ -27,8 +27,9 @@ var (
 )
 
 const (
-	ErrInvalidPath   = Error("invalid path")
-	ErrWritingReport = Error("error writing report")
+	ErrGameInProgress = Error("game in progress")
+	ErrInvalidPath    = Error("invalid path")
+	ErrWritingReport  = Error("error writing report")
 )
 
 type CreateClusterMapParams_t struct {
@@ -168,45 +169,53 @@ func CreateClusterStarListCommand(e *Engine_t, cfg *CreateClusterStarListParams_
 }
 
 type CreateEmpireParams_t struct {
-	Code   string
-	Handle string
+	Code         string
+	PlayerHandle string
 }
 
-func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, string, error) {
+func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, error) {
 	log.Printf("create: empire: code %q\n", cfg.Code)
 
-	if cfg.Handle != "" {
-		if _, err := IsValidHandle(cfg.Handle); err != nil {
-			return 0, 0, "", err
-		}
+	if cfg.PlayerHandle == "" {
+		return 0, 0, ErrMissingHandle
+	} else if _, err := IsValidHandle(cfg.PlayerHandle); err != nil {
+		return 0, 0, err
 	}
 
 	q, tx, err := e.Store.Begin()
 	if err != nil {
-		return 0, 0, "", err
+		return 0, 0, err
 	}
 	defer tx.Rollback()
 
+	var playerID int64
+	if row, err := q.ReadPlayerByHandle(e.Store.Context, cfg.PlayerHandle); err != nil {
+		return 0, 0, err
+	} else {
+		playerID = row.ID
+	}
+
 	gameRow, err := q.ReadGameByCode(e.Store.Context, cfg.Code)
 	if err != nil {
-		return 0, 0, "", err
+		return 0, 0, err
 	}
+	if gameRow.CurrentTurn != 0 {
+		return 0, 0, ErrGameInProgress
+	}
+
 	parms := sqlc.CreateEmpireParams{
 		GameID:       gameRow.ID,
+		PlayerID:     playerID,
 		EmpireNo:     gameRow.LastEmpireNo + 1,
 		Name:         fmt.Sprintf("Empire %03d", gameRow.LastEmpireNo+1),
-		Handle:       cfg.Handle,
 		HomeSystemID: gameRow.HomeSystemID,
 		HomeStarID:   gameRow.HomeStarID,
 		HomeOrbitID:  gameRow.HomeOrbitID,
 		HomePlanetID: gameRow.HomePlanetID,
 	}
-	if parms.Handle == "" {
-		parms.Handle = fmt.Sprintf("player-%03d", parms.EmpireNo)
-	}
 	empireId, err := q.CreateEmpire(e.Store.Context, parms)
 	if err != nil {
-		return 0, 0, "", err
+		return 0, 0, err
 	}
 
 	// create a home colony
@@ -215,7 +224,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		Kind:     SCOpenSurfaceColony,
 	})
 	if err != nil {
-		return 0, 0, "", err
+		return 0, 0, err
 	}
 	log.Printf("create: empire: id %d: no %d: colony %d\n", empireId, parms.EmpireNo, sorcId)
 
@@ -241,7 +250,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		IsOnSurface: 1,
 	})
 	if err != nil {
-		return 0, 0, "", err
+		return 0, 0, err
 	}
 	log.Printf("create: empire: id %d: no %d: colony %d: details %d\n", empireId, parms.EmpireNo, sorcId, detailsId)
 
@@ -259,7 +268,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 			Qty:       unit.qty,
 		})
 		if err != nil {
-			return 0, 0, "", err
+			return 0, 0, err
 		}
 	}
 
@@ -279,16 +288,16 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 			Qty:       unit.qty,
 		})
 		if err != nil {
-			return 0, 0, "", err
+			return 0, 0, err
 		}
 	}
 
 	err = q.UpdateGameEmpireCounter(e.Store.Context, sqlc.UpdateGameEmpireCounterParams{GameID: gameRow.ID, EmpireNo: parms.EmpireNo})
 	if err != nil {
-		return 0, 0, "", err
+		return 0, 0, err
 	}
 
-	return empireId, parms.EmpireNo, parms.Handle, tx.Commit()
+	return empireId, parms.EmpireNo, tx.Commit()
 }
 
 type CreateGameParams_t struct {

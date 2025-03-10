@@ -54,25 +54,20 @@ var cmdCreateDatabase = &cobra.Command{
 
 // cmdCreateEmpire creates a new empire
 var cmdCreateEmpire = &cobra.Command{
-	Use:   "empire --handle",
+	Use:   "empire --player --empire",
 	Short: "create a new empire",
 	Long:  `Create a new empire.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if handle := cmd.Flag("handle").Value.String(); handle == "" {
-			// will default to the empire number
-		} else if _, err := engine.IsValidHandle(handle); err != nil {
-			return err
-		}
-		return nil
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		started := time.Now()
 		defer func() {
 			log.Printf("create: empire: elapsed time: %v\n", time.Now().Sub(started))
 		}()
-		handle := cmd.Flag("handle").Value.String()
-		if handle != "" {
-			log.Printf("create: empire: handle %q\n", handle)
+
+		playerHandle := cmd.Flag("player").Value.String()
+		if playerHandle == "" {
+			log.Fatalf("create: empire: player: handle is required\n")
+		} else if _, err := engine.IsValidHandle(playerHandle); err != nil {
+			log.Fatalf("create: empire: player: %v\n", err)
 		}
 
 		repo, err := store.Open(flags.Database.Path, context.Background())
@@ -85,15 +80,15 @@ var cmdCreateEmpire = &cobra.Command{
 			log.Fatalf("error: engine.open: %v\n", err)
 		}
 
-		empireId, empireNo, empireHandle, err := engine.CreateEmpireCommand(e, &engine.CreateEmpireParams_t{
-			Code:   flags.Game.Code,
-			Handle: handle,
+		empireId, empireNo, err := engine.CreateEmpireCommand(e, &engine.CreateEmpireParams_t{
+			Code:         flags.Game.Code,
+			PlayerHandle: playerHandle,
 		})
 		if err != nil {
 			log.Fatalf("error: engine.CreateEmpireCommand: %v\n", err)
 		}
 
-		log.Printf("create: empire: created %d (%d/%s)\n", empireId, empireNo, empireHandle)
+		log.Printf("create: empire: created %d (%d)\n", empireId, empireNo)
 	},
 }
 

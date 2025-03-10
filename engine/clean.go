@@ -13,6 +13,7 @@ const (
 	ErrInvalidDescription = Error("invalid description")
 	ErrInvalidHandle      = Error("invalid handle")
 	ErrInvalidName        = Error("invalid name")
+	ErrMissingHandle      = Error("missing handle")
 )
 
 // IsValidCode validates whether a game code meets specific formatting requirements.
