@@ -2,7 +2,9 @@
 
 package engine
 
-import "math"
+import (
+	"math"
+)
 
 // DistanceBetween calculates the Euclidean distance between two points in 3D space.
 func DistanceBetween(a, b Point_t) float64 {
@@ -20,4 +22,15 @@ func tooClose(a Point_t, points []Point_t) bool {
 		}
 	}
 	return false
+}
+
+func (p Point_t) DistanceSquared(p2 Point_t) int64 {
+	dx, dy, dz := p.X-p2.X, p.Y-p2.Y, p.Z-p2.Z
+	return dx*dx + dy*dy + dz*dz
+}
+
+// DistanceTo calculates the Euclidean distance between two points in 3D space.
+func (p Point_t) DistanceTo(p2 Point_t) float64 {
+	dx, dy, dz := p.X-p2.X, p.Y-p2.Y, p.Z-p2.Z
+	return math.Sqrt(float64(dx*dx + dy*dy + dz*dz))
 }

@@ -111,7 +111,7 @@ CREATE TABLE orbits
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
     star_id  INTEGER NOT NULL,
     orbit_no INTEGER NOT NULL CHECK (orbit_no BETWEEN 1 AND 10),
-    kind     TEXT    NOT NULL CHECK (kind IN ('empty', 'gas-giant', 'terrestrial', 'asteroid-belt')),
+    kind     INTEGER NOT NULL CHECK (kind BETWEEN 0 AND 5),
     scarcity INTEGER NOT NULL CHECK (scarcity BETWEEN 0 AND 3),
     UNIQUE (star_id, orbit_no),
     CONSTRAINT fk_star_id
@@ -124,7 +124,7 @@ CREATE TABLE planets
 (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     orbit_id     INTEGER NOT NULL,
-    kind         TEXT    NOT NULL CHECK (kind IN ('empty', 'gas-giant', 'terrestrial', 'asteroid-belt')),
+    kind         INTEGER NOT NULL CHECK (kind BETWEEN 0 AND 4),
     habitability INTEGER NOT NULL CHECK (habitability BETWEEN 0 AND 25),
     scarcity     INTEGER NOT NULL CHECK (scarcity BETWEEN 0 AND 3),
     CONSTRAINT fk_orbit_id
@@ -138,10 +138,10 @@ CREATE TABLE deposits
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     planet_id     INTEGER NOT NULL,
     deposit_no    INTEGER NOT NULL CHECK (deposit_no BETWEEN 1 AND 35),
-    kind          TEXT    NOT NULL CHECK (kind IN ('none', 'gold', 'fuel', 'metallic', 'non-metallic')),
-    yield_pct     INTEGER NOT NULL CHECK (yield_pct BETWEEN 0 AND 100),
+    kind          INTEGER NOT NULL CHECK (kind BETWEEN 0 AND 4),
     initial_qty   INTEGER NOT NULL CHECK (initial_qty BETWEEN 0 AND 99000000),
     remaining_qty INTEGER NOT NULL CHECK (remaining_qty BETWEEN 0 AND 99000000),
+    yield_pct     INTEGER NOT NULL CHECK (yield_pct BETWEEN 0 AND 100),
     UNIQUE (planet_id, deposit_no),
     CONSTRAINT fk_planet_id
         FOREIGN KEY (planet_id)
@@ -201,7 +201,7 @@ CREATE TABLE sorcs
 (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     empire_id INTEGER NOT NULL,
-    kind      TEXT    NOT NULL CHECK (kind IN ('ship', 'open-colony', 'enclosed-colony', 'orbital-colony')),
+    kind      INTEGER NOT NULL CHECK (kind BETWEEN 1 AND 4),
     CONSTRAINT fk_empire_id
         FOREIGN KEY (empire_id)
             REFERENCES empires (id)

@@ -212,7 +212,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 	// create a home colony
 	sorcId, err := q.CreateSorC(e.Store.Context, sqlc.CreateSorCParams{
 		EmpireID: empireId,
-		Kind:     "open-colony",
+		Kind:     SCOpenSurfaceColony,
 	})
 	if err != nil {
 		return 0, 0, "", err
@@ -296,6 +296,7 @@ type CreateGameParams_t struct {
 	Name                        string
 	DisplayName                 string
 	NumberOfEmpires             int64
+	IncludeEmptyResources       bool
 	PopulateSystemDistanceTable bool
 	Rand                        *rand.Rand
 	ForceCreate                 bool
@@ -304,7 +305,11 @@ type CreateGameParams_t struct {
 // CreateGameCommand creates a new game.
 func CreateGameCommand(e *Engine_t, cfg *CreateGameParams_t) (int64, error) {
 	log.Printf("create: game: code %q: name %q: display %q\n", cfg.Code, cfg.Name, cfg.DisplayName)
-	return e.CreateGame(cfg.Code, cfg.Name, cfg.DisplayName, cfg.NumberOfEmpires, cfg.PopulateSystemDistanceTable, cfg.Rand, cfg.ForceCreate)
+
+	g, _ := newGame(rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed)))
+
+	g, err := e.CreateGame(cfg.Code, cfg.Name, cfg.DisplayName, cfg.IncludeEmptyResources, cfg.PopulateSystemDistanceTable, cfg.Rand, cfg.ForceCreate)
+	return g.Id, err
 }
 
 var (
@@ -581,10 +586,23 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 		return nil, err
 	}
 	for _, row := range colonyRows {
+		var kind SorC_e
+		switch SorC_e(row.Kind) {
+		case SCShip:
+			kind = SCShip
+		case SCOpenSurfaceColony:
+			kind = SCOpenSurfaceColony
+		case SCEnclosedSurfaceColony:
+			kind = SCEnclosedSurfaceColony
+		case SCOrbitalColony:
+			kind = SCOrbitalColony
+		default:
+			panic(fmt.Sprintf("assert(sorc.Kind != %d)", row.Kind))
+		}
 		colony := &colony_t{
 			Id:      row.SorcID.Int64,
 			Name:    row.Name.String,
-			Kind:    row.Kind,
+			Kind:    kind.Code(),
 			OrbitNo: row.OrbitNo.Int64,
 			TL:      row.TechLevel.Int64,
 			SOL:     fmt.Sprintf("%5.4f", row.Sol.Float64),
@@ -606,12 +624,12 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 			},
 		}
 		colony.Coordinates = fmt.Sprintf("%02d/%02d/%02d%s", row.X.Int64, row.Y.Int64, row.Z.Int64, row.Suffix.String)
-		switch row.Kind {
-		case "open-colony":
+		switch kind {
+		case SCOpenSurfaceColony:
 			colony.Kind = "Open Colony"
-		case "enclosed-colony":
+		case SCEnclosedSurfaceColony:
 			colony.Kind = "Enclosed Colony"
-		case "orbital-colony":
+		case SCOrbitalColony:
 			colony.Kind = "Orbital Colony"
 		}
 		colony.Census.TotalPopulation = row.UemQty.Int64 + row.UskQty.Int64 + row.ProQty.Int64 + row.SldQty.Int64 + 2*row.CnwQty.Int64 + 2*row.SpyQty.Int64

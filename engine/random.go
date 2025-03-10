@@ -5,6 +5,7 @@ package engine
 import (
 	"math"
 	"math/rand/v2"
+	"sort"
 )
 
 // this file implements functions to return random values.
@@ -107,4 +108,67 @@ func randomCubePoint() Point_t {
 		Y: rand.Int64N(31) - 15, // -15 to 15
 		Z: rand.Int64N(31) - 15, // -15 to 15
 	}
+}
+
+// randomPoints returns a slice of 100 random points.
+// Used to create a cluster of systems.
+func randomPoints(r *rand.Rand) []Point_t {
+	// create a slice of points to randomly place most of the systems
+	points := make([]Point_t, 0, 100)
+
+	// the first five locations are fixed around the origin.
+	// this ensures that TL-1 empires will have systems to expand into.
+	points = append(points,
+		Point_t{X: 0, Y: 0, Z: 0},
+		Point_t{X: 1, Y: 0, Z: 0},
+		Point_t{X: 0, Y: 1, Z: 0},
+		Point_t{X: -1, Y: 0, Z: 0},
+		Point_t{X: 0, Y: -1, Z: 0},
+	)
+
+	// crude attempt to ensure that the first few locations are not too far from each other
+	for _, coreSystem := range []struct {
+		count  int
+		radius float64
+	}{
+		{2, 5},
+		{4, 8},
+		{7, 11},
+		{10, 14},
+	} {
+		if len(points) < 100 {
+			for count := 0; count < coreSystem.count; count++ {
+				for maxAttempts := 0; maxAttempts < 55; maxAttempts++ {
+					if point := randomPoint(coreSystem.radius); !tooClose(point, points) {
+						points = append(points, point)
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// the remaining systems are always within the 31-unit cube centered at the origin
+	for len(points) < 100 {
+		point := randomCubePoint()
+		for maxAttempts := 0; tooClose(point, points) && maxAttempts < 1_000; maxAttempts++ {
+			point = randomCubePoint()
+		}
+		points = append(points, point)
+	}
+
+	// sort the points by distance from the origin
+	var origin Point_t = Point_t{X: 0, Y: 0, Z: 0}
+	sort.Slice(points, func(i, j int) bool {
+		return origin.DistanceSquared(points[i]) < origin.DistanceSquared(points[j])
+	})
+
+	return points
+}
+
+func roll(r *rand.Rand, number, sides int) (total int64) {
+	for ; number > 0; number-- {
+		total += r.Int64N(int64(sides)) + 1
+	}
+	return total
 }

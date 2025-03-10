@@ -21,10 +21,10 @@ type Deposits struct {
 	ID           int64
 	PlanetID     int64
 	DepositNo    int64
-	Kind         string
-	YieldPct     int64
+	Kind         int64
 	InitialQty   int64
 	RemainingQty int64
+	YieldPct     int64
 }
 
 type Empires struct {
@@ -58,14 +58,14 @@ type Orbits struct {
 	ID       int64
 	StarID   int64
 	OrbitNo  int64
-	Kind     string
+	Kind     int64
 	Scarcity int64
 }
 
 type Planets struct {
 	ID           int64
 	OrbitID      int64
-	Kind         string
+	Kind         int64
 	Habitability int64
 	Scarcity     int64
 }
@@ -125,7 +125,7 @@ type SorcSuperstructure struct {
 type Sorcs struct {
 	ID       int64
 	EmpireID int64
-	Kind     string
+	Kind     int64
 }
 
 type Stars struct {

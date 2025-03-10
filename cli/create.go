@@ -267,7 +267,7 @@ var cmdCreateTurnReport = &cobra.Command{
 		}
 		log.Printf("created turn report empire %3d as %s\n", empireNo, reportName)
 
-		log.Printf("create: turn-reports: completed\n")
+		log.Printf("create: turn-report: completed\n")
 	},
 }
 

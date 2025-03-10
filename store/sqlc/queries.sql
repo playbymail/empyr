@@ -77,7 +77,7 @@ RETURNING id;
 -- name: DeleteEmptyOrbits :exec
 DELETE
 FROM orbits
-WHERE kind = 'empty';
+WHERE kind = 0;
 
 -- CreatePlanet creates a new planet.
 --
@@ -89,8 +89,8 @@ RETURNING id;
 -- CreateDeposit creates a new deposit.
 --
 -- name: CreateDeposit :one
-INSERT INTO deposits (planet_id, deposit_no, kind, yield_pct, initial_qty, remaining_qty)
-VALUES (:planet_id, :deposit_no, :kind, :yield_pct, :initial_qty, :remaining_qty)
+INSERT INTO deposits (planet_id, deposit_no, kind, initial_qty, remaining_qty, yield_pct)
+VALUES (:planet_id, :deposit_no, :kind, :initial_qty, :remaining_qty, :yield_pct)
 RETURNING id;
 
 -- DeleteEmptyOrbits deletes all orbits with no planets.
@@ -98,7 +98,7 @@ RETURNING id;
 -- name: DeleteEmptyDeposits :exec
 DELETE
 FROM deposits
-WHERE kind = 'none';
+WHERE kind = 0;
 
 -- UpdateGameEmpireMetadata updates the empire metadata in the games table.
 --
@@ -239,5 +239,5 @@ FROM sorcs
          LEFT JOIN stars ON stars.id = orbits.star_id
          LEFT JOIN systems ON systems.id = stars.system_id
 WHERE sorcs.empire_id = :empire_id
-  AND sorcs.kind in ('open-colony', 'enclosed-colony', 'orbital-colony')
+  AND sorcs.kind in (2, 3, 4)
 ORDER BY sorcs.id, sorcs.kind;

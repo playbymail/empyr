@@ -18,6 +18,21 @@ const (
 	NON_METALLICS
 )
 
+func (r Resource_e) Code() string {
+	switch r {
+	case GOLD:
+		return "GOLD"
+	case FUEL:
+		return "FUEL"
+	case METALLICS:
+		return "METL"
+	case NON_METALLICS:
+		return "NMTL"
+	default:
+		return "NONE"
+	}
+}
+
 type Deposit_t struct {
 	Id        int64
 	Planet    *Planet_t
@@ -96,6 +111,23 @@ const (
 	RockyPlanet
 )
 
+func (e Orbit_e) Code() string {
+	switch e {
+	case AsteroidBelt:
+		return "ASTR"
+	case EarthlikePlanet:
+		return "TERR"
+	case GasGiant:
+		return "GASG"
+	case IceGiant:
+		return "ICEG"
+	case RockyPlanet:
+		return "TERR"
+	default:
+		return "EMPT"
+	}
+}
+
 type Planet_t struct {
 	Id           int64
 	System       *System_t
@@ -116,6 +148,19 @@ const (
 	TerrestrialPlanet
 )
 
+func (e Planet_e) Code() string {
+	switch e {
+	case AsteroidBeltPlanet:
+		return "ASTR"
+	case GasGiantPlanet:
+		return "GASG"
+	case TerrestrialPlanet:
+		return "TERR"
+	default:
+		return "NONE"
+	}
+}
+
 type Empire_t struct {
 	Id         int64
 	EmpireNo   int64
@@ -124,4 +169,28 @@ type Empire_t struct {
 	HomeStar   *Star_t
 	HomeOrbit  *Orbit_t
 	HomePlanet *Planet_t
+}
+
+type SorC_e int64
+
+const (
+	SCShip                  SorC_e = 1
+	SCOpenSurfaceColony            = 2
+	SCEnclosedSurfaceColony        = 3
+	SCOrbitalColony                = 4
+)
+
+func (e SorC_e) Code() string {
+	switch e {
+	case SCShip:
+		return "SHIP"
+	case SCOpenSurfaceColony:
+		return "COPN"
+	case SCEnclosedSurfaceColony:
+		return "CENC"
+	case SCOrbitalColony:
+		return "CORB"
+	default:
+		return "NONE"
+	}
 }

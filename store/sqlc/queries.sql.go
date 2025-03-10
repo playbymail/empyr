@@ -19,7 +19,7 @@ RETURNING id
 type CreateDepositParams struct {
 	PlanetID     int64
 	DepositNo    int64
-	Kind         string
+	Kind         int64
 	YieldPct     int64
 	InitialQty   int64
 	RemainingQty int64
@@ -106,7 +106,7 @@ RETURNING id
 type CreateOrbitParams struct {
 	StarID   int64
 	OrbitNo  int64
-	Kind     string
+	Kind     int64
 	Scarcity int64
 }
 
@@ -131,7 +131,7 @@ RETURNING id
 
 type CreatePlanetParams struct {
 	OrbitID      int64
-	Kind         string
+	Kind         int64
 	Scarcity     int64
 	Habitability int64
 }
@@ -157,7 +157,7 @@ RETURNING id
 
 type CreateSorCParams struct {
 	EmpireID int64
-	Kind     string
+	Kind     int64
 }
 
 // CreateSorC creates a new ship or colony.
@@ -368,7 +368,7 @@ func (q *Queries) CreateSystemDistance(ctx context.Context, arg CreateSystemDist
 const deleteEmptyDeposits = `-- name: DeleteEmptyDeposits :exec
 DELETE
 FROM deposits
-WHERE kind = 'none'
+WHERE kind = 0
 `
 
 // DeleteEmptyOrbits deletes all orbits with no planets.
@@ -380,7 +380,7 @@ func (q *Queries) DeleteEmptyDeposits(ctx context.Context) error {
 const deleteEmptyOrbits = `-- name: DeleteEmptyOrbits :exec
 DELETE
 FROM orbits
-WHERE kind = 'empty'
+WHERE kind = 0
 `
 
 // DeleteEmptyOrbits deletes all orbits with no planets.
@@ -498,7 +498,7 @@ FROM sorcs
          LEFT JOIN stars ON stars.id = orbits.star_id
          LEFT JOIN systems ON systems.id = stars.system_id
 WHERE sorcs.empire_id = ?2
-  AND sorcs.kind in ('open-colony', 'enclosed-colony', 'orbital-colony')
+  AND sorcs.kind in (2, 3, 4)
 ORDER BY sorcs.id, sorcs.kind
 `
 
@@ -509,7 +509,7 @@ type ReadEmpireAllColoniesForTurnParams struct {
 
 type ReadEmpireAllColoniesForTurnRow struct {
 	SorcID      sql.NullInt64
-	Kind        string
+	Kind        int64
 	TechLevel   sql.NullInt64
 	Name        sql.NullString
 	UemQty      sql.NullInt64
