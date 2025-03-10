@@ -10,9 +10,9 @@ import (
 	"log"
 )
 
-// this file defines the command line arguments structure
+// this file defines the command line argument flags structure
 
-var env struct {
+var flags struct {
 	Env struct {
 		Prefix string
 	}
@@ -49,31 +49,31 @@ var env struct {
 
 // painfully apply the environment variables to the arguments
 func applyEnvironmentVariables() {
-	xiistr(&env.Database.Path, "_DATABASE_PATH")
-	xiibool(&env.Database.DryRun, "_DATABASE_DRYRUN")
-	xiibool(&env.Database.ForceCreate, "_DATABASE_FORCECREATE")
+	xiistr(&flags.Database.Path, "_DATABASE_PATH")
+	xiibool(&flags.Database.DryRun, "_DATABASE_DRYRUN")
+	xiibool(&flags.Database.ForceCreate, "_DATABASE_FORCECREATE")
 
-	xiibool(&env.Debug.Database.Open, "_DEBUG_DATABASE_OPEN")
-	xiibool(&env.Debug.Database.Close, "_DEBUG_DATABASE_CLOSE")
-	xiibool(&env.Debug.DumpEnv, "_DEBUG_DUMPARGS")
+	xiibool(&flags.Debug.Database.Open, "_DEBUG_DATABASE_OPEN")
+	xiibool(&flags.Debug.Database.Close, "_DEBUG_DATABASE_CLOSE")
+	xiibool(&flags.Debug.DumpEnv, "_DEBUG_DUMPARGS")
 
-	xiiint(&env.Empire.Id, "_EMPIRE_ID")
-	xiiint(&env.Empire.No, "_EMPIRE_NO")
-	xiistr(&env.Empire.Handle, "_EMPIRE_HANDLE")
+	xiiint(&flags.Empire.Id, "_EMPIRE_ID")
+	xiiint(&flags.Empire.No, "_EMPIRE_NO")
+	xiistr(&flags.Empire.Handle, "_EMPIRE_HANDLE")
 
-	xiistr(&env.Game.Code, "_GAME_CODE")
-	xiistr(&env.Game.Name, "_GAME_NAME")
-	xiistr(&env.Game.Description, "_GAME_DESCRIPTION")
-	xiiint(&env.Game.TurnNo, "_GAME_TURNNO")
-	xiibool(&env.Game.ForceCreate, "_GAME_FORCECREATE")
+	xiistr(&flags.Game.Code, "_GAME_CODE")
+	xiistr(&flags.Game.Name, "_GAME_NAME")
+	xiistr(&flags.Game.Description, "_GAME_DESCRIPTION")
+	xiiint(&flags.Game.TurnNo, "_GAME_TURNNO")
+	xiibool(&flags.Game.ForceCreate, "_GAME_FORCECREATE")
 
-	xiistr(&env.Reports.Path, "_REPORTS_PATH")
+	xiistr(&flags.Reports.Path, "_REPORTS_PATH")
 
-	xiibool(&env.Verbose, "_VERBOSE")
+	xiibool(&flags.Verbose, "_VERBOSE")
 }
 
 func dumpEnv(toLog bool) {
-	data, err := json.MarshalIndent(env, "", "  ")
+	data, err := json.MarshalIndent(flags, "", "  ")
 	if err != nil {
 		panic(err)
 	}
@@ -86,21 +86,21 @@ func dumpEnv(toLog bool) {
 
 // xiibool is a helper function to apply the environment variable to a boolean
 func xiibool(b *bool, varname string) {
-	if val, err := xii.AsBool(env.Env.Prefix+varname, xii.BoolOpts{DefaultValue: *b}); err == nil {
+	if val, err := xii.AsBool(flags.Env.Prefix+varname, xii.BoolOpts{DefaultValue: *b}); err == nil {
 		*b = val
 	}
 }
 
 // xiiint is a helper function to apply the environment variable to an integer
 func xiiint(i *int64, varname string) {
-	if val, err := xii.AsInt(env.Env.Prefix+varname, xii.IntOpts{DefaultValue: int(*i)}); err == nil {
+	if val, err := xii.AsInt(flags.Env.Prefix+varname, xii.IntOpts{DefaultValue: int(*i)}); err == nil {
 		*i = int64(val)
 	}
 }
 
 // xiistr is a helper function to apply the environment variable to a string
 func xiistr(s *string, varname string) {
-	if val, err := xii.AsString(env.Env.Prefix+varname, xii.StringOpts{DefaultValue: *s}); err == nil {
+	if val, err := xii.AsString(flags.Env.Prefix+varname, xii.StringOpts{DefaultValue: *s}); err == nil {
 		*s = val
 	}
 }

@@ -12,7 +12,7 @@ var cmdRoot = &cobra.Command{
 	Long:  `empyr is an engine inspired by better games.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		const toLog = true
-		if env.Debug.DumpEnv {
+		if flags.Debug.DumpEnv {
 			dumpEnv(toLog)
 		}
 	},

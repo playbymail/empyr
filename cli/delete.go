@@ -39,7 +39,7 @@ var cmdDeleteGame = &cobra.Command{
 		code := cmd.Flag("code").Value.String()
 		log.Printf("delete: game: code  %q\n", code)
 
-		repo, err := store.Open(env.Database.Path, context.Background())
+		repo, err := store.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -50,7 +50,7 @@ var cmdDeleteGame = &cobra.Command{
 		}
 
 		err = engine.DeleteGameCommand(e, &engine.DeleteGameParams_t{
-			Code: env.Game.Code,
+			Code: flags.Game.Code,
 		})
 		if err != nil {
 			log.Fatalf("error: engine.DeleteGameCommand: %v\n", err)

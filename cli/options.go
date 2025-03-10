@@ -28,14 +28,14 @@ func WithEnvPrefix(pfx string) Option {
 		} else if containsInvalidChars(pfx, validChars) {
 			return errors.Join(ErrEnvPrefixBadChars, ErrInvalidEnvPrefix)
 		}
-		env.Env.Prefix = pfx
+		flags.Env.Prefix = pfx
 		return nil
 	}
 }
 
 func WithVersion(version semver.Version) Option {
 	return func() error {
-		env.Version = version
+		flags.Version = version
 		return nil
 	}
 }

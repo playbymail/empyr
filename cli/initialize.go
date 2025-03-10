@@ -21,8 +21,8 @@ import (
 // will override any environment variables, which override any environment files.
 func Initialize(options ...Option) (*cobra.Command, error) {
 	// bootstrap the arguments
-	env.Env.Prefix = "EMPYR"
-	env.Reports.Path = "reports"
+	flags.Env.Prefix = "EMPYR"
+	flags.Reports.Path = "reports"
 
 	// apply the options
 	for _, option := range options {
@@ -32,35 +32,35 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	}
 
 	// load the env files, and then pull values from the environment.
-	if err := dotenv.Load(env.Env.Prefix); err != nil {
+	if err := dotenv.Load(flags.Env.Prefix); err != nil {
 		log.Fatalf("empyr: %+v\n", err)
 	}
 	applyEnvironmentVariables()
 
-	cmdRoot.PersistentFlags().BoolVar(&env.Debug.DumpEnv, "dump-env", env.Debug.DumpEnv, "dump environment variables")
+	cmdRoot.PersistentFlags().BoolVar(&flags.Debug.DumpEnv, "dump-env", flags.Debug.DumpEnv, "dump environment variables")
 
 	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdShow, cmdVersion)
 
 	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap, cmdCreateTurnReport, cmdCreateTurnReports)
-	cmdCreateDatabase.Flags().BoolVar(&env.Database.ForceCreate, "force-create", env.Database.ForceCreate, "force creation of the database")
-	cmdCreateDatabase.Flags().StringVar(&env.Database.Path, "path", env.Database.Path, "path to the database")
-	cmdCreateEmpire.Flags().StringVar(&env.Empire.Handle, "handle", env.Empire.Handle, "player handle for empire")
-	cmdCreateGame.Flags().StringVar(&env.Game.Code, "code", env.Game.Code, "code for the game")
+	cmdCreateDatabase.Flags().BoolVar(&flags.Database.ForceCreate, "force-create", flags.Database.ForceCreate, "force creation of the database")
+	cmdCreateDatabase.Flags().StringVar(&flags.Database.Path, "path", flags.Database.Path, "path to the database")
+	cmdCreateEmpire.Flags().StringVar(&flags.Empire.Handle, "handle", flags.Empire.Handle, "player handle for empire")
+	cmdCreateGame.Flags().StringVar(&flags.Game.Code, "code", flags.Game.Code, "code for the game")
 	if err := cmdCreateGame.MarkFlagRequired("code"); err != nil {
 		return nil, err
 	}
-	cmdCreateGame.Flags().StringVar(&env.Game.Name, "name", env.Game.Name, "name of the game")
+	cmdCreateGame.Flags().StringVar(&flags.Game.Name, "name", flags.Game.Name, "name of the game")
 	if err := cmdCreateGame.MarkFlagRequired("name"); err != nil {
 		return nil, err
 	}
-	cmdCreateGame.Flags().StringVar(&env.Game.Description, "descr", env.Game.Description, "description of the game")
-	cmdCreateGame.Flags().BoolVar(&env.Game.ForceCreate, "force-create", env.Game.ForceCreate, "force creation of the game")
+	cmdCreateGame.Flags().StringVar(&flags.Game.Description, "descr", flags.Game.Description, "description of the game")
+	cmdCreateGame.Flags().BoolVar(&flags.Game.ForceCreate, "force-create", flags.Game.ForceCreate, "force creation of the game")
 	cmdCreateTurnReport.Flags().Int64("empire-no", 0, "empire number for the report")
 	if err := cmdCreateTurnReport.MarkFlagRequired("empire-no"); err != nil {
 		return nil, err
 	}
-	cmdCreateTurnReport.Flags().Int64Var(&env.Game.TurnNo, "turn-no", env.Game.TurnNo, "turn number for the report")
-	cmdCreateTurnReports.Flags().Int64Var(&env.Game.TurnNo, "turn-no", env.Game.TurnNo, "turn number for the report")
+	cmdCreateTurnReport.Flags().Int64Var(&flags.Game.TurnNo, "turn-no", flags.Game.TurnNo, "turn number for the report")
+	cmdCreateTurnReports.Flags().Int64Var(&flags.Game.TurnNo, "turn-no", flags.Game.TurnNo, "turn number for the report")
 
 	cmdDB.PersistentFlags().String("path", "", "path to the database")
 	if err := cmdDB.MarkPersistentFlagRequired("path"); err != nil {
@@ -69,7 +69,7 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	cmdDB.AddCommand(cmdDBCreate, cmdDBOpen)
 
 	cmdDelete.AddCommand(cmdDeleteGame)
-	cmdDeleteGame.Flags().StringVar(&env.Game.Code, "code", env.Game.Code, "code for the game")
+	cmdDeleteGame.Flags().StringVar(&flags.Game.Code, "code", flags.Game.Code, "code for the game")
 	if err := cmdDeleteGame.MarkFlagRequired("code"); err != nil {
 		return nil, err
 	}

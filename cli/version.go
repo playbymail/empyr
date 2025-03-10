@@ -12,6 +12,6 @@ var cmdVersion = &cobra.Command{
 	Short: "Print the version number of the engine",
 	Long:  `Print the version number of the engine.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Printf("empyr: version %s\n", env.Version.String())
+		log.Printf("empyr: version %s\n", flags.Version.String())
 	},
 }

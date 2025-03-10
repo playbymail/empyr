@@ -34,18 +34,18 @@ var cmdCreateDatabase = &cobra.Command{
 	Long:  `Create a new database.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		started := time.Now()
-		log.Printf("create: database: %q\n", env.Database.Path)
-		if stdlib.IsExists(env.Database.Path) {
-			if !env.Database.ForceCreate {
+		log.Printf("create: database: %q\n", flags.Database.Path)
+		if stdlib.IsExists(flags.Database.Path) {
+			if !flags.Database.ForceCreate {
 				log.Fatalf("error: %v\n", ErrFileExists)
 			}
 			log.Printf("create: database: deleting existing database\n")
-			if err := stdlib.Remove(env.Database.Path); err != nil {
+			if err := stdlib.Remove(flags.Database.Path); err != nil {
 				log.Fatalf("error: stdlib.remove: %v\n", errors.Join(ErrDeleteFailed, err))
 			}
 		}
-		log.Printf("create: database: %q\n", env.Database.Path)
-		if err := store.Create(env.Database.Path); err != nil {
+		log.Printf("create: database: %q\n", flags.Database.Path)
+		if err := store.Create(flags.Database.Path); err != nil {
 			log.Fatalf("error: store.create: %v\n", err)
 		}
 		log.Printf("create: database: completed in %v\n", time.Since(started))
@@ -75,7 +75,7 @@ var cmdCreateEmpire = &cobra.Command{
 			log.Printf("create: empire: handle %q\n", handle)
 		}
 
-		repo, err := store.Open(env.Database.Path, context.Background())
+		repo, err := store.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -86,7 +86,7 @@ var cmdCreateEmpire = &cobra.Command{
 		}
 
 		empireId, empireNo, empireHandle, err := engine.CreateEmpireCommand(e, &engine.CreateEmpireParams_t{
-			Code:   env.Game.Code,
+			Code:   flags.Game.Code,
 			Handle: handle,
 		})
 		if err != nil {
@@ -127,7 +127,7 @@ var cmdCreateGame = &cobra.Command{
 		log.Printf("create: game: name  %q\n", name)
 		log.Printf("create: game: descr %q\n", descr)
 
-		repo, err := store.Open(env.Database.Path, context.Background())
+		repo, err := store.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -138,11 +138,11 @@ var cmdCreateGame = &cobra.Command{
 		}
 
 		gameId, err := engine.CreateGameCommand(e, &engine.CreateGameParams_t{
-			Code:        env.Game.Code,
-			Name:        env.Game.Name,
-			DisplayName: fmt.Sprintf("EC-%s", env.Game.Code),
+			Code:        flags.Game.Code,
+			Name:        flags.Game.Name,
+			DisplayName: fmt.Sprintf("EC-%s", flags.Game.Code),
 			Rand:        rand.New(rand.NewPCG(0xdeadbeef, 0xcafedeed)),
-			ForceCreate: env.Game.ForceCreate,
+			ForceCreate: flags.Game.ForceCreate,
 		})
 		if err != nil {
 			log.Fatalf("error: engine.CreateGameCommand: %v\n", err)
@@ -163,7 +163,7 @@ var cmdCreateStarList = &cobra.Command{
 			log.Printf("create: star-list: elapsed time: %v\n", time.Now().Sub(started))
 		}()
 
-		repo, err := store.Open(env.Database.Path, context.Background())
+		repo, err := store.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -173,7 +173,7 @@ var cmdCreateStarList = &cobra.Command{
 			log.Fatalf("error: engine.open: %v\n", err)
 		}
 
-		dataHtml, dataJson, err := engine.CreateClusterStarListCommand(e, &engine.CreateClusterStarListParams_t{Code: env.Game.Code})
+		dataHtml, dataJson, err := engine.CreateClusterStarListCommand(e, &engine.CreateClusterStarListParams_t{Code: flags.Game.Code})
 		if err != nil {
 			log.Fatalf("error: engine.CreateClusterStarListCommand: %v\n", err)
 		} else if err = os.WriteFile("cluster-star-list.html", dataHtml, 0644); err != nil {
@@ -198,7 +198,7 @@ var cmdCreateSystemMap = &cobra.Command{
 			log.Printf("create: system-map: elapsed time: %v\n", time.Now().Sub(started))
 		}()
 
-		repo, err := store.Open(env.Database.Path, context.Background())
+		repo, err := store.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -208,7 +208,7 @@ var cmdCreateSystemMap = &cobra.Command{
 			log.Fatalf("error: engine.open: %v\n", err)
 		}
 
-		data, err := engine.CreateClusterMapCommand(e, &engine.CreateClusterMapParams_t{Code: env.Game.Code})
+		data, err := engine.CreateClusterMapCommand(e, &engine.CreateClusterMapParams_t{Code: flags.Game.Code})
 		if err != nil {
 			log.Fatalf("error: engine.CreateClusterMapCommand: %v\n", err)
 		} else if err = os.WriteFile("cluster-system-map.html", data, 0644); err != nil {
@@ -230,7 +230,7 @@ var cmdCreateTurnReport = &cobra.Command{
 			log.Printf("create: turn-report: elapsed time: %v\n", time.Now().Sub(started))
 		}()
 
-		repo, err := store.Open(env.Database.Path, context.Background())
+		repo, err := store.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -246,16 +246,16 @@ var cmdCreateTurnReport = &cobra.Command{
 		} else {
 			empireNo = int64(n)
 		}
-		if env.Game.TurnNo < 0 || env.Game.TurnNo > 9999 {
+		if flags.Game.TurnNo < 0 || flags.Game.TurnNo > 9999 {
 			log.Fatalf("error: turn-no must be between 0 and 9999")
 		}
 
-		empireReportPath := filepath.Join(env.Reports.Path, fmt.Sprintf("e%03d", empireNo), "reports")
-		reportName := filepath.Join(empireReportPath, fmt.Sprintf("e%03d-turn-%04d.html", empireNo, env.Game.TurnNo))
+		empireReportPath := filepath.Join(flags.Reports.Path, fmt.Sprintf("e%03d", empireNo), "reports")
+		reportName := filepath.Join(empireReportPath, fmt.Sprintf("e%03d-turn-%04d.html", empireNo, flags.Game.TurnNo))
 
 		data, err := engine.CreateTurnReportCommand(e, &engine.CreateTurnReportParams_t{
-			Code:     env.Game.Code,
-			TurnNo:   env.Game.TurnNo,
+			Code:     flags.Game.Code,
+			TurnNo:   flags.Game.TurnNo,
 			EmpireNo: empireNo,
 		})
 		if err != nil {
@@ -282,7 +282,7 @@ var cmdCreateTurnReports = &cobra.Command{
 			log.Printf("create: turn-reports: elapsed time: %v\n", time.Now().Sub(started))
 		}()
 
-		repo, err := store.Open(env.Database.Path, context.Background())
+		repo, err := store.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -293,9 +293,9 @@ var cmdCreateTurnReports = &cobra.Command{
 		}
 
 		err = engine.CreateTurnReportsCommand(e, &engine.CreateTurnReportsParams_t{
-			Code:   env.Game.Code,
-			TurnNo: env.Game.TurnNo,
-			Path:   env.Reports.Path,
+			Code:   flags.Game.Code,
+			TurnNo: flags.Game.TurnNo,
+			Path:   flags.Reports.Path,
 		})
 		if err != nil {
 			log.Fatalf("error: engine.CreateTurnReportsCommand: %v\n", err)
