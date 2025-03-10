@@ -116,11 +116,6 @@ func runStartServer(env *config.Environment, args []string) error {
 	return nil
 }
 
-func runVersion(env *config.Environment, args []string) error {
-	log.Printf("version: %s\n", env.Version.String())
-	return nil
-}
-
 func argOptBool(arg, flag string) (value bool, ok bool) {
 	if arg == "--"+flag {
 		return true, true
