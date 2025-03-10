@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/playbymail/empyr/engine"
-	"github.com/playbymail/empyr/pkg/clean"
 	"github.com/playbymail/empyr/pkg/stdlib"
 	"github.com/playbymail/empyr/store"
 	"github.com/spf13/cobra"
@@ -61,7 +60,7 @@ var cmdCreateEmpire = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if handle := cmd.Flag("handle").Value.String(); handle == "" {
 			// will default to the empire number
-		} else if _, err := clean.IsValidHandle(handle); err != nil {
+		} else if _, err := engine.IsValidHandle(handle); err != nil {
 			return err
 		}
 		return nil
@@ -104,11 +103,11 @@ var cmdCreateGame = &cobra.Command{
 	Short: "create a new game",
 	Long:  `Create a new game.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if _, err := clean.IsValidCode(cmd.Flag("code").Value.String()); err != nil {
+		if _, err := engine.IsValidCode(cmd.Flag("code").Value.String()); err != nil {
 			return err
-		} else if _, err = clean.IsValidName(cmd.Flag("name").Value.String()); err != nil {
+		} else if _, err = engine.IsValidName(cmd.Flag("name").Value.String()); err != nil {
 			return err
-		} else if _, err = clean.IsValidDescription(cmd.Flag("descr").Value.String()); err != nil {
+		} else if _, err = engine.IsValidDescription(cmd.Flag("descr").Value.String()); err != nil {
 			return err
 		}
 		return nil

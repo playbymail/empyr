@@ -176,7 +176,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 	log.Printf("create: empire: code %q\n", cfg.Code)
 
 	if cfg.Handle != "" {
-		if _, err := isValidHandle(cfg.Handle); err != nil {
+		if _, err := IsValidHandle(cfg.Handle); err != nil {
 			return 0, 0, "", err
 		}
 	}

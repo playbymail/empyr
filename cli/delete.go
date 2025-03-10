@@ -5,7 +5,6 @@ package cli
 import (
 	"context"
 	"github.com/playbymail/empyr/engine"
-	"github.com/playbymail/empyr/pkg/clean"
 	"github.com/playbymail/empyr/store"
 	"github.com/spf13/cobra"
 	"log"
@@ -27,7 +26,7 @@ var cmdDeleteGame = &cobra.Command{
 	Short: "delete a game",
 	Long:  `Delete a game.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if _, err := clean.IsValidCode(cmd.Flag("code").Value.String()); err != nil {
+		if _, err := engine.IsValidCode(cmd.Flag("code").Value.String()); err != nil {
 			return err
 		}
 		return nil
