@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS deposits;
 DROP TABLE IF EXISTS empires;
 DROP TABLE IF EXISTS games;
 DROP TABLE IF EXISTS planets;
+DROP TABLE IF EXISTS players;
 DROP TABLE IF EXISTS orbits;
 DROP TABLE IF EXISTS stars;
 DROP TABLE IF EXISTS system_distances;
@@ -24,18 +25,25 @@ DROP TABLE IF EXISTS units;
 -- foreign keys must be enabled with every database connection
 PRAGMA foreign_keys = ON;
 
--- -- create the table for managing migrations
--- CREATE TABLE meta_migrations
--- (
---     version    INTEGER  NOT NULL UNIQUE,
---     comment    TEXT     NOT NULL,
---     script     TEXT     NOT NULL UNIQUE,
---     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
--- );
+-- create the table for managing migrations
+CREATE TABLE meta_migrations
+(
+    version    INTEGER  NOT NULL UNIQUE,
+    comment    TEXT     NOT NULL,
+    script     TEXT     NOT NULL UNIQUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- -- update the migrations table
--- INSERT INTO meta_migrations (version, comment, script)
--- VALUES (202502110915, 'initial migration', '202502110915_initial.sql');
+
+CREATE TABLE players
+(
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    handle     TEXT     NOT NULL UNIQUE,
+    magic_link TEXT     NOT NULL UNIQUE,
+    is_active  INTEGER  NOT NULL CHECK (is_active IN (0, 1)),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE units
 (

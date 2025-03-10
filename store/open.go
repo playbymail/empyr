@@ -65,14 +65,25 @@ func Create(path string) error {
 		log.Printf("store: create: %v\n", err)
 		return err
 	}
+	_, err = db.Exec("insert into meta_migrations(version, comment, script) values(20250211091500, 'initial migration', '20250211091500_initial.sql')")
+	if err != nil {
+		log.Printf("store: create: %v\n", err)
+		return err
+	}
 
-	// run the initialization scripts
+	// run the migration scripts
 	for _, script := range scripts {
+		log.Printf("store: create: migrate %d: %q\n", script.version, script.comment)
 		if _, err := db.Exec(script.script); err != nil {
-			log.Printf("store: create: %d: %v\n", script.version, err)
+			log.Printf("store: create: migrate %d: %v\n", script.version, err)
 			return errors.Join(ErrCreateSchema, err)
 		}
 		log.Printf("store: create: %d: %s\n", script.version, script.comment)
+		_, err := db.Exec("insert into meta_migrations(version, comment, script) values(?, ?, ?)", script.version, script.comment, script.path)
+		if err != nil {
+			log.Printf("store: create: %v\n", err)
+			return err
+		}
 	}
 
 	log.Printf("store: created %q\n", path)
@@ -131,13 +142,17 @@ func (s *Store) Begin() (*sqlc.Queries, *sql.Tx, error) {
 }
 
 type migrationScript struct {
+	path    string
 	version int
 	comment string
 	script  string
 }
 
+// example 20250310155301_create_users.sql
+
 func loadMigrations() (scripts []migrationScript, err error) {
-	re, err := regexp.Compile(`^(\d{12})_([a-zA-Z0-9_])+\.sql$`)
+	// verify pattern: YYYYMMDDHHMMSS_comment.sql
+	re, err := regexp.Compile(`^(\d{14})_([a-zA-Z0-9_]+)\.sql$`)
 	if err != nil {
 		return nil, err
 	}
@@ -153,11 +168,16 @@ func loadMigrations() (scripts []migrationScript, err error) {
 		}
 
 		name := entry.Name()
-		// verify pattern: YYYYMMDDHHMM_comment.sql
 		match := re.FindSubmatch([]byte(name))
 		if match == nil {
 			continue
 		}
+		log.Printf("store: load migrations: %s\n", name)
+		for n, m := range match {
+			log.Printf("store: load migrations: %d %q\n", n, string(m))
+		}
+		log.Printf("store: load migrations: version %q\n", string(match[1]))
+		log.Printf("store: load migrations: comment %q\n", string(match[2]))
 		version, err := strconv.Atoi(string(match[1]))
 		if err != nil {
 			return nil, err
@@ -167,7 +187,12 @@ func loadMigrations() (scripts []migrationScript, err error) {
 		if err != nil {
 			return nil, err
 		}
-		scripts = append(scripts, migrationScript{version: version, comment: comment, script: string(content)})
+		scripts = append(scripts, migrationScript{
+			path:    name,
+			version: version,
+			comment: comment,
+			script:  string(content),
+		})
 	}
 
 	sort.Slice(scripts, func(i, j int) bool {

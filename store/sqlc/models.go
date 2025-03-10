@@ -54,6 +54,13 @@ type Games struct {
 	UpdatedAt    time.Time
 }
 
+type MetaMigrations struct {
+	Version   int64
+	Comment   string
+	Script    string
+	CreatedAt time.Time
+}
+
 type Orbits struct {
 	ID       int64
 	StarID   int64
@@ -68,6 +75,15 @@ type Planets struct {
 	Kind         int64
 	Habitability int64
 	Scarcity     int64
+}
+
+type Players struct {
+	ID        int64
+	Handle    string
+	MagicLink string
+	IsActive  int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type SorcDetails struct {

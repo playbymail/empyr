@@ -11,7 +11,7 @@ import (
 )
 
 const createDeposit = `-- name: CreateDeposit :one
-INSERT INTO deposits (planet_id, deposit_no, kind, yield_pct, initial_qty, remaining_qty)
+INSERT INTO deposits (planet_id, deposit_no, kind, initial_qty, remaining_qty, yield_pct)
 VALUES (?1, ?2, ?3, ?4, ?5, ?6)
 RETURNING id
 `
@@ -20,9 +20,9 @@ type CreateDepositParams struct {
 	PlanetID     int64
 	DepositNo    int64
 	Kind         int64
-	YieldPct     int64
 	InitialQty   int64
 	RemainingQty int64
+	YieldPct     int64
 }
 
 // CreateDeposit creates a new deposit.
@@ -31,9 +31,9 @@ func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (i
 		arg.PlanetID,
 		arg.DepositNo,
 		arg.Kind,
-		arg.YieldPct,
 		arg.InitialQty,
 		arg.RemainingQty,
+		arg.YieldPct,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -75,7 +75,6 @@ func (q *Queries) CreateEmpire(ctx context.Context, arg CreateEmpireParams) (int
 }
 
 const createGame = `-- name: CreateGame :one
-
 INSERT INTO games (code, name, display_name)
 VALUES (?1, ?2, ?3)
 RETURNING id
@@ -87,8 +86,6 @@ type CreateGameParams struct {
 	DisplayName string
 }
 
-//	Copyright (c) 2025 Michael D Henderson. All rights reserved.
-//
 // CreateGame creates a new game.
 func (q *Queries) CreateGame(ctx context.Context, arg CreateGameParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, createGame, arg.Code, arg.Name, arg.DisplayName)
@@ -413,6 +410,26 @@ func (q *Queries) GetCurrentGameTurn(ctx context.Context, gameID int64) (int64, 
 	var current_turn int64
 	err := row.Scan(&current_turn)
 	return current_turn, err
+}
+
+const insertMetaMigration = `-- name: InsertMetaMigration :exec
+
+INSERT INTO meta_migrations (version, comment, script)
+VALUES (?1, ?2, ?3)
+`
+
+type InsertMetaMigrationParams struct {
+	Version int64
+	Comment string
+	Script  string
+}
+
+//	Copyright (c) 2025 Michael D Henderson. All rights reserved.
+//
+// InsertMetaMigration inserts a new migration.
+func (q *Queries) InsertMetaMigration(ctx context.Context, arg InsertMetaMigrationParams) error {
+	_, err := q.db.ExecContext(ctx, insertMetaMigration, arg.Version, arg.Comment, arg.Script)
+	return err
 }
 
 const readClusterMap = `-- name: ReadClusterMap :many

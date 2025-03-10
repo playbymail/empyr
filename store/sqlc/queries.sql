@@ -1,6 +1,12 @@
 --  Copyright (c) 2025 Michael D Henderson. All rights reserved.
 --
 
+-- InsertMetaMigration inserts a new migration.
+--
+-- name: InsertMetaMigration :exec
+INSERT INTO meta_migrations (version, comment, script)
+VALUES (:version, :comment, :script);
+
 -- CreateGame creates a new game.
 --
 -- name: CreateGame :one
