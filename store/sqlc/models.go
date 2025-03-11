@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+type Codes struct {
+	Category string
+	Code     string
+	Value    int64
+	Display  string
+}
+
 type Deposit struct {
 	DepositID int64
 	Quantity  int64
@@ -30,7 +37,7 @@ type Deposits struct {
 type Empires struct {
 	ID           int64
 	GameID       int64
-	PlayerID     int64
+	UserID       int64
 	EmpireNo     int64
 	Name         string
 	HomeSystemID int64
@@ -75,15 +82,6 @@ type Planets struct {
 	Kind         int64
 	Habitability int64
 	Scarcity     int64
-}
-
-type Players struct {
-	ID        int64
-	Handle    string
-	MagicLink string
-	IsActive  int64
-	CreatedAt time.Time
-	UpdatedAt time.Time
 }
 
 type SorcDetails struct {
@@ -170,4 +168,13 @@ type Units struct {
 	Code          string
 	Mass          int64
 	IsOperational int64
+}
+
+type Users struct {
+	ID        int64
+	Handle    string
+	MagicLink string
+	IsActive  int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

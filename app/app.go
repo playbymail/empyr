@@ -10,18 +10,12 @@ import (
 	"github.com/playbymail/empyr/internal/actions"
 	"github.com/playbymail/empyr/internal/commands"
 	"github.com/playbymail/empyr/internal/controllers"
-	"github.com/playbymail/empyr/internal/domains"
 	"github.com/playbymail/empyr/internal/encryption"
-	"github.com/playbymail/empyr/internal/middlewares"
 	"github.com/playbymail/empyr/internal/ratelimiter"
-	"github.com/playbymail/empyr/internal/responders"
-	"github.com/playbymail/empyr/internal/router"
 	"github.com/playbymail/empyr/internal/services"
 	"github.com/playbymail/empyr/internal/views"
 	"github.com/playbymail/empyr/pkg/stdlib"
 	"github.com/playbymail/empyr/store"
-	"html/template"
-	"net/http"
 	"path/filepath"
 )
 
@@ -100,40 +94,4 @@ func New(repo *store.Store, assetsPath, templatesPath string, ctx context.Contex
 	}
 
 	return a, nil
-}
-
-func (a *App) Router() http.Handler {
-	r := router.New(middlewares.Static(a.Assets.Files))
-
-	// public routes (no authentication required)
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/home", http.StatusSeeOther)
-	})
-	r.Get("/home", a.Controllers.Home.Show)
-	r.Get("/blogs", a.Controllers.Blogs.Show)
-	r.Get("/reports", a.Controllers.Reports.Show)
-
-	// Load templates
-	tmpl := template.Must(template.ParseFiles(filepath.Join(a.Assets.Templates, "user-row.gohtml")))
-
-	// Dependency injection
-	userRepo := &InMemoryUserRepo{data: make(map[string]domains.User)}
-	userService := &domains.UserService{Repo: userRepo}
-	createUserResponder := &responders.CreateUserResponder{Tmpl: tmpl}
-	createUserAction := &actions.CreateUserAction{Service: userService, Responder: createUserResponder}
-
-	// Register routes
-	r.Post("/users", createUserAction.ServeHTTP)
-
-	return nil
-}
-
-// Mock repository implementation
-type InMemoryUserRepo struct {
-	data map[string]domains.User
-}
-
-func (repo *InMemoryUserRepo) Save(user domains.User) error {
-	repo.data[user.Email] = user
-	return nil
 }

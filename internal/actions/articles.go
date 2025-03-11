@@ -8,6 +8,19 @@ import (
 	"time"
 )
 
+type ArticlesRepository interface {
+	CreateArticle(article *models.Article) error
+	GetArticleByID(id int) (*models.Article, error)
+	GetArticleBySlug(slug string) (*models.Article, error)
+	GetDraftArticles() ([]models.Article, error)
+	GetPublishedArticles() ([]models.Article, error)
+	GetRecentArticles(limit int)
+	PublishArticle(id int) error
+	UnpublishArticle(id int) error
+	UpdateArticle(article *models.Article) error
+}
+
+// ArticlesFacade is a facade for the ArticlesRepository interface.
 type ArticlesFacade struct {
 	db *sql.DB
 }

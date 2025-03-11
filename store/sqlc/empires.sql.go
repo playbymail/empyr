@@ -11,7 +11,7 @@ import (
 
 const createEmpire = `-- name: CreateEmpire :one
 INSERT INTO empires (game_id,
-                     player_id,
+                     user_id,
                      empire_no,
                      name,
                      home_system_id,
@@ -31,7 +31,7 @@ RETURNING id
 
 type CreateEmpireParams struct {
 	GameID       int64
-	PlayerID     int64
+	UserID       int64
 	EmpireNo     int64
 	Name         string
 	HomeSystemID int64
@@ -44,7 +44,7 @@ type CreateEmpireParams struct {
 func (q *Queries) CreateEmpire(ctx context.Context, arg CreateEmpireParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, createEmpire,
 		arg.GameID,
-		arg.PlayerID,
+		arg.UserID,
 		arg.EmpireNo,
 		arg.Name,
 		arg.HomeSystemID,

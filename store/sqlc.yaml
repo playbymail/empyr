@@ -6,7 +6,7 @@ sql:
     queries:
       - "sqlc/queries.sql"
       - "sqlc/empires.sql"
-      - "sqlc/players.sql"
+      - "sqlc/users.sql"
     gen:
       go:
         emit_exact_table_names: true

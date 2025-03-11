@@ -15,13 +15,13 @@ DROP TABLE IF EXISTS deposits;
 DROP TABLE IF EXISTS empires;
 DROP TABLE IF EXISTS games;
 DROP TABLE IF EXISTS planets;
-DROP TABLE IF EXISTS players;
 DROP TABLE IF EXISTS orbits;
 DROP TABLE IF EXISTS stars;
 DROP TABLE IF EXISTS system_distances;
 DROP TABLE IF EXISTS system_stars;
 DROP TABLE IF EXISTS systems;
 DROP TABLE IF EXISTS units;
+DROP TABLE IF EXISTS users;
 
 -- foreign keys must be enabled with every database connection
 PRAGMA foreign_keys = ON;
@@ -45,7 +45,7 @@ CREATE TABLE codes
     UNIQUE (category, value)
 );
 
-CREATE TABLE players
+CREATE TABLE users
 (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     handle     TEXT     NOT NULL UNIQUE,
@@ -185,22 +185,22 @@ CREATE TABLE empires
 (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id        INTEGER NOT NULL,
-    player_id      INTEGER NOT NULL,
+    user_id      INTEGER NOT NULL,
     empire_no      INTEGER NOT NULL CHECK (empire_no BETWEEN 1 AND 256),
     name           TEXT    NOT NULL,
     home_system_id INTEGER NOT NULL,
     home_star_id   INTEGER NOT NULL,
     home_orbit_id  INTEGER NOT NULL,
     home_planet_id INTEGER NOT NULL,
-    UNIQUE (game_id, player_id),
+    UNIQUE (game_id, user_id),
     UNIQUE (game_id, empire_no),
     CONSTRAINT fk_game_id
         FOREIGN KEY (game_id)
             REFERENCES games (id)
             ON DELETE CASCADE,
-    CONSTRAINT fk_player_id
-        FOREIGN KEY (player_id)
-            REFERENCES players (id)
+    CONSTRAINT fk_user_id
+        FOREIGN KEY (user_id)
+            REFERENCES users (id)
             ON DELETE CASCADE,
     CONSTRAINT fk_system_id
         FOREIGN KEY (home_system_id)

@@ -10,7 +10,7 @@ RETURNING last_empire_no as next_empire_no;
 --
 -- name: CreateEmpire :one
 INSERT INTO empires (game_id,
-                     player_id,
+                     user_id,
                      empire_no,
                      name,
                      home_system_id,
@@ -18,7 +18,7 @@ INSERT INTO empires (game_id,
                      home_orbit_id,
                      home_planet_id)
 VALUES (:game_id,
-        :player_id,
+        :user_id,
         :empire_no,
         :name,
         :home_system_id,

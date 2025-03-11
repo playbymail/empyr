@@ -169,16 +169,16 @@ func CreateClusterStarListCommand(e *Engine_t, cfg *CreateClusterStarListParams_
 }
 
 type CreateEmpireParams_t struct {
-	Code         string
-	PlayerHandle string
+	Code       string
+	UserHandle string
 }
 
 func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, error) {
 	log.Printf("create: empire: code %q\n", cfg.Code)
 
-	if cfg.PlayerHandle == "" {
+	if cfg.UserHandle == "" {
 		return 0, 0, ErrMissingHandle
-	} else if _, err := IsValidHandle(cfg.PlayerHandle); err != nil {
+	} else if _, err := IsValidHandle(cfg.UserHandle); err != nil {
 		return 0, 0, err
 	}
 
@@ -188,11 +188,11 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 	}
 	defer tx.Rollback()
 
-	var playerID int64
-	if row, err := q.ReadPlayerByHandle(e.Store.Context, cfg.PlayerHandle); err != nil {
+	var userID int64
+	if row, err := q.ReadUserByHandle(e.Store.Context, cfg.UserHandle); err != nil {
 		return 0, 0, err
 	} else {
-		playerID = row.ID
+		userID = row.ID
 	}
 
 	gameRow, err := q.ReadGameByCode(e.Store.Context, cfg.Code)
@@ -205,7 +205,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 
 	parms := sqlc.CreateEmpireParams{
 		GameID:       gameRow.ID,
-		PlayerID:     playerID,
+		UserID:       userID,
 		EmpireNo:     gameRow.LastEmpireNo + 1,
 		Name:         fmt.Sprintf("Empire %03d", gameRow.LastEmpireNo+1),
 		HomeSystemID: gameRow.HomeSystemID,

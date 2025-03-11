@@ -2,4 +2,4 @@
 
 package controllers
 
-type Auth struct { }
+type Auth struct{}

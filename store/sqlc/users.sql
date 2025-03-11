@@ -1,8 +1,8 @@
 --  Copyright (c) 2025 Michael D Henderson. All rights reserved.
 
--- ReadPlayerByHandle gets a player by its handle.
+-- ReadUserByHandle gets a player by its handle.
 --
--- name: ReadPlayerByHandle :one
+-- name: ReadUserByHandle :one
 SELECT id, magic_link, is_active
-FROM players
+FROM users
 WHERE handle = :handle;
