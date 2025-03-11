@@ -7,6 +7,7 @@ import (
 	"github.com/playbymail/empyr/pkg/dotenv"
 	"github.com/spf13/cobra"
 	"log"
+	"time"
 )
 
 // Initialize returns a new cobra.Command that is initialized from the current environment.
@@ -22,7 +23,16 @@ import (
 func Initialize(options ...Option) (*cobra.Command, error) {
 	// bootstrap the arguments
 	flags.Env.Prefix = "EMPYR"
+	flags.Application.Assets.Public = "app/assets/public"
+	flags.Application.Assets.Templates = "app/assets/templates"
 	flags.Reports.Path = "reports"
+	flags.Server.Scheme = "http"
+	flags.Server.Host = "localhost"
+	flags.Server.Port = "8080"
+	flags.Server.ReadTimeout = 5 * time.Second
+	flags.Server.WriteTimeout = 10 * time.Second
+	flags.Server.IdleTimeout = 120 * time.Second
+	flags.Server.MaxHeaderBytes = 1 << 20
 
 	// apply the options
 	for _, option := range options {
@@ -39,7 +49,7 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 
 	cmdRoot.PersistentFlags().BoolVar(&flags.Debug.DumpEnv, "dump-env", flags.Debug.DumpEnv, "dump environment variables")
 
-	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdShow, cmdVersion)
+	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdShow, cmdStart, cmdVersion)
 
 	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap, cmdCreateTurnReport, cmdCreateTurnReports)
 	cmdCreateDatabase.Flags().BoolVar(&flags.Database.ForceCreate, "force-create", flags.Database.ForceCreate, "force creation of the database")
@@ -78,6 +88,8 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	}
 
 	cmdShow.AddCommand(cmdShowEnv)
+
+	cmdStart.AddCommand(cmdStartServer)
 
 	return cmdRoot, nil
 }

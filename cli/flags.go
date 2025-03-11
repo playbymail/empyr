@@ -8,6 +8,7 @@ import (
 	"github.com/mdhender/semver"
 	"github.com/mdhender/xii"
 	"log"
+	"time"
 )
 
 // this file defines the command line argument flags structure
@@ -15,6 +16,12 @@ import (
 var flags struct {
 	Env struct {
 		Prefix string
+	}
+	Application struct {
+		Assets struct {
+			Public    string
+			Templates string
+		}
 	}
 	Database struct {
 		Path        string
@@ -43,12 +50,24 @@ var flags struct {
 	Reports struct {
 		Path string
 	}
+	Server struct {
+		Scheme         string
+		Host           string
+		Port           string
+		ReadTimeout    time.Duration
+		WriteTimeout   time.Duration
+		IdleTimeout    time.Duration
+		MaxHeaderBytes int64
+	}
 	Verbose bool
 	Version semver.Version
 }
 
 // painfully apply the environment variables to the arguments
 func applyEnvironmentVariables() {
+	xiistr(&flags.Application.Assets.Public, "_APP_ASSETS_PUBLIC")
+	xiistr(&flags.Application.Assets.Templates, "_APP_ASSETS_TEMPLATES")
+
 	xiistr(&flags.Database.Path, "_DATABASE_PATH")
 	xiibool(&flags.Database.DryRun, "_DATABASE_DRYRUN")
 	xiibool(&flags.Database.ForceCreate, "_DATABASE_FORCECREATE")
@@ -68,6 +87,11 @@ func applyEnvironmentVariables() {
 	xiibool(&flags.Game.ForceCreate, "_GAME_FORCECREATE")
 
 	xiistr(&flags.Reports.Path, "_REPORTS_PATH")
+
+	xiistr(&flags.Server.Scheme, "_SERVER_SCHEME")
+	xiistr(&flags.Server.Host, "_SERVER_HOST")
+	xiistr(&flags.Server.Port, "_SERVER_PORT")
+	xiiint(&flags.Server.MaxHeaderBytes, "_SERVER_MAXHEADERBYTES")
 
 	xiibool(&flags.Verbose, "_VERBOSE")
 }
