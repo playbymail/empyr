@@ -15,6 +15,7 @@ ADR is a web-specific alternative to **Model-View-Controller (MVC)** that clearl
 
 ## **🎯 What is the Domain Layer?**
 In ADR, the **Domain** layer is where the actual application logic resides. It:
+
 ✔ Encapsulates business rules independent of HTTP or any transport mechanism.  
 ✔ Interacts with databases, external APIs, and services.  
 ✔ Provides a **clean API** for the **Action** layer to call.  

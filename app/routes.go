@@ -6,13 +6,15 @@ import (
 	"github.com/playbymail/empyr/app/actions"
 	"github.com/playbymail/empyr/app/domains"
 	"github.com/playbymail/empyr/app/responders"
+	"github.com/playbymail/empyr/internal/services/auth"
+	"github.com/playbymail/empyr/internal/services/sessions"
 	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
 )
 
-func (a *App) Router() http.Handler {
+func (a *App) Router(authService auth.Service, sessionsService sessions.Service) http.Handler {
 	// Load templates
 	tmpl := template.Must(template.ParseFiles(filepath.Join(a.Assets.Templates, "user-row.gohtml")))
 
@@ -35,23 +37,53 @@ func (a *App) Router() http.Handler {
 	mux.HandleFunc("GET /blogs", a.Controllers.Blogs.Show)
 	mux.HandleFunc("GET /reports", a.Controllers.Reports.Show)
 
-	showLoginAction := actions.ShowLoginAction{Responder: &responders.ShowLoginResponder{Tmpl: tmpl}}
-	mux.HandleFunc("GET /login/", showLoginAction.ServeHTTP)
-	mux.HandleFunc("GET /login/{magicKey}", showLoginAction.ServeHTTP)
+	showLoginResponder := responders.NewShowLoginResponder(responders.NewView("login", a.Assets.Templates, "login.gohtml"))
+	showLoginAction := actions.ShowLoginAction{
+		Sessions:  sessionsService,
+		Responder: showLoginResponder,
+	}
+	mux.HandleFunc("GET /login", showLoginAction.ServeHTTP)
 
-	logoutAction := actions.LogoutAction{Responder: responders.NewLogoutResponder(a.Assets.Templates)}
-	mux.HandleFunc("GET /logout", logoutAction.ServeHTTP)
-	mux.HandleFunc("POST /logout", logoutAction.ServeHTTP)
+	loginUserAction := actions.LoginUserAction{
+		Sessions:       sessionsService,
+		Authentication: authService,
+		Responder:      showLoginResponder,
+	}
+	mux.HandleFunc("GET /login/{magicKey}", loginUserAction.ServeHTTP)
+	mux.HandleFunc("POST /login/{magicKey}", loginUserAction.ServeHTTP)
+
+	logoutUserAction := actions.LogoutUserAction{
+		Sessions:  sessionsService,
+		Responder: responders.NewLogoutUserResponder(responders.NewView("logout", a.Assets.Templates, "logout.gohtml")),
+	}
+	mux.HandleFunc("GET /logout", logoutUserAction.ServeHTTP)
+	mux.HandleFunc("POST /logout", logoutUserAction.ServeHTTP)
 
 	createUserResponder := &responders.CreateUserResponder{Tmpl: tmpl}
 	createUserAction := &actions.CreateUserAction{Service: userService, Responder: createUserResponder}
 
 	mux.HandleFunc("POST /users", createUserAction.ServeHTTP)
 
-	// the "/" route is special. it serves the landing page
+	// the "/" route is special. it serves the landing page but also serves as
+	// the catch-all for all not-found routes.
+	// Gotta love Go's routing.
+	// Actually, I don't love this part of it.
 	mux.HandleFunc("GET /", a.Controllers.Home.Show)
 
-	return mux
+	return sessions.AddUserToContext(mux, sessionsService)
+
+	//r := router.New(authn.Sessions(a.JotFactory))
+	//
+	//r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	//	log.Printf("%s %s: entered\n", r.Method, r.URL.Path)
+	//	id := authn.User(r).ID()
+	//	log.Printf("%s %s: id is %d\n", r.Method, r.URL.Path, id)
+	//	fmt.Println("[the handler ran here]")
+	//	_, _ = fmt.Fprintln(w, "Hello world of", r.URL.Path)
+	//})
+	//r.Get("/logout", logoutAction.ServeHTTP)
+	//
+	//return r
 }
 
 // Mock repository implementation

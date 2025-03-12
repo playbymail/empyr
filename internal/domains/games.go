@@ -4,20 +4,12 @@ package domains
 
 import "time"
 
-// some notes to myself on the model:
-// - this needs to implement the minimal viable product
-
-// Player represents a single player in the game.
-// A player is a human or AI or just an NPC.
-// Each player controls a single empire in any given game.
-type Player struct {
-	ID int // unique identifier for the player
-}
+type GameID int64
 
 // Game represents a single game.
 type Game struct {
-	ID          int // unique identifier for the game
-	Code        string
+	ID          GameID // unique identifier for the game
+	Code        string // unique code for the game, e.g. A01
 	Name        string
 	DisplayName string
 	CurrentTurn int
@@ -102,4 +94,3 @@ const (
 	METALLICS
 	NONMETALLICS
 )
-

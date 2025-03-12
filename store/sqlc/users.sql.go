@@ -31,3 +31,23 @@ func (q *Queries) ReadUserByHandle(ctx context.Context, handle string) (ReadUser
 	err := row.Scan(&i.ID, &i.MagicLink, &i.IsActive)
 	return i, err
 }
+
+const readUserByMagicKey = `-- name: ReadUserByMagicKey :one
+SELECT id, handle, is_active
+FROM users
+WHERE magic_link = ?1
+`
+
+type ReadUserByMagicKeyRow struct {
+	ID       int64
+	Handle   string
+	IsActive int64
+}
+
+// ReadUserByMagicKey gets a player by its magic key.
+func (q *Queries) ReadUserByMagicKey(ctx context.Context, magicKey string) (ReadUserByMagicKeyRow, error) {
+	row := q.db.QueryRowContext(ctx, readUserByMagicKey, magicKey)
+	var i ReadUserByMagicKeyRow
+	err := row.Scan(&i.ID, &i.Handle, &i.IsActive)
+	return i, err
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="generator" content="go"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="author" content="Michael D Henderson"/>
+    <title>Epimethean Challenge</title>
+</head>
+<body>
+<main>
+    {{if .Error}}
+        <p>
+            There was an error logging in.
+            <ul>
+                <li>{{.Error}}</li>
+            </ul>
+        </p>
+    {{else if .User.ID}}
+        <p>
+            You have a token with user id of {{.User.ID}}.
+        </p>
+    {{else}}
+        <p>
+            You are not logged in.
+            Please contact the admin if you have not received an e-mail with a link to log in.
+        </p>
+    {{end}}
+</main>
+<hr>
+<footer>
+    Empyrean Challenge is the property of James Columbo and is used with his permission.
+    The documentation from this site may not be used without his express permission.
+</footer>
+</body>
+</html>

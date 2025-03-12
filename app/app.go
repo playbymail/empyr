@@ -4,6 +4,9 @@
 // It is not the game engine or the web server or the repository.
 package app
 
+// https://grafana.com/blog/2024/02/09/how-i-write-http-services-in-go-after-13-years/
+// https://dev.to/omg-a-bear/how-i-write-http-services-in-go-2k34
+
 import (
 	"context"
 	"fmt"
@@ -11,6 +14,7 @@ import (
 	"github.com/playbymail/empyr/internal/commands"
 	"github.com/playbymail/empyr/internal/controllers"
 	"github.com/playbymail/empyr/internal/encryption"
+	"github.com/playbymail/empyr/internal/jot"
 	"github.com/playbymail/empyr/internal/ratelimiter"
 	"github.com/playbymail/empyr/internal/services"
 	"github.com/playbymail/empyr/internal/views"
@@ -56,12 +60,13 @@ type App struct {
 		PaddleMigrate *commands.PaddleMigrate
 	}
 
-	Views *views.View
+	JotFactory *jot.Factory
+	Views      *views.View
 }
 
 type Config struct{}
 
-func New(repo *store.Store, assetsPath, templatesPath string, ctx context.Context) (*App, error) {
+func New(repo *store.Store, jf *jot.Factory, assetsPath, templatesPath string, ctx context.Context) (*App, error) {
 	// verify the asset paths
 	if !stdlib.IsDirExists(assetsPath) {
 		return nil, fmt.Errorf("%s: invalid path", assetsPath)
@@ -74,6 +79,7 @@ func New(repo *store.Store, assetsPath, templatesPath string, ctx context.Contex
 	a.Assets.Templates = templatesPath
 	a.Database.Store = repo
 	a.Database.Context = ctx
+	a.JotFactory = jf
 
 	// wire up the controllers for the application
 	// should we be creating views for the controllers here?

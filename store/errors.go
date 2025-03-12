@@ -2,30 +2,24 @@
 
 package store
 
-// Error implements Cheney's constant error idiom
-type Error string
-
-// Error implements the error interface.
-func (e Error) Error() string {
-	return string(e)
-}
+import "github.com/playbymail/empyr/internal/cerr"
 
 const (
-	ErrAlreadyExists       = Error("already exists")
-	ErrCreateSchema        = Error("create schema")
-	ErrForeignKeysDisabled = Error("foreign keys are disabled")
-	ErrInvalidPath         = Error("invalid path")
-	ErrNotExist            = Error("not exist")
-	ErrNotFound            = Error("not found")
-	ErrNotImplemented      = Error("not implemented")
-	ErrNotOpen             = Error("not open")
-	ErrNotUnique           = Error("not unique")
-	ErrNotValid            = Error("not valid")
-	ErrNotWritable         = Error("not writable")
-	ErrOpen                = Error("open")
-	ErrPragmaReturnedNil   = Error("pragma returned nil")
-	ErrReadOnly            = Error("read only")
-	ErrUnknown             = Error("unknown")
-	ErrUnsupported         = Error("unsupported")
-	ErrWriteOnly           = Error("write only")
+	ErrAlreadyExists       = cerr.Error("already exists")
+	ErrCreateSchema        = cerr.Error("create schema")
+	ErrForeignKeysDisabled = cerr.Error("foreign keys are disabled")
+	ErrInvalidPath         = cerr.Error("invalid path")
+	ErrNotExist            = cerr.Error("not exist")
+	ErrNotFound            = cerr.Error("not found")
+	ErrNotImplemented      = cerr.Error("not implemented")
+	ErrNotOpen             = cerr.Error("not open")
+	ErrNotUnique           = cerr.Error("not unique")
+	ErrNotValid            = cerr.Error("not valid")
+	ErrNotWritable         = cerr.Error("not writable")
+	ErrOpen                = cerr.Error("open")
+	ErrPragmaReturnedNil   = cerr.Error("pragma returned nil")
+	ErrReadOnly            = cerr.Error("read only")
+	ErrUnknown             = cerr.Error("unknown")
+	ErrUnsupported         = cerr.Error("unsupported")
+	ErrWriteOnly           = cerr.Error("write only")
 )

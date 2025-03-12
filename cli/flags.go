@@ -59,6 +59,9 @@ var flags struct {
 		IdleTimeout    time.Duration
 		MaxHeaderBytes int64
 	}
+	Sessions struct {
+		Secret string
+	}
 	Verbose bool
 	Version semver.Version
 }
@@ -92,6 +95,8 @@ func applyEnvironmentVariables() {
 	xiistr(&flags.Server.Host, "_SERVER_HOST")
 	xiistr(&flags.Server.Port, "_SERVER_PORT")
 	xiiint(&flags.Server.MaxHeaderBytes, "_SERVER_MAXHEADERBYTES")
+
+	xiistr(&flags.Sessions.Secret, "_SESSIONS_SECRET")
 
 	xiibool(&flags.Verbose, "_VERBOSE")
 }

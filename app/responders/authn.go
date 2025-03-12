@@ -3,65 +3,42 @@
 package responders
 
 import (
-	"html/template"
+	"github.com/playbymail/empyr/internal/domains"
 	"log"
 	"net/http"
-	"path/filepath"
 )
 
+type LogoutUserResponder struct {
+	View *ResponderTemplate
+}
+
+func NewLogoutUserResponder(view *ResponderTemplate) *LogoutUserResponder {
+	return &LogoutUserResponder{View: view}
+}
+
+func (r *LogoutUserResponder) Respond(w http.ResponseWriter, isHTMX bool, err error) {
+	// render the logout page
+	r.View.Render(w, "logout.gohtml", nil)
+}
+
 type ShowLoginResponder struct {
-	Tmpl *template.Template
+	View *ResponderTemplate
 }
 
-type ShowLoginResponse struct {
-	IsHTMX bool
-	User   string
+func NewShowLoginResponder(view *ResponderTemplate) *ShowLoginResponder {
+	return &ShowLoginResponder{View: view}
 }
 
-func (r *ShowLoginResponder) Respond(w http.ResponseWriter, data ShowLoginResponse, err error) {
-	w.Header().Set("Content-Type", "text/html")
-	_ = r.Tmpl.ExecuteTemplate(w, "login.gohtml", nil)
-}
-
-type LogoutResponder struct {
-	Templates []string // path to templates directory
-	Tmpl      *template.Template
-}
-
-type LogoutResponse struct {
-	IsHTMX bool
-}
-
-func NewLogoutResponder(templates string) *LogoutResponder {
-	// in development, always reload the templates. in production, we should cache them.
-	return &LogoutResponder{
-		Templates: []string{filepath.Join(templates, "logout.gohtml")},
-	}
-}
-
-func (r *LogoutResponder) Respond(w http.ResponseWriter, data LogoutResponse, err error) {
-	log.Printf("responders: LogoutResponder: entered\n")
-
-	// delete the session cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:   "empyr-session",
-		Value:  "",
-		MaxAge: -1,
+func (r *ShowLoginResponder) Respond(w http.ResponseWriter, isHTMX bool, user domains.User, err error) {
+	log.Printf("responders: ShowLoginResponder: entered\n")
+	// render the login page
+	r.View.Render(w, "login.gohtml", struct {
+		IsHTMX bool
+		User   domains.User
+		Error  error
+	}{
+		IsHTMX: isHTMX,
+		User:   user,
+		Error:  err,
 	})
-
-	var t *template.Template
-	if r.Tmpl != nil {
-		log.Printf("responders: LogoutResponder: using cached template\n")
-		t = r.Tmpl
-	} else {
-		log.Printf("responders: LogoutResponder: loading %s\n", r.Templates)
-		if t, err = template.ParseFiles(r.Templates...); err != nil {
-			log.Printf("responders: LogoutResponder: template.ParseFiles: %v\n", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	w.Header().Set("Content-Type", "text/html")
-	_ = t.ExecuteTemplate(w, "logout.gohtml", nil)
 }

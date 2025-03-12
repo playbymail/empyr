@@ -35,6 +35,15 @@ type PageData struct {
 var viewCount int
 
 func (c Home) Show(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		// The / path is the garbage bin for the stdlib's router. We have to explicitly
+		// handle those not found paths here. Some people would implement the static
+		// file server here, but that's not the job of this controller. Meh.
+		log.Printf("%s %s: not found\n", r.Method, r.URL.Path)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
 	log.Printf("%s %s: %s\n", r.Method, r.URL.Path, r.RemoteAddr)
 
 	// unsafe increment the view count, but who cares
