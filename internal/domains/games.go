@@ -12,6 +12,7 @@ type Game struct {
 	Code        string // unique code for the game, e.g. A01
 	Name        string
 	DisplayName string
+	IsActive    bool
 	CurrentTurn int
 	CreatedAt   time.Time
 	UpdatedAt   time.Time

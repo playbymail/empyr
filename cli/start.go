@@ -7,6 +7,7 @@ import (
 	"github.com/playbymail/empyr/app"
 	"github.com/playbymail/empyr/internal/jot"
 	"github.com/playbymail/empyr/internal/services/auth"
+	"github.com/playbymail/empyr/internal/services/games"
 	"github.com/playbymail/empyr/internal/services/sessions"
 	"github.com/playbymail/empyr/server"
 	"github.com/playbymail/empyr/store"
@@ -41,6 +42,7 @@ var cmdStartServer = &cobra.Command{
 		jf := jot.NewFactory(flags.Sessions.Secret)
 
 		authService := auth.NewService(repo)
+		gamesService := games.NewService(repo)
 		sessionsService := sessions.NewService(repo, jf)
 
 		// initialize the web application
@@ -64,7 +66,7 @@ var cmdStartServer = &cobra.Command{
 		srv := server.New(cfg)
 
 		// start the server. blocks until the server receives a signal to stop.
-		err = srv.Start(a.Router(authService, sessionsService))
+		err = srv.Start(a.Router(authService, gamesService, sessionsService))
 
 		// force the repository to close before we exit.
 		_ = repo.Close()

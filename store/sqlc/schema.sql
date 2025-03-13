@@ -78,6 +78,7 @@ CREATE TABLE games
     home_star_id   INTEGER  NOT NULL DEFAULT 0,
     home_orbit_id  INTEGER  NOT NULL DEFAULT 0,
     home_planet_id INTEGER  NOT NULL DEFAULT 0,
+    is_active      INTEGER  NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
     created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -6,6 +6,7 @@ sql:
     queries:
       - "sqlc/queries.sql"
       - "sqlc/empires.sql"
+      - "sqlc/games.sql"
       - "sqlc/users.sql"
     gen:
       go:

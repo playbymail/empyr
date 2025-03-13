@@ -57,6 +57,7 @@ type Games struct {
 	HomeStarID   int64
 	HomeOrbitID  int64
 	HomePlanetID int64
+	IsActive     int64
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }

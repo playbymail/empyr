@@ -7,6 +7,7 @@ import (
 	"github.com/playbymail/empyr/app/domains"
 	"github.com/playbymail/empyr/app/responders"
 	"github.com/playbymail/empyr/internal/services/auth"
+	"github.com/playbymail/empyr/internal/services/games"
 	"github.com/playbymail/empyr/internal/services/sessions"
 	"html/template"
 	"log"
@@ -14,7 +15,11 @@ import (
 	"path/filepath"
 )
 
-func (a *App) Router(authService auth.Service, sessionsService sessions.Service) http.Handler {
+func (a *App) Router(
+	authService auth.Service,
+	gamesService games.Service,
+	sessionsService sessions.Service,
+) http.Handler {
 	// Load templates
 	tmpl := template.Must(template.ParseFiles(filepath.Join(a.Assets.Templates, "user-row.gohtml")))
 
@@ -58,6 +63,14 @@ func (a *App) Router(authService auth.Service, sessionsService sessions.Service)
 	}
 	mux.HandleFunc("GET /logout", logoutUserAction.ServeHTTP)
 	mux.HandleFunc("POST /logout", logoutUserAction.ServeHTTP)
+
+	showGamesResponder := responders.NewShowGamesResponder(responders.NewView("games", a.Assets.Templates, "games.gohtml"))
+	showGamesAction := actions.ShowGamesAction{
+		Sessions:  sessionsService,
+		Games:     gamesService,
+		Responder: showGamesResponder,
+	}
+	mux.HandleFunc("GET /games", showGamesAction.ServeHTTP)
 
 	createUserResponder := &responders.CreateUserResponder{Tmpl: tmpl}
 	createUserAction := &actions.CreateUserAction{Service: userService, Responder: createUserResponder}
