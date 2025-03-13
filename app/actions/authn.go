@@ -3,6 +3,7 @@
 package actions
 
 import (
+	"fmt"
 	"github.com/playbymail/empyr/app/responders"
 	"github.com/playbymail/empyr/internal/services/auth"
 	"github.com/playbymail/empyr/internal/services/sessions"
@@ -21,21 +22,28 @@ func (a *LoginUserAction) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// and then create a session.
 	// as a precaution, we delete any existing sessions
 	_ = a.Sessions.DeleteSession(w, 0)
-	// get the key from the route
-	key := r.PathValue("magicKey")
-	log.Printf("action: loginUser: key: %q\n", key)
+	// get the handle and key from the route
+	handle, key := r.PathValue("handle"), r.PathValue("magicKey")
+	log.Printf("action: loginUser: %q %q\n", handle, key)
 	// use the key to authenticate the user
-	user, err := a.Authentication.AuthenticateMagicKey(key)
+	user, err := a.Authentication.AuthenticateMagicKey(handle, key)
+	if err != nil {
+		// respond by showing the login page with an error
+		a.Responder.Respond(w, false, user, err)
+		return
+	} else if !user.IsUser {
+		// respond by showing the login page with an error
+		a.Responder.Respond(w, false, user, fmt.Errorf("invalid credentials"))
+		return
+	}
 	log.Printf("action: loginUser: user %+v\n", user)
 	log.Printf("action: loginUser: err %v\n", err)
 	if err == nil {
 		// create a new session
 		_, _ = a.Sessions.CreateSession(w, user.ID)
 	}
-	// set the response parameters
-	isHTMX := r.Header.Get("HX-Request") != ""
-	// respond
-	a.Responder.Respond(w, isHTMX, user, err)
+	// respond by redirecting user to the login page
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 type LogoutUserAction struct {
@@ -62,6 +70,7 @@ func (a *ShowLoginAction) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// set the response parameters
 	isHTMX := r.Header.Get("HX-Request") != ""
 	user := a.Sessions.GetUser(r)
+	log.Printf("action: showLogin: user %+v\n", user)
 	// respond
 	a.Responder.Respond(w, isHTMX, user, nil)
 }

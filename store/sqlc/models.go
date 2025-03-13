@@ -175,6 +175,7 @@ type Users struct {
 	Handle    string
 	MagicLink string
 	IsActive  int64
+	IsAdmin   int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+[ -f public/css/input.css ] || {
+  echo "error: must run from root of repository"
+  exit 2
+}
+
+echo " info: starting tailwind cli"
+echo " info: watching public/css/input.css"
+echo " info: updating public/css/empyr.css"
+
+~/bin/tailwindcss -i ./public/css/input.css -o ./public/css/empyr.css --watch
+

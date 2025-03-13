@@ -8,7 +8,6 @@ import (
 	"github.com/playbymail/empyr/internal/cerr"
 	"github.com/playbymail/empyr/internal/domains"
 	"github.com/playbymail/empyr/internal/jot"
-	"log"
 	"net/http"
 )
 
@@ -62,6 +61,7 @@ func (s *service) GetSession(r *http.Request) (SessionID, error) {
 }
 
 func (s *service) GetUser(r *http.Request) domains.User {
+	// log.Printf("%s %s: mw: sessions: GetUser entered\n", r.Method, r.URL.Path)
 	// try from the context first
 	user, ok := r.Context().Value(sessionsContextKey("user")).(domains.User)
 	if ok {
@@ -84,7 +84,7 @@ type sessionsContextKey string
 
 func AddUserToContext(h http.Handler, sessionsService Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s: mw: sessions: entered\n", r.Method, r.URL.Path)
+		// log.Printf("%s %s: mw: sessions: entered\n", r.Method, r.URL.Path)
 		user := sessionsService.GetUser(r)
 		ctx := context.WithValue(r.Context(), sessionsContextKey("user"), user)
 		h.ServeHTTP(w, r.WithContext(ctx))

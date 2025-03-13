@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"github.com/mdhender/semver"
 	"github.com/playbymail/empyr/internal/domains"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -75,38 +74,38 @@ func (f *Factory) GetToken(r *http.Request) *Token {
 	if len(fields) != 3 {
 		return nil
 	}
-	log.Printf("jot: getToken: fields: %+v\n", fields)
+	// log.Printf("jot: getToken: fields: %+v\n", fields)
 
 	var t Token
 	if id, err := strconv.Atoi(fields[0]); err != nil {
-		log.Printf("jot: getToken: id: strconv: %v\n", err)
+		// log.Printf("jot: getToken: id: strconv: %v\n", err)
 		return nil
 	} else {
 		t.id = domains.UserID(id)
-		log.Printf("jot: getToken: id: %d\n", t.id)
+		// log.Printf("jot: getToken: id: %d\n", t.id)
 	}
 	if expiresAt, err := strconv.Atoi(fields[1]); err != nil {
-		log.Printf("jot: getToken: expiresAt: strconv: %v\n", err)
+		// log.Printf("jot: getToken: expiresAt: strconv: %v\n", err)
 		return nil
 	} else {
 		t.expiresAt = time.Unix(int64(expiresAt), 0)
-		log.Printf("jot: getToken: expiresAt: %s\n", t.expiresAt.Format(time.RFC3339))
+		// log.Printf("jot: getToken: expiresAt: %s\n", t.expiresAt.Format(time.RFC3339))
 	}
 	if t.signature = fields[2]; t.signature == "" {
-		log.Printf("jot: getToken: signature: empty\n")
+		// log.Printf("jot: getToken: signature: empty\n")
 		return nil
 	}
 
 	// verify that the token is valid. we check for expiration first because
 	// it is cheaper to check than to verify the signature.
 	if t.expiresAt.IsZero() {
-		log.Printf("jot: getToken: token has no expiration timestamp\n")
+		// log.Printf("jot: getToken: token has no expiration timestamp\n")
 	} else if now := time.Now().UTC(); !now.Before(t.expiresAt) {
-		log.Printf("jot: getToken: token has expired\n")
+		// log.Printf("jot: getToken: token has expired\n")
 	} else if t.isValid = f.verify(t.id, t.expiresAt, t.signature); !t.isValid {
-		log.Printf("jot: getToken: token not signed\n")
+		// log.Printf("jot: getToken: token not signed\n")
 	} else {
-		log.Printf("jot: getToken: token is valid\n")
+		// log.Printf("jot: getToken: token is valid\n")
 	}
 
 	return &t
@@ -124,38 +123,38 @@ func (f *Factory) NewToken(id domains.UserID) *Token {
 // fromBearerToken returns the text of the token from the Authorization header.
 // If there is no bearer token, it returns false.
 func (f *Factory) fromBearerToken(r *http.Request) (string, bool) {
-	log.Printf("jot: bearer: entered\n")
+	// log.Printf("jot: bearer: entered\n")
 	headerAuthText := r.Header.Get("Authorization")
 	if headerAuthText == "" {
 		return "", false
 	}
-	log.Printf("jon: bearer: found authorization header\n")
+	// log.Printf("jon: bearer: found authorization header\n")
 	authTokens := strings.SplitN(headerAuthText, " ", 2)
 	if len(authTokens) != 2 {
 		return "", false
 	}
-	log.Printf("jot: bearer: found authorization token\n")
+	// log.Printf("jot: bearer: found authorization token\n")
 	authType, authToken := authTokens[0], strings.TrimSpace(authTokens[1])
 	if authType != "Bearer" {
 		return "", false
 	}
-	log.Printf("jot: bearer: found bearer token\n")
+	// log.Printf("jot: bearer: found bearer token\n")
 	return authToken, true
 }
 
 // fromCookie returns the text of the token from a session cookie.
 // If there is no session cookie, it returns false.
 func (f *Factory) fromCookie(r *http.Request) (string, bool) {
-	log.Printf("jot: cookie: entered\n")
+	// log.Printf("jot: cookie: entered\n")
 	c, err := r.Cookie(cookieName)
 	if err != nil {
-		log.Printf("jot: cookie: %+v\n", err)
+		// log.Printf("jot: cookie: %+v\n", err)
 		return "", false
 	} else if c.Value == "" {
-		log.Printf("jot: cookie: missing value\n")
+		// log.Printf("jot: cookie: missing value\n")
 		return "", false
 	}
-	log.Printf("jot: cookie: %q\n", c.Value)
+	// log.Printf("jot: cookie: %q\n", c.Value)
 	return c.Value, true
 }
 

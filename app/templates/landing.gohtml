@@ -10,15 +10,28 @@
 </head>
 <body>
 <main>
-<p>
-    You have been logged out.
-    Please close your browser and go take some time to think about what you have learned.
-</p>
+    <h2 class="text-2xl font-bold underline">
+        Epimethean Challenge
+    </h2>
+    {{if .User.IsUser}}
+        <p>Welcome, {{.User.Handle}}</p>
+            <nav>
+                <ul>
+                    <li><a href="/games">Games</a></li>
+                    <li><a href="/games">Logout</a></li>
+                </ul>
+            </nav>
+    {{else}}
+        <p>Visit the Discord server to learn more!</p>
+    {{end}}
 </main>
 <hr>
 <footer>
     Empyrean Challenge is the property of James Columbo and is used with his permission.
     The documentation from this site may not be used without his express permission.
+    <p>
+        Author | <a href="https://github.com/playbymail/empyr">Michael D Henderson</a> | GNU AGPLv3
+    </p>
 </footer>
 </body>
 </html>

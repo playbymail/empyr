@@ -16,14 +16,14 @@ const (
 
 // Repository defines the operations required to fetch and store authentication data.
 type Repository interface {
-	GetMagicKeyUser(key string) (domains.User, error)
+	GetMagicKeyUser(handle, key string) (domains.User, error)
 	GetUser(domains.UserID) (domains.User, error)
 }
 
 // Service defines the operations this service will perform.
 // It's the contract with the outside world and is defined so we can mock it for testing.
 type Service interface {
-	AuthenticateMagicKey(key string) (domains.User, error)
+	AuthenticateMagicKey(handle, key string) (domains.User, error)
 }
 
 // service defines the service we are implementing
@@ -35,9 +35,9 @@ func NewService(r Repository) Service {
 	return &service{r: r}
 }
 
-func (s *service) AuthenticateMagicKey(key string) (domains.User, error) {
+func (s *service) AuthenticateMagicKey(handle, key string) (domains.User, error) {
 	log.Printf("services: authn: authenticate magic key: %s\n", key)
-	return s.r.GetMagicKeyUser(key)
+	return s.r.GetMagicKeyUser(handle, key)
 }
 
 func (s *service) GetUser(userID domains.UserID) (domains.User, error) {

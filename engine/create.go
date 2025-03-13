@@ -98,8 +98,58 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 	g.Id = id
 	log.Printf("create: game: %d: %s\n", g.Id, code)
 
-	log.Printf("create: systems: %8d systems\n", len(g.Systems))
+	var systems []*System_t
 	for _, system := range g.Systems {
+		if system != nil {
+			systems = append(systems, system)
+		}
+	}
+	sort.Slice(systems, func(i, j int) bool {
+		return systems[i].Id < systems[j].Id
+	})
+	var stars []*Star_t
+	for _, star := range g.Stars {
+		if star != nil {
+			stars = append(stars, star)
+		}
+	}
+	sort.Slice(stars, func(i, j int) bool {
+		return stars[i].Id < stars[j].Id
+	})
+	var orbits []*Orbit_t
+	for _, orbit := range g.Orbits {
+		if orbit != nil {
+			orbits = append(orbits, orbit)
+		}
+	}
+	sort.Slice(orbits, func(i, j int) bool {
+		return orbits[i].Id < orbits[j].Id
+	})
+	var planets []*Planet_t
+	for _, planet := range g.Planets {
+		if planet != nil {
+			planets = append(planets, planet)
+		}
+	}
+	sort.Slice(planets, func(i, j int) bool {
+		return planets[i].Id < planets[j].Id
+	})
+	var deposits []*Deposit_t
+	for _, deposit := range g.Deposits {
+		if deposit != nil {
+			deposits = append(deposits, deposit)
+		}
+	}
+	sort.Slice(deposits, func(i, j int) bool {
+		return deposits[i].Id < deposits[j].Id
+	})
+
+	log.Printf("create: systems: %8d systems\n", len(g.Systems))
+	g.Systems = make(map[int64]*System_t)
+	for _, system := range systems {
+		if system == nil {
+			continue
+		}
 		systemId, err := q.CreateSystem(e.Store.Context, sqlc.CreateSystemParams{
 			GameID:   id,
 			X:        system.Coordinates.X,
@@ -112,17 +162,16 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		}
 		// update the system with the id from the database
 		system.Id = systemId
-	}
-	// update the id numbers in the game map
-	if src := g.Systems; len(src) != 0 {
-		g.Systems = make(map[int64]*System_t)
-		for _, system := range src {
-			g.Systems[system.Id] = system
-		}
+		// update the id numbers in the game map
+		g.Systems[system.Id] = system
 	}
 
 	log.Printf("create: stars: %8d stars\n", len(g.Stars))
-	for _, star := range g.Stars {
+	g.Stars = make(map[int64]*Star_t)
+	for _, star := range stars {
+		if star == nil {
+			continue
+		}
 		starId, err := q.CreateStar(e.Store.Context, sqlc.CreateStarParams{
 			SystemID: star.System.Id,
 			Sequence: star.Sequence,
@@ -133,17 +182,16 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		}
 		// update the star with the id from the database
 		star.Id = starId
-	}
-	// update the id numbers in the game map
-	if src := g.Stars; len(src) != 0 {
-		g.Stars = make(map[int64]*Star_t)
-		for _, star := range src {
-			g.Stars[star.Id] = star
-		}
+		// update the id numbers in the game map
+		g.Stars[star.Id] = star
 	}
 
 	log.Printf("create: orbits: %8d orbits\n", len(g.Orbits))
-	for _, orbit := range g.Orbits {
+	g.Orbits = make(map[int64]*Orbit_t)
+	for _, orbit := range orbits {
+		if orbit == nil {
+			continue
+		}
 		orbitId, err := q.CreateOrbit(e.Store.Context, sqlc.CreateOrbitParams{
 			StarID:   orbit.Star.Id,
 			OrbitNo:  orbit.OrbitNo,
@@ -155,17 +203,16 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		}
 		// update the orbit with the id from the database
 		orbit.Id = orbitId
-	}
-	// update the id numbers in the game map
-	if src := g.Orbits; len(src) != 0 {
-		g.Orbits = make(map[int64]*Orbit_t)
-		for _, orbit := range src {
-			g.Orbits[orbit.Id] = orbit
-		}
+		// update the id numbers in the game map
+		g.Orbits[orbit.Id] = orbit
 	}
 
 	log.Printf("create: planets: %8d planets\n", len(g.Planets))
-	for _, planet := range g.Planets {
+	g.Planets = make(map[int64]*Planet_t)
+	for _, planet := range planets {
+		if planet == nil {
+			continue
+		}
 		planetId, err := q.CreatePlanet(e.Store.Context, sqlc.CreatePlanetParams{
 			OrbitID:      planet.Orbit.Id,
 			Kind:         int64(planet.Kind),
@@ -177,17 +224,13 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		}
 		// update the planet with the id from the database
 		planet.Id = planetId
-	}
-	// update the id numbers in the game map
-	if src := g.Planets; len(src) != 0 {
-		g.Planets = make(map[int64]*Planet_t)
-		for _, planet := range src {
-			g.Planets[planet.Id] = planet
-		}
+		// update the id numbers in the game map
+		g.Planets[planet.Id] = planet
 	}
 
 	log.Printf("create: deposits: %8d deposits\n", len(g.Deposits))
-	for _, deposit := range g.Deposits {
+	g.Deposits = make(map[int64]*Deposit_t)
+	for _, deposit := range deposits {
 		if deposit == nil {
 			continue
 		}
@@ -204,13 +247,8 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		}
 		// update the deposit with the id from the database
 		deposit.Id = depositId
-	}
-	// update the id numbers in the game map
-	if src := g.Deposits; len(src) != 0 {
-		g.Deposits = make(map[int64]*Deposit_t)
-		for _, deposit := range src {
-			g.Deposits[deposit.Id] = deposit
-		}
+		// update the id numbers in the game map
+		g.Deposits[deposit.Id] = deposit
 	}
 
 	log.Printf("create: empires: %8d empires\n", len(g.Empires))

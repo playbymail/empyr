@@ -49,8 +49,8 @@ func (a *App) Router(authService auth.Service, sessionsService sessions.Service)
 		Authentication: authService,
 		Responder:      showLoginResponder,
 	}
-	mux.HandleFunc("GET /login/{magicKey}", loginUserAction.ServeHTTP)
-	mux.HandleFunc("POST /login/{magicKey}", loginUserAction.ServeHTTP)
+	mux.HandleFunc("GET /login/{handle}/{magicKey}", loginUserAction.ServeHTTP)
+	mux.HandleFunc("POST /login/{handle}/{magicKey}", loginUserAction.ServeHTTP)
 
 	logoutUserAction := actions.LogoutUserAction{
 		Sessions:  sessionsService,
@@ -68,7 +68,12 @@ func (a *App) Router(authService auth.Service, sessionsService sessions.Service)
 	// the catch-all for all not-found routes.
 	// Gotta love Go's routing.
 	// Actually, I don't love this part of it.
-	mux.HandleFunc("GET /", a.Controllers.Home.Show)
+	showLandingResponder := responders.NewShowLandingResponder(responders.NewView("landing", a.Assets.Templates, "landing.gohtml"))
+	showLandingAction := actions.ShowLandingAction{
+		Sessions:  sessionsService,
+		Responder: showLandingResponder,
+	}
+	mux.HandleFunc("GET /", showLandingAction.ServeHTTP)
 
 	return sessions.AddUserToContext(mux, sessionsService)
 

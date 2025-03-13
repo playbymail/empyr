@@ -50,7 +50,8 @@ CREATE TABLE users
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     handle     TEXT     NOT NULL UNIQUE,
     magic_link TEXT     NOT NULL UNIQUE,
-    is_active  INTEGER  NOT NULL CHECK (is_active IN (0, 1)),
+    is_active  INTEGER  NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
+    is_admin   INTEGER  NOT NULL DEFAULT 0 CHECK (is_admin IN (0, 1)),
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -185,7 +186,7 @@ CREATE TABLE empires
 (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id        INTEGER NOT NULL,
-    user_id      INTEGER NOT NULL,
+    user_id        INTEGER NOT NULL,
     empire_no      INTEGER NOT NULL CHECK (empire_no BETWEEN 1 AND 256),
     name           TEXT    NOT NULL,
     home_system_id INTEGER NOT NULL,
