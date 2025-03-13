@@ -9,6 +9,7 @@ User=empyr
 Group=empyr
 PIDFile=/run/empyr-a01.pid
 WorkingDirectory=/var/www/a01/bin
+Environment=EMPYR_ENV=production
 ExecStart=/var/www/a01/bin/empyr start server
 ExecReload=/bin/kill -USR1 $MAINPID
 Restart=on-failure

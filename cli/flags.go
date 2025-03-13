@@ -14,7 +14,8 @@ import (
 // this file defines the command line argument flags structure
 
 var flags struct {
-	Env struct {
+	Environment string // development, test, production
+	Env         struct {
 		Prefix string
 	}
 	Application struct {

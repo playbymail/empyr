@@ -2,22 +2,18 @@
 
 package cli
 
-// Error implements Cheney's constant error idiom
-type Error string
-
-// Error implements the error interface.
-func (e Error) Error() string {
-	return string(e)
-}
+import "github.com/playbymail/empyr/internal/cerr"
 
 const (
-	ErrDeleteFailed      = Error("delete failed")
-	ErrFileExists        = Error("file exists")
-	ErrEnvPrefixBadChars = Error("environment prefix contains invalid characters")
-	ErrEnvPrefixEmpty    = Error("environment prefix is empty")
-	ErrEnvPrefixPrefix   = Error("environment prefix must start with an upper-case letter")
-	ErrEnvPrefixSuffix   = Error("environment prefix must end with an underscore")
-	ErrInvalidEnvPrefix  = Error("invalid environment prefix")
-	ErrInvalidVersion    = Error("invalid version")
-	ErrNotImplemented    = Error("not implemented")
+	ErrDeleteFailed      = cerr.Error("delete failed")
+	ErrFileExists        = cerr.Error("file exists")
+	ErrEnvFlagInvalid    = cerr.Error("environment flag is invalid")
+	ErrEnvFlagNotSet     = cerr.Error("environment flag not set")
+	ErrEnvPrefixBadChars = cerr.Error("environment prefix contains invalid characters")
+	ErrEnvPrefixEmpty    = cerr.Error("environment prefix is empty")
+	ErrEnvPrefixPrefix   = cerr.Error("environment prefix must start with an upper-case letter")
+	ErrEnvPrefixSuffix   = cerr.Error("environment prefix must end with an underscore")
+	ErrInvalidEnvPrefix  = cerr.Error("invalid environment prefix")
+	ErrInvalidVersion    = cerr.Error("invalid version")
+	ErrNotImplemented    = cerr.Error("not implemented")
 )

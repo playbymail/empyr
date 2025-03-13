@@ -7,6 +7,7 @@ import (
 	"github.com/playbymail/empyr/pkg/dotenv"
 	"github.com/spf13/cobra"
 	"log"
+	"os"
 	"time"
 )
 
@@ -39,6 +40,15 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 		if err := option(); err != nil {
 			return nil, err
 		}
+	}
+
+	// the environment flag must be set
+	if env, ok := os.LookupEnv(flags.Env.Prefix + "_ENV"); !ok {
+		return nil, ErrEnvFlagNotSet
+	} else if !(env == "development" || env == "test" || env == "production") {
+		return nil, ErrEnvFlagInvalid
+	} else {
+		flags.Environment = env
 	}
 
 	// load the env files, and then pull values from the environment.
