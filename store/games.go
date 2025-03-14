@@ -6,43 +6,47 @@ import "github.com/playbymail/empyr/internal/domains"
 
 // this file implements functions for the Games service.
 
-func (s *Store) GetAllGames() ([]domains.Game, error) {
+func (s *Store) GetAllGameInfo() ([]domains.GameInfo, error) {
 	// get all games
-	rows, err := s.Queries.ReadAllGames(s.Context)
+	rows, err := s.Queries.ReadAllGameInfo(s.Context)
 	if err != nil {
 		return nil, err
 	}
 	// convert rows to games
-	games := make([]domains.Game, 0, len(rows))
+	games := make([]domains.GameInfo, 0, len(rows))
 	for _, row := range rows {
-		games = append(games, domains.Game{
+		games = append(games, domains.GameInfo{
 			ID:          domains.GameID(row.ID),
 			Code:        row.Code,
 			Name:        row.Name,
 			DisplayName: row.DisplayName,
 			IsActive:    row.IsActive == 1,
-			CurrentTurn: int(row.CurrentTurn),
+			CurrentTurn: row.CurrentTurn,
+			EmpireCount: row.EmpireCount,
+			PlayerCount: row.PlayerCount,
 		})
 	}
 	return games, nil
 }
 
-func (s *Store) GetUsersGames(userID domains.UserID) ([]domains.Game, error) {
+func (s *Store) GetUserGames(userID domains.UserID) ([]domains.UserGame, error) {
 	// get all games
 	rows, err := s.Queries.ReadUsersGames(s.Context, int64(userID))
 	if err != nil {
 		return nil, err
 	}
 	// convert rows to games
-	games := make([]domains.Game, 0, len(rows))
+	games := make([]domains.UserGame, 0, len(rows))
 	for _, row := range rows {
-		games = append(games, domains.Game{
+		games = append(games, domains.UserGame{
 			ID:          domains.GameID(row.ID),
 			Code:        row.Code,
 			Name:        row.Name,
 			DisplayName: row.DisplayName,
 			IsActive:    row.IsActive == 1,
-			CurrentTurn: int(row.CurrentTurn),
+			EmpireID:    domains.EmpireID(row.EmpireID.Int64),
+			EmpireNo:    row.EmpireNo.Int64,
+			CurrentTurn: row.CurrentTurn,
 		})
 	}
 	return games, nil

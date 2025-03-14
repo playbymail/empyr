@@ -30,15 +30,18 @@ func (a *ShowGamesAction) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	payload.User = user
 
 	// get the games
-	if games, err := a.Games.GetAllGames(); err != nil {
+	if games, err := a.Games.GetAllGameInfo(); err != nil {
 		log.Printf("%s %s: %v\n", r.Method, r.URL.Path, err)
 		a.Responder.Respond(w, payload, err)
 		return
 	} else {
 		for _, game := range games {
-			payload.Games = append(payload.Games, responders.Game{
-				Code: game.Code,
-				Name: game.Name,
+			payload.Games = append(payload.Games, responders.GameInfo{
+				Code:        game.Code,
+				Name:        game.Name,
+				DisplayName: game.DisplayName,
+				IsActive:    game.IsActive,
+				CurrentTurn: game.CurrentTurn,
 			})
 		}
 	}

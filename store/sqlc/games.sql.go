@@ -7,31 +7,37 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
-const readAllGames = `-- name: ReadAllGames :many
+const readAllGameInfo = `-- name: ReadAllGameInfo :many
 
-SELECT id,
-       code,
-       name,
-       display_name,
-       is_active,
-       current_turn,
-       last_empire_no,
-       home_system_id,
-       home_star_id,
-       home_orbit_id,
-       home_planet_id
+SELECT games.id,
+       games.code,
+       games.name,
+       games.display_name,
+       games.is_active,
+       count(empires.id) as empire_count,
+       count(empires.id) as player_count,
+       games.current_turn,
+       games.last_empire_no,
+       games.home_system_id,
+       games.home_star_id,
+       games.home_orbit_id,
+       games.home_planet_id
 FROM games
+         LEFT OUTER JOIN empires ON games.id = empires.game_id
 ORDER BY code
 `
 
-type ReadAllGamesRow struct {
+type ReadAllGameInfoRow struct {
 	ID           int64
 	Code         string
 	Name         string
 	DisplayName  string
 	IsActive     int64
+	EmpireCount  int64
+	PlayerCount  int64
 	CurrentTurn  int64
 	LastEmpireNo int64
 	HomeSystemID int64
@@ -42,22 +48,24 @@ type ReadAllGamesRow struct {
 
 //	Copyright (c) 2025 Michael D Henderson. All rights reserved.
 //
-// ReadAllGames returns all games in the database, even the inactive ones.
-func (q *Queries) ReadAllGames(ctx context.Context) ([]ReadAllGamesRow, error) {
-	rows, err := q.db.QueryContext(ctx, readAllGames)
+// ReadAllGameInfo returns all games in the database, even the inactive ones.
+func (q *Queries) ReadAllGameInfo(ctx context.Context) ([]ReadAllGameInfoRow, error) {
+	rows, err := q.db.QueryContext(ctx, readAllGameInfo)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ReadAllGamesRow
+	var items []ReadAllGameInfoRow
 	for rows.Next() {
-		var i ReadAllGamesRow
+		var i ReadAllGameInfoRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Code,
 			&i.Name,
 			&i.DisplayName,
 			&i.IsActive,
+			&i.EmpireCount,
+			&i.PlayerCount,
 			&i.CurrentTurn,
 			&i.LastEmpireNo,
 			&i.HomeSystemID,
@@ -85,11 +93,8 @@ SELECT games.id,
        games.display_name,
        games.is_active,
        games.current_turn,
-       games.last_empire_no,
-       games.home_system_id,
-       games.home_star_id,
-       games.home_orbit_id,
-       games.home_planet_id
+       empires.id as empire_id,
+       empires.empire_no
 FROM games
          LEFT JOIN empires ON games.id = empires.game_id AND empires.user_id = ?1
 WHERE is_active = 1
@@ -97,17 +102,14 @@ ORDER BY code
 `
 
 type ReadUsersGamesRow struct {
-	ID           int64
-	Code         string
-	Name         string
-	DisplayName  string
-	IsActive     int64
-	CurrentTurn  int64
-	LastEmpireNo int64
-	HomeSystemID int64
-	HomeStarID   int64
-	HomeOrbitID  int64
-	HomePlanetID int64
+	ID          int64
+	Code        string
+	Name        string
+	DisplayName string
+	IsActive    int64
+	CurrentTurn int64
+	EmpireID    sql.NullInt64
+	EmpireNo    sql.NullInt64
 }
 
 // ReadUsersGames returns all active games that the user has a player in.
@@ -127,11 +129,8 @@ func (q *Queries) ReadUsersGames(ctx context.Context, userID int64) ([]ReadUsers
 			&i.DisplayName,
 			&i.IsActive,
 			&i.CurrentTurn,
-			&i.LastEmpireNo,
-			&i.HomeSystemID,
-			&i.HomeStarID,
-			&i.HomeOrbitID,
-			&i.HomePlanetID,
+			&i.EmpireID,
+			&i.EmpireNo,
 		); err != nil {
 			return nil, err
 		}

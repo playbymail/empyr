@@ -13,7 +13,7 @@ type Game struct {
 	Name        string
 	DisplayName string
 	IsActive    bool
-	CurrentTurn int
+	CurrentTurn int64
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Cluster     *Cluster
@@ -95,3 +95,27 @@ const (
 	METALLICS
 	NONMETALLICS
 )
+
+type GameInfo struct {
+	ID          GameID // unique identifier for the game
+	Code        string // unique code for the game, e.g. A01
+	Name        string
+	DisplayName string
+	EmpireCount int64
+	PlayerCount int64
+	IsActive    bool
+	CurrentTurn int64
+}
+
+type EmpireID int64
+
+type UserGame struct {
+	ID          GameID // unique identifier for the game
+	Code        string // unique code for the game, e.g. A01
+	Name        string
+	DisplayName string
+	EmpireID    EmpireID
+	EmpireNo    int64
+	IsActive    bool
+	CurrentTurn int64
+}

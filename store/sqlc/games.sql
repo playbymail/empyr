@@ -1,20 +1,23 @@
 --  Copyright (c) 2025 Michael D Henderson. All rights reserved.
 
--- ReadAllGames returns all games in the database, even the inactive ones.
+-- ReadAllGameInfo returns all games in the database, even the inactive ones.
 --
--- name: ReadAllGames :many
-SELECT id,
-       code,
-       name,
-       display_name,
-       is_active,
-       current_turn,
-       last_empire_no,
-       home_system_id,
-       home_star_id,
-       home_orbit_id,
-       home_planet_id
+-- name: ReadAllGameInfo :many
+SELECT games.id,
+       games.code,
+       games.name,
+       games.display_name,
+       games.is_active,
+       count(empires.id) as empire_count,
+       count(empires.id) as player_count,
+       games.current_turn,
+       games.last_empire_no,
+       games.home_system_id,
+       games.home_star_id,
+       games.home_orbit_id,
+       games.home_planet_id
 FROM games
+         LEFT OUTER JOIN empires ON games.id = empires.game_id
 ORDER BY code;
 
 -- ReadUsersGames returns all active games that the user has a player in.
@@ -26,11 +29,8 @@ SELECT games.id,
        games.display_name,
        games.is_active,
        games.current_turn,
-       games.last_empire_no,
-       games.home_system_id,
-       games.home_star_id,
-       games.home_orbit_id,
-       games.home_planet_id
+       empires.id as empire_id,
+       empires.empire_no
 FROM games
          LEFT JOIN empires ON games.id = empires.game_id AND empires.user_id = :user_id
 WHERE is_active = 1

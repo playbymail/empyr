@@ -15,11 +15,30 @@
     </h2>
     <p>Active Games</p>
     {{with .Games}}
-    <ul>
+    <table border="2">
+        <thead>
+        <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Display Name</th>
+            <th>Current Turn</th>
+            <th>Nbr of Players</th>
+            <th>Nbr of Empires</th>
+            <th>Is Active</th>
+        </tr>
+        </thead>
         {{range .}}
-        <li><a href="/game/{{.Code}}">{{.Name}}</a></li>
+        <tr>
+            <td>{{.Code}}</td>
+            <td><a href="/game/{{.Code}}">{{.Name}}</a></td>
+            <td>{{.DisplayName}}</td>
+            <td>{{.CurrentTurn}}</td>
+            <td>{{.PlayerCount}}</td>
+            <td>{{.EmpireCount}}</td>
+            <td>{{.IsActive}}</td>
+        </tr>
         {{end}}
-    </ul>
+    </table>
     {{else}}
     <p>There are no active games.</p>
     {{end}}

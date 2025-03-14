@@ -14,15 +14,15 @@ const (
 
 // Repository defines the operations required to fetch and store authentication data.
 type Repository interface {
-	GetAllGames() ([]domains.Game, error)
-	GetUsersGames(domains.UserID) ([]domains.Game, error)
+	GetAllGameInfo() ([]domains.GameInfo, error)
+	GetUserGames(domains.UserID) ([]domains.UserGame, error)
 }
 
 // Service defines the operations this service will perform.
 // It's the contract with the outside world and is defined so we can mock it for testing.
 type Service interface {
-	GetAllGames() ([]domains.Game, error)
-	GetUsersGames(domains.UserID) ([]domains.Game, error)
+	GetAllGameInfo() ([]domains.GameInfo, error)
+	GetUserGames(domains.UserID) ([]domains.UserGame, error)
 }
 
 // service defines the service we are implementing
@@ -34,10 +34,10 @@ func NewService(r Repository) Service {
 	return &service{r: r}
 }
 
-func (s *service) GetAllGames() ([]domains.Game, error) {
-	return s.r.GetAllGames()
+func (s *service) GetAllGameInfo() ([]domains.GameInfo, error) {
+	return s.r.GetAllGameInfo()
 }
 
-func (s *service) GetUsersGames(userID domains.UserID) ([]domains.Game, error) {
-	return s.r.GetUsersGames(userID)
+func (s *service) GetUserGames(userID domains.UserID) ([]domains.UserGame, error) {
+	return s.r.GetUserGames(userID)
 }

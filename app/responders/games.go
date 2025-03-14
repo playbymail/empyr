@@ -18,11 +18,16 @@ func NewShowGamesResponder(view *ResponderTemplate) *ShowGamesResponder {
 type ShowGamesData struct {
 	IsHTMX bool
 	User   domains.User
-	Games  []Game
+	Games  []GameInfo
 }
-type Game struct {
-	Code string
-	Name string
+type GameInfo struct {
+	Code        string
+	Name        string
+	DisplayName string
+	IsActive    bool
+	CurrentTurn int64
+	EmpireCount int64
+	PlayerCount int64
 }
 
 func (r *ShowGamesResponder) Respond(w http.ResponseWriter, data ShowGamesData, err error) {
