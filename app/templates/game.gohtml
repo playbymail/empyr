@@ -13,32 +13,11 @@
     <h2 class="text-2xl font-bold underline">
         Epimethean Challenge
     </h2>
-    <p>Active Games</p>
-    {{with .Games}}
-    <table border="2">
-        <thead>
-        <tr>
-            <th>Game</th>
-            <th>Name</th>
-            <th>Empire No</th>
-            <th>Current Turn</th>
-        </tr>
-        </thead>
-        {{range .}}
-        <tr>
-            <td><a href="/game/{{.Code}}/empire/{{.EmpireID}}">{{.Code}}</a></td>
-            <td>{{.DisplayName}}</td>
-            <td><a href="/game/{{.Code}}/empire/{{.EmpireID}}">{{.EmpireNo}}</a></td>
-            <td>{{.CurrentTurn}}</td>
-        </tr>
-        {{end}}
-    </table>
-    {{else}}
-    <p>There are no active games.</p>
-    {{end}}
+    <p>Game {{.Game.Code}}</p>
     <nav>
         <ul>
             <li><a href="/">Home</a></li>
+            <li><a href="/games">Games</a></li>
             <li><a href="/logout">Logout</a></li>
         </ul>
     </nav>

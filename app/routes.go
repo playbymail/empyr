@@ -64,6 +64,14 @@ func (a *App) Router(
 	mux.HandleFunc("GET /logout", logoutUserAction.ServeHTTP)
 	mux.HandleFunc("POST /logout", logoutUserAction.ServeHTTP)
 
+	showGameResponder := responders.NewShowGameResponder(responders.NewView("game", a.Assets.Templates, "game.gohtml"))
+	showGameAction := actions.ShowGameAction{
+		Sessions:  sessionsService,
+		Games:     gamesService,
+		Responder: showGameResponder,
+	}
+	mux.HandleFunc("GET /game/{gameCode}/empire/{empireID}", showGameAction.ServeHTTP)
+
 	showGamesResponder := responders.NewShowGamesResponder(responders.NewView("games", a.Assets.Templates, "games.gohtml"))
 	showGamesAction := actions.ShowGamesAction{
 		Sessions:  sessionsService,

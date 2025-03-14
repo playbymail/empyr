@@ -10,6 +10,65 @@ import (
 	"database/sql"
 )
 
+const getListOfActiveGamesForUser = `-- name: GetListOfActiveGamesForUser :many
+SELECT games.id,
+       games.code,
+       games.name,
+       games.display_name,
+       games.current_turn,
+       empires.id as empire_id,
+       empires.empire_no
+FROM games,
+     empires
+WHERE games.is_active = 1
+  AND empires.user_id = ?1
+  AND empires.game_id = games.id
+ORDER BY code
+`
+
+type GetListOfActiveGamesForUserRow struct {
+	ID          int64
+	Code        string
+	Name        string
+	DisplayName string
+	CurrentTurn int64
+	EmpireID    int64
+	EmpireNo    int64
+}
+
+// GetListOfActiveGamesForUser returns a list of all active games
+// that the user is a player in.
+func (q *Queries) GetListOfActiveGamesForUser(ctx context.Context, userID int64) ([]GetListOfActiveGamesForUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getListOfActiveGamesForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetListOfActiveGamesForUserRow
+	for rows.Next() {
+		var i GetListOfActiveGamesForUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.DisplayName,
+			&i.CurrentTurn,
+			&i.EmpireID,
+			&i.EmpireNo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const readAllGameInfo = `-- name: ReadAllGameInfo :many
 
 SELECT games.id,
@@ -84,6 +143,58 @@ func (q *Queries) ReadAllGameInfo(ctx context.Context) ([]ReadAllGameInfoRow, er
 		return nil, err
 	}
 	return items, nil
+}
+
+const readEmpireGameSummary = `-- name: ReadEmpireGameSummary :one
+SELECT games.id,
+       games.code,
+       games.name,
+       games.display_name,
+       games.is_active,
+       games.current_turn,
+       empires.id as empire_id,
+       empires.empire_no
+FROM games
+         LEFT JOIN empires ON games.id = empires.game_id AND empires.user_id = ?1
+WHERE games.code = ?2
+  AND games.is_active = 1
+  AND empires.user_id = ?1
+  AND empires.empire_no = ?3
+ORDER BY code
+`
+
+type ReadEmpireGameSummaryParams struct {
+	UserID   int64
+	GameCode string
+	EmpireNo int64
+}
+
+type ReadEmpireGameSummaryRow struct {
+	ID          int64
+	Code        string
+	Name        string
+	DisplayName string
+	IsActive    int64
+	CurrentTurn int64
+	EmpireID    sql.NullInt64
+	EmpireNo    sql.NullInt64
+}
+
+// ReadEmpireGameSummary returns a summary of the empire's game.
+func (q *Queries) ReadEmpireGameSummary(ctx context.Context, arg ReadEmpireGameSummaryParams) (ReadEmpireGameSummaryRow, error) {
+	row := q.db.QueryRowContext(ctx, readEmpireGameSummary, arg.UserID, arg.GameCode, arg.EmpireNo)
+	var i ReadEmpireGameSummaryRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.DisplayName,
+		&i.IsActive,
+		&i.CurrentTurn,
+		&i.EmpireID,
+		&i.EmpireNo,
+	)
+	return i, err
 }
 
 const readUsersGames = `-- name: ReadUsersGames :many
