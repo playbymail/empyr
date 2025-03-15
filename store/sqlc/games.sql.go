@@ -197,6 +197,56 @@ func (q *Queries) ReadEmpireGameSummary(ctx context.Context, arg ReadEmpireGameS
 	return i, err
 }
 
+const readGameInfoByCode = `-- name: ReadGameInfoByCode :one
+SELECT games.id,
+       games.code,
+       games.name,
+       games.display_name,
+       games.is_active,
+       games.current_turn,
+       games.last_empire_no,
+       games.home_system_id,
+       games.home_star_id,
+       games.home_orbit_id,
+       games.home_planet_id
+FROM games
+WHERE games.code = ?1
+`
+
+type ReadGameInfoByCodeRow struct {
+	ID           int64
+	Code         string
+	Name         string
+	DisplayName  string
+	IsActive     int64
+	CurrentTurn  int64
+	LastEmpireNo int64
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
+	HomePlanetID int64
+}
+
+// ReadGameInfoByCode returns a game.
+func (q *Queries) ReadGameInfoByCode(ctx context.Context, gameCode string) (ReadGameInfoByCodeRow, error) {
+	row := q.db.QueryRowContext(ctx, readGameInfoByCode, gameCode)
+	var i ReadGameInfoByCodeRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.DisplayName,
+		&i.IsActive,
+		&i.CurrentTurn,
+		&i.LastEmpireNo,
+		&i.HomeSystemID,
+		&i.HomeStarID,
+		&i.HomeOrbitID,
+		&i.HomePlanetID,
+	)
+	return i, err
+}
+
 const readUsersGames = `-- name: ReadUsersGames :many
 SELECT games.id,
        games.code,

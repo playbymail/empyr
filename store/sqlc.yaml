@@ -7,6 +7,9 @@ sql:
       - "sqlc/queries.sql"
       - "sqlc/empires.sql"
       - "sqlc/games.sql"
+      - "sqlc/planets.sql"
+      - "sqlc/stars.sql"
+      - "sqlc/systems.sql"
       - "sqlc/users.sql"
     gen:
       go:

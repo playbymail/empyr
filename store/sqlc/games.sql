@@ -20,6 +20,23 @@ FROM games
          LEFT OUTER JOIN empires ON games.id = empires.game_id
 ORDER BY code;
 
+-- ReadGameInfoByCode returns a game.
+--
+-- name: ReadGameInfoByCode :one
+SELECT games.id,
+       games.code,
+       games.name,
+       games.display_name,
+       games.is_active,
+       games.current_turn,
+       games.last_empire_no,
+       games.home_system_id,
+       games.home_star_id,
+       games.home_orbit_id,
+       games.home_planet_id
+FROM games
+WHERE games.code = :game_code;
+
 -- ReadUsersGames returns all active games that the user has a player in.
 --
 -- name: ReadUsersGames :many

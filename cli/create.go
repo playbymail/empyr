@@ -252,7 +252,7 @@ var cmdCreateTurnReport = &cobra.Command{
 			Code:     flags.Game.Code,
 			TurnNo:   flags.Game.TurnNo,
 			EmpireNo: empireNo,
-		})
+		}, empireReportPath)
 		if err != nil {
 			log.Fatalf("error: turn report: %v\n", err)
 		}

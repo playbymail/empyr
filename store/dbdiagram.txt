@@ -1,0 +1,223 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Project epimethean {
+  database_type: 'Sqlite3'
+  Note: 'Description of the project'
+}
+
+Table users {
+  id integer [primary key]
+  username text [not null, unique]
+}
+
+Table games {
+  id integer [primary key]
+  code text [not null, unique]
+}
+
+Table clusters {
+  game_id integer [not null]
+  id integer [primary key]
+}
+Ref {
+  clusters.game_id > games.id
+}
+
+Table systems {
+  cluster_id integer [not null]
+  id integer [primary key]
+  x integer [not null]
+  y integer [not null]
+  z integer [not null]
+}
+Ref {
+  systems.cluster_id > clusters.id
+}
+
+Table stars  {
+  system_id integer [not null]
+  id integer [primary key]
+}
+Ref {
+  stars.system_id > systems.id
+}
+
+Table orbits  {
+  star_id integer [not null]
+  id integer [primary key]
+  orbit_no integer [not null]
+}
+Ref {
+  orbits.star_id > stars.id
+}
+
+Table planets {
+  orbit_id integer [not null]
+  id integer [primary key]
+}
+Ref {
+  planets.orbit_id > orbits.id
+}
+
+Table units  {
+  id integer [primary key]
+  code text [unique]
+}
+
+Table deposits {
+  planet_id integer [not null]
+  id integer [primary key]
+  deposit_no integer [not null]
+  resource_id integer [not null]
+  remaining_qty integer [not null]
+  yield_pct integer [not null]
+}
+Ref {
+  deposits.planet_id > planets.id
+}
+Ref {
+  deposits.resource_id > units.id
+}
+
+Table empires  {
+  game_id integer [not null]
+  user_id integer [not null]
+  id integer [primary key]
+}
+Ref {
+  empires.game_id > games.id [delete: cascade]
+}
+Ref {
+  empires.user_id > users.id [delete: cascade]
+}
+
+Table sorcs {
+  empire_id integer [not null]
+  orbit_id integer [not null]
+  id integer [primary key]
+}
+Ref {
+  sorcs.empire_id > empires.id
+}
+Ref {
+  sorcs.orbit_id > orbits.id
+}
+
+Table population {
+  sorc_id integer [not null]
+  kind code [not null]
+  qty integer [not null]
+}
+Ref {
+  population.sorc_id > sorcs.id
+}
+
+Table inventory  {
+  sorc_id integer [not null]
+  unit_id integer [not null]
+  qty integer
+}
+Ref {
+  inventory.sorc_id > sorcs.id
+}
+Ref {
+  inventory.unit_id > units.id
+}
+
+Table factory_groups {
+  sorc_id integer [not null]
+  id integer [primary key]
+  group_no integer [not null]
+  orders text [not null]
+}
+Ref {
+  factory_groups.sorc_id > sorcs.id
+}
+
+Table factory_group {
+  factory_group_id integer [not null]
+  id integer [primary key]
+  units integer [not null]
+  tech_level integer [not null]
+}
+Ref {
+  factory_group.factory_group_id > factory_groups.id
+}
+
+Table farm_groups {
+  sorc_id integer [not null]
+  id integer [primary key]
+  group_no integer [not null]
+}
+Ref {
+  farm_groups.sorc_id > sorcs.id
+}
+
+Table farm_group {
+  farm_group_id integer [not null]
+  id integer [primary key]
+  units integer [not null]
+  tech_level integer [not null]
+}
+Ref {
+  farm_group.farm_group_id > farm_groups.id
+}
+
+Table mining_groups {
+  sorc_id integer [not null]
+  deposit_id integer [not null]
+  id integer [primary key]
+  group_no integer [not null]
+  units integer [not null]
+  tech_level integer [not null]
+}
+Ref {
+  mining_groups.sorc_id > sorcs.id
+}
+Ref {
+  mining_groups.deposit_id > deposits.id
+}
+
+Table mining_group {
+  mining_group_id integer [not null]
+  id integer [primary key]
+  units integer [not null]
+  tech_level integer [not null]
+}
+Ref {
+  mining_group.mining_group_id > mining_groups.id
+}
+
+Table reports {
+  sorc_id integer [not null]
+  id integer [primary key]
+  turn_no integer [not null]
+}
+Ref {
+  reports.sorc_id > sorcs.id
+}
+
+Table surveys  {
+  report_id integer [not null]
+  id integer [primary key]
+}
+Ref {
+  surveys.report_id > reports.id
+}
+
+Table probes  {
+  report_id integer [not null]
+  id integer [primary key]
+}
+Ref {
+  probes.report_id > reports.id
+}
+
+Table spies  {
+  report_id integer [not null]
+  id integer [primary key]
+}
+Ref {
+  spies.report_id > reports.id
+}
