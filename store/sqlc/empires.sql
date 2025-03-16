@@ -117,10 +117,12 @@ SELECT games.id           AS game_id,
        empires.home_orbit_id,
        empires.home_planet_id
 FROM games,
+     users,
      empires
 WHERE games.code = :game_code
   AND games.is_active = 1
-  AND empires.user_id = :user_id
+  AND users.id = :user_id
+  AND empires.user_id = users.id
   AND empires.empire_no = :empire_no
   AND empires.is_active = 1;
 
@@ -128,12 +130,28 @@ WHERE games.code = :game_code
 -- ReadEmpireByGameIDByID returns the data for a single empire in a game.
 --
 -- name: ReadEmpireByGameIDByID :one
-SELECT games.id AS game_id, empires.id AS empire_id, empire_no
+SELECT games.id           AS game_id,
+       games.code         AS game_code,
+       games.name         AS game_name,
+       games.display_name AS game_display_name,
+       games.current_turn AS game_current_turn,
+       users.id           AS user_id,
+       users.handle       AS username,
+       empires.id         AS empire_id,
+       empires.empire_no,
+       empires.is_active  AS empire_is_active,
+       empires.name       AS empire_name,
+       empires.home_system_id,
+       empires.home_star_id,
+       empires.home_orbit_id,
+       empires.home_planet_id
 FROM games,
+     users,
      empires
 WHERE games.id = :game_id
   AND empires.game_id = games.id
-  AND empires.empire_no = :empire_no;
+  AND empires.empire_no = :empire_no
+  AND users.id = empires.user_id;
 
 -- ReadEmpireByGameIDUserIDEmpireNo reads an empire for a user in a game.
 --

@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createStar = `-- name: CreateStar :one
@@ -88,14 +89,18 @@ func (q *Queries) ReadAllStarsInCluster(ctx context.Context, clusterID int64) ([
 }
 
 const readAllStarsInSystem = `-- name: ReadAllStarsInSystem :many
-SELECT stars.id, stars.sequence
-FROM stars
-WHERE stars.system_id = ?1
+SELECT stars.id, systems.x, systems.y, systems.z, stars.sequence
+FROM systems, stars
+WHERE systems.id = ?1
+  AND stars.system_id = systems.id
 ORDER BY stars.id
 `
 
 type ReadAllStarsInSystemRow struct {
 	ID       int64
+	X        int64
+	Y        int64
+	Z        int64
 	Sequence string
 }
 
@@ -109,7 +114,75 @@ func (q *Queries) ReadAllStarsInSystem(ctx context.Context, systemID int64) ([]R
 	var items []ReadAllStarsInSystemRow
 	for rows.Next() {
 		var i ReadAllStarsInSystemRow
-		if err := rows.Scan(&i.ID, &i.Sequence); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.X,
+			&i.Y,
+			&i.Z,
+			&i.Sequence,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readStarSurvey = `-- name: ReadStarSurvey :many
+SELECT orbits.id                   AS orbit_id,
+       planets.id                  AS planet_id,
+       orbits.kind                 AS orbit_kind,
+       orbits.orbit_no             AS orbit_no,
+       planets.kind                AS planet_kind,
+       deposits.kind               AS deposit_kind,
+       sum(deposits.remaining_qty) AS quantity
+FROM stars,
+     orbits,
+     planets,
+     deposits
+WHERE stars.id = ?1
+  AND orbits.star_id = stars.id
+  AND planets.orbit_id = orbits.id
+  AND deposits.planet_id = planets.id
+GROUP BY orbits.id, orbits.orbit_no, orbits.kind, planets.id, planets.kind, deposits.kind
+ORDER BY orbits.orbit_no, deposits.kind
+`
+
+type ReadStarSurveyRow struct {
+	OrbitID     int64
+	PlanetID    int64
+	OrbitKind   string
+	OrbitNo     int64
+	PlanetKind  string
+	DepositKind string
+	Quantity    sql.NullFloat64
+}
+
+// ReadStarSurvey reads the star survey data for star in a game.
+func (q *Queries) ReadStarSurvey(ctx context.Context, starID int64) ([]ReadStarSurveyRow, error) {
+	rows, err := q.db.QueryContext(ctx, readStarSurvey, starID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadStarSurveyRow
+	for rows.Next() {
+		var i ReadStarSurveyRow
+		if err := rows.Scan(
+			&i.OrbitID,
+			&i.PlanetID,
+			&i.OrbitKind,
+			&i.OrbitNo,
+			&i.PlanetKind,
+			&i.DepositKind,
+			&i.Quantity,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

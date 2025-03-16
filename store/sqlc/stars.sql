@@ -28,39 +28,30 @@ ORDER BY systems.id, stars.sequence;
 -- ReadAllStarsInSystem returns a list of stars in a system.
 --
 -- name: ReadAllStarsInSystem :many
-SELECT stars.id, stars.sequence
-FROM stars
-WHERE stars.system_id = :system_id
+SELECT stars.id, systems.x, systems.y, systems.z, stars.sequence
+FROM systems, stars
+WHERE systems.id = :system_id
+  AND stars.system_id = systems.id
 ORDER BY stars.id;
 
--- -- ReadStarSurvey reads the star survey data for a game.
--- --
--- -- name: ReadStarSurvey :many
--- SELECT systems.id                  AS system_id,
---        stars.id                    AS star_id,
---        orbits.id                   AS orbit_id,
---        planets.id                  AS planet_id,
---        systems.x                   AS x,
---        systems.y                   AS y,
---        systems.z                   AS z,
---        stars.sequence              AS sequence,
---        orbits.kind                 AS orbit_kind,
---        orbits.orbit_no             AS orbit_no,
---        planets.kind                AS planet_kind,
---        deposits.kind               AS deposit_kind,
---        sum(deposits.remaining_qty) AS quantity
--- FROM games,
---      systems,
---      stars,
---      orbits,
---      planets,
---      deposits
--- WHERE stars.id = :star_id
---   AND stars.system_id = systems.id
---   AND systems.game_id = games.id
---   AND orbits.star_id = stars.id
---   AND planets.orbit_id = orbits.id
---   AND deposits.planet_id = planets.id
--- GROUP BY systems.id, stars.id, orbits.id, planets.id, deposits.kind
--- ORDER BY systems.id, stars.id, orbits.id, planets.id, deposits.kind;
+-- ReadStarSurvey reads the star survey data for star in a game.
 --
+-- name: ReadStarSurvey :many
+SELECT orbits.id                   AS orbit_id,
+       planets.id                  AS planet_id,
+       orbits.kind                 AS orbit_kind,
+       orbits.orbit_no             AS orbit_no,
+       planets.kind                AS planet_kind,
+       deposits.kind               AS deposit_kind,
+       sum(deposits.remaining_qty) AS quantity
+FROM stars,
+     orbits,
+     planets,
+     deposits
+WHERE stars.id = :star_id
+  AND orbits.star_id = stars.id
+  AND planets.orbit_id = orbits.id
+  AND deposits.planet_id = planets.id
+GROUP BY orbits.id, orbits.orbit_no, orbits.kind, planets.id, planets.kind, deposits.kind
+ORDER BY orbits.orbit_no, deposits.kind;
+

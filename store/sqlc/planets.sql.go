@@ -31,3 +31,63 @@ func (q *Queries) CreatePlanet(ctx context.Context, arg CreatePlanetParams) (int
 	err := row.Scan(&id)
 	return id, err
 }
+
+const readPlanetSurvey = `-- name: ReadPlanetSurvey :many
+SELECT orbits.orbit_no        as orbit_no,
+       planet_codes.name      as planet_kind,
+       deposits.deposit_no    as deposit_no,
+       unit_codes.name        as deposit_kind,
+       deposits.remaining_qty as deposit_qty,
+       deposits.yield_pct     as yield_pct
+FROM orbits,
+     planets,
+     deposits,
+     planet_codes,
+     unit_codes
+WHERE orbits.id = planets.orbit_id
+  AND planets.id = ?1
+  AND deposits.planet_id = planets.id
+  AND planet_codes.code = planets.kind
+  AND unit_codes.code = deposits.kind
+ORDER BY deposits.deposit_no
+`
+
+type ReadPlanetSurveyRow struct {
+	OrbitNo     int64
+	PlanetKind  string
+	DepositNo   int64
+	DepositKind string
+	DepositQty  int64
+	YieldPct    int64
+}
+
+// ReadPlanetSurvey reads the planet survey data for a game.
+func (q *Queries) ReadPlanetSurvey(ctx context.Context, planetID int64) ([]ReadPlanetSurveyRow, error) {
+	rows, err := q.db.QueryContext(ctx, readPlanetSurvey, planetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadPlanetSurveyRow
+	for rows.Next() {
+		var i ReadPlanetSurveyRow
+		if err := rows.Scan(
+			&i.OrbitNo,
+			&i.PlanetKind,
+			&i.DepositNo,
+			&i.DepositKind,
+			&i.DepositQty,
+			&i.YieldPct,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

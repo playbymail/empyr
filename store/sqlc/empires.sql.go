@@ -199,10 +199,12 @@ SELECT games.id           AS game_id,
        empires.home_orbit_id,
        empires.home_planet_id
 FROM games,
+     users,
      empires
 WHERE games.code = ?1
   AND games.is_active = 1
-  AND empires.user_id = ?2
+  AND users.id = ?2
+  AND empires.user_id = users.id
   AND empires.empire_no = ?3
   AND empires.is_active = 1
 `
@@ -254,12 +256,28 @@ func (q *Queries) ReadEmpireByGameCodeUserEmpireNo(ctx context.Context, arg Read
 }
 
 const readEmpireByGameIDByID = `-- name: ReadEmpireByGameIDByID :one
-SELECT games.id AS game_id, empires.id AS empire_id, empire_no
+SELECT games.id           AS game_id,
+       games.code         AS game_code,
+       games.name         AS game_name,
+       games.display_name AS game_display_name,
+       games.current_turn AS game_current_turn,
+       users.id           AS user_id,
+       users.handle       AS username,
+       empires.id         AS empire_id,
+       empires.empire_no,
+       empires.is_active  AS empire_is_active,
+       empires.name       AS empire_name,
+       empires.home_system_id,
+       empires.home_star_id,
+       empires.home_orbit_id,
+       empires.home_planet_id
 FROM games,
+     users,
      empires
 WHERE games.id = ?1
   AND empires.game_id = games.id
   AND empires.empire_no = ?2
+  AND users.id = empires.user_id
 `
 
 type ReadEmpireByGameIDByIDParams struct {
@@ -268,16 +286,44 @@ type ReadEmpireByGameIDByIDParams struct {
 }
 
 type ReadEmpireByGameIDByIDRow struct {
-	GameID   int64
-	EmpireID int64
-	EmpireNo int64
+	GameID          int64
+	GameCode        string
+	GameName        string
+	GameDisplayName string
+	GameCurrentTurn int64
+	UserID          int64
+	Username        string
+	EmpireID        int64
+	EmpireNo        int64
+	EmpireIsActive  int64
+	EmpireName      string
+	HomeSystemID    int64
+	HomeStarID      int64
+	HomeOrbitID     int64
+	HomePlanetID    int64
 }
 
 // ReadEmpireByGameIDByID returns the data for a single empire in a game.
 func (q *Queries) ReadEmpireByGameIDByID(ctx context.Context, arg ReadEmpireByGameIDByIDParams) (ReadEmpireByGameIDByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, readEmpireByGameIDByID, arg.GameID, arg.EmpireNo)
 	var i ReadEmpireByGameIDByIDRow
-	err := row.Scan(&i.GameID, &i.EmpireID, &i.EmpireNo)
+	err := row.Scan(
+		&i.GameID,
+		&i.GameCode,
+		&i.GameName,
+		&i.GameDisplayName,
+		&i.GameCurrentTurn,
+		&i.UserID,
+		&i.Username,
+		&i.EmpireID,
+		&i.EmpireNo,
+		&i.EmpireIsActive,
+		&i.EmpireName,
+		&i.HomeSystemID,
+		&i.HomeStarID,
+		&i.HomeOrbitID,
+		&i.HomePlanetID,
+	)
 	return i, err
 }
 

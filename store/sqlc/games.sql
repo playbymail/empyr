@@ -66,7 +66,6 @@ SELECT current_turn
 FROM games
 WHERE code = :game_code;
 
-
 -- ReadGameInfoByCode returns data for a single game using the game code.
 --
 -- name: ReadGameInfoByCode :one
@@ -115,18 +114,6 @@ WHERE empires.user_id = :user_id
   AND games.id = :game_id
   AND games.is_active = 1
 ORDER BY code;
-
--- ReadGameByCode gets a game by its code.
---
--- name: ReadGameByCode :one
-SELECT id,
-       code,
-       name,
-       display_name,
-       current_turn,
-       last_empire_no
-FROM games
-WHERE code = :game_code;
 
 -- UpdateCurrentTurnByGameID increments the game turn number.
 --

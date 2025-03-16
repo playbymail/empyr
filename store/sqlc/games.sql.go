@@ -262,41 +262,6 @@ func (q *Queries) ReadCurrentTurnByGameID(ctx context.Context, gameID int64) (in
 	return current_turn, err
 }
 
-const readGameByCode = `-- name: ReadGameByCode :one
-SELECT id,
-       code,
-       name,
-       display_name,
-       current_turn,
-       last_empire_no
-FROM games
-WHERE code = ?1
-`
-
-type ReadGameByCodeRow struct {
-	ID           int64
-	Code         string
-	Name         string
-	DisplayName  string
-	CurrentTurn  int64
-	LastEmpireNo int64
-}
-
-// ReadGameByCode gets a game by its code.
-func (q *Queries) ReadGameByCode(ctx context.Context, gameCode string) (ReadGameByCodeRow, error) {
-	row := q.db.QueryRowContext(ctx, readGameByCode, gameCode)
-	var i ReadGameByCodeRow
-	err := row.Scan(
-		&i.ID,
-		&i.Code,
-		&i.Name,
-		&i.DisplayName,
-		&i.CurrentTurn,
-		&i.LastEmpireNo,
-	)
-	return i, err
-}
-
 const readGameInfoByCode = `-- name: ReadGameInfoByCode :one
 SELECT games.id,
        games.code,
