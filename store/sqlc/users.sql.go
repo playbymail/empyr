@@ -89,3 +89,47 @@ func (q *Queries) ReadUserByMagicKey(ctx context.Context, arg ReadUserByMagicKey
 	err := row.Scan(&i.ID, &i.IsActive, &i.IsAdmin)
 	return i, err
 }
+
+const readUsersInGame = `-- name: ReadUsersInGame :many
+SELECT users.id, users.handle, users.is_active, users.is_admin
+FROM users,
+     empires
+WHERE empires.game_id = ?1
+  AND empires.user_id = users.id
+`
+
+type ReadUsersInGameRow struct {
+	ID       int64
+	Handle   string
+	IsActive int64
+	IsAdmin  int64
+}
+
+// ReadUsersInGame gets a list of users in a game.
+func (q *Queries) ReadUsersInGame(ctx context.Context, gameID int64) ([]ReadUsersInGameRow, error) {
+	rows, err := q.db.QueryContext(ctx, readUsersInGame, gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadUsersInGameRow
+	for rows.Next() {
+		var i ReadUsersInGameRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Handle,
+			&i.IsActive,
+			&i.IsAdmin,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

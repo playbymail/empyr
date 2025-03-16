@@ -262,9 +262,9 @@ func Scan(buffer []byte) ([]*Lexeme, error) {
 			case "gold":
 				lexeme.Kind, lexeme.Text = RESOURCE, "GOLD"
 			case "metallics":
-				lexeme.Kind, lexeme.Text = RESOURCE, "MTL"
+				lexeme.Kind, lexeme.Text = RESOURCE, "MTLS"
 			case "non-metallics":
-				lexeme.Kind, lexeme.Text = RESOURCE, "NMTL"
+				lexeme.Kind, lexeme.Text = RESOURCE, "NMTS"
 			case "research":
 				lexeme.Kind, lexeme.Text = RESEARCH, "RESEARCH"
 			default:

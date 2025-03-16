@@ -126,6 +126,10 @@ func (s *Store) Close() error {
 	var err error
 	if s != nil {
 		if s.DB != nil {
+			// analyze the store before we close it
+			if _, err := s.DB.Exec(`PRAGMA optimize`); err != nil {
+				log.Printf("store: close: optimize: %v\n", err)
+			}
 			err = s.DB.Close()
 			s.DB = nil
 		}

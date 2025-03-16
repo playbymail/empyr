@@ -97,14 +97,15 @@ const (
 )
 
 type GameInfo struct {
-	ID          GameID // unique identifier for the game
-	Code        string // unique code for the game, e.g. A01
-	Name        string
-	DisplayName string
-	EmpireCount int64
-	PlayerCount int64
-	IsActive    bool
-	CurrentTurn int64
+	ID           GameID // unique identifier for the game
+	Code         string // unique code for the game, e.g. A01
+	Name         string
+	DisplayName  string
+	IsActive     bool
+	CurrentTurn  int64
+	LastEmpireNo int64
+	EmpireCount  int64
+	PlayerCount  int64
 }
 
 type EmpireID int64
@@ -121,19 +122,20 @@ type UserGame struct {
 }
 
 type UserGameSummary struct {
-	ID          GameID // unique identifier for the game
-	Code        string // unique code for the game, e.g. A01
-	Name        string
-	DisplayName string
-	EmpireID    EmpireID
-	EmpireNo    int64
-	IsActive    bool
-	CurrentTurn int64
+	ID             GameID // unique identifier for the game
+	Code           string // unique code for the game, e.g. A01
+	Name           string
+	DisplayName    string
+	EmpireID       EmpireID
+	EmpireNo       int64
+	EmpireIsActive bool
+	CurrentTurn    int64
 }
 
 type GameListing struct {
 	ID          GameID
 	Code        string
+	Name        string
 	DisplayName string
 	CurrentTurn int64
 	EmpireID    EmpireID

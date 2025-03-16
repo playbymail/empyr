@@ -7,34 +7,63 @@ package sqlc
 
 import (
 	"context"
-	"database/sql"
 )
 
-const readAllSystems = `-- name: ReadAllSystems :many
+const createSystem = `-- name: CreateSystem :one
 
+INSERT INTO systems (cluster_id, x, y, z)
+VALUES (?1, ?2, ?3, ?4)
+RETURNING id
+`
+
+type CreateSystemParams struct {
+	ClusterID int64
+	X         int64
+	Y         int64
+	Z         int64
+}
+
+//	Copyright (c) 2025 Michael D Henderson. All rights reserved.
+//
+// CreateSystem creates a new system.
+func (q *Queries) CreateSystem(ctx context.Context, arg CreateSystemParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSystem,
+		arg.ClusterID,
+		arg.X,
+		arg.Y,
+		arg.Z,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const readAllSystems = `-- name: ReadAllSystems :many
 SELECT systems.id      AS id,
        systems.x       as x,
        systems.y       as y,
        systems.z       as z,
        count(stars.id) AS number_of_stars
-FROM games
-         LEFT JOIN systems on games.id = systems.game_id
-         LEFT JOIN stars on systems.id = stars.system_id
+FROM games,
+     clusters,
+     systems,
+     stars
 WHERE games.id = ?1
+  AND clusters.game_id = games.id
+  AND systems.cluster_id = clusters.id
+  AND stars.system_id = systems.id
 GROUP BY systems.id, systems.x, systems.y, systems.z
 ORDER BY systems.id
 `
 
 type ReadAllSystemsRow struct {
-	ID            sql.NullInt64
-	X             sql.NullInt64
-	Y             sql.NullInt64
-	Z             sql.NullInt64
+	ID            int64
+	X             int64
+	Y             int64
+	Z             int64
 	NumberOfStars int64
 }
 
-//	Copyright (c) 2025 Michael D Henderson. All rights reserved.
-//
 // ReadAllSystems reads the system data for a game.
 func (q *Queries) ReadAllSystems(ctx context.Context, gameID int64) ([]ReadAllSystemsRow, error) {
 	rows, err := q.db.QueryContext(ctx, readAllSystems, gameID)

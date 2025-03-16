@@ -22,3 +22,12 @@ FROM users
 WHERE handle = :handle
   AND magic_link = :magic_key;
 
+-- ReadUsersInGame gets a list of users in a game.
+--
+-- name: ReadUsersInGame :many
+SELECT users.id, users.handle, users.is_active, users.is_admin
+FROM users,
+     empires
+WHERE empires.game_id = :game_id
+  AND empires.user_id = users.id;
+

@@ -5,45 +5,70 @@
 package sqlc
 
 import (
+	"database/sql"
 	"time"
 )
 
-type Codes struct {
-	Category string
-	Code     string
-	Value    int64
-	Display  string
-}
-
-type Deposit struct {
-	DepositID int64
-	Quantity  int64
-	YieldPct  int64
-	EffTurn   int64
-	EndTurn   int64
-	Active    int64
+type Clusters struct {
+	GameID       int64
+	ID           int64
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
+	HomePlanetID int64
 }
 
 type Deposits struct {
-	ID           int64
 	PlanetID     int64
+	ID           int64
 	DepositNo    int64
-	Kind         int64
-	InitialQty   int64
+	Kind         string
 	RemainingQty int64
 	YieldPct     int64
 }
 
 type Empires struct {
-	ID           int64
 	GameID       int64
 	UserID       int64
+	ID           int64
+	IsActive     int64
 	EmpireNo     int64
 	Name         string
 	HomeSystemID int64
 	HomeStarID   int64
 	HomeOrbitID  int64
 	HomePlanetID int64
+}
+
+type FactoryGroup struct {
+	FactoryGroupID int64
+	ID             int64
+	UnitCd         string
+	NbrOfUnits     int64
+	Wip25pctQty    int64
+	Wip50pctQty    int64
+	Wip75pctQty    int64
+}
+
+type FactoryGroups struct {
+	SorcID       int64
+	ID           int64
+	GroupNo      int64
+	RetoolTurnNo sql.NullInt64
+	OrdersCd     string
+}
+
+type FarmGroup struct {
+	FarmGroupID int64
+	ID          int64
+	UnitCd      string
+	NbrOfUnits  int64
+}
+
+type FarmGroups struct {
+	SorcID  int64
+	ID      int64
+	GroupNo int64
 }
 
 type Games struct {
@@ -53,13 +78,15 @@ type Games struct {
 	DisplayName  string
 	CurrentTurn  int64
 	LastEmpireNo int64
-	HomeSystemID int64
-	HomeStarID   int64
-	HomeOrbitID  int64
-	HomePlanetID int64
 	IsActive     int64
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+}
+
+type Inventory struct {
+	SorcID int64
+	UnitCd string
+	Qty    int64
 }
 
 type MetaMigrations struct {
@@ -69,85 +96,102 @@ type MetaMigrations struct {
 	CreatedAt time.Time
 }
 
+type MiningGroup struct {
+	MiningGroupID int64
+	ID            int64
+	UnitCd        string
+	NbrOfUnits    int64
+}
+
+type MiningGroups struct {
+	SorcID    int64
+	DepositID int64
+	ID        int64
+	GroupNo   int64
+}
+
+type OrbitCodes struct {
+	Code string
+	Name string
+}
+
 type Orbits struct {
-	ID       int64
-	StarID   int64
-	OrbitNo  int64
-	Kind     int64
-	Scarcity int64
+	StarID  int64
+	ID      int64
+	OrbitNo int64
+	Kind    string
+}
+
+type PlanetCodes struct {
+	Code string
+	Name string
 }
 
 type Planets struct {
-	ID           int64
 	OrbitID      int64
-	Kind         int64
+	ID           int64
+	Kind         string
 	Habitability int64
-	Scarcity     int64
 }
 
-type SorcDetails struct {
-	ID          int64
-	SorcID      int64
-	TurnNo      int64
-	TechLevel   int64
+type Population struct {
+	SorcID       int64
+	PopulationCd string
+	Qty          int64
+	PayRate      float64
+	RebelQty     int64
+}
+
+type PopulationCodes struct {
+	Code        string
 	Name        string
-	UemQty      int64
-	UemPay      float64
-	UskQty      int64
-	UskPay      float64
-	ProQty      int64
-	ProPay      float64
-	SldQty      int64
-	SldPay      float64
-	CnwQty      int64
-	SpyQty      int64
-	Rations     float64
-	BirthRate   float64
-	DeathRate   float64
-	Sol         float64
-	OrbitID     int64
-	IsOnSurface int64
+	BasePayRate float64
 }
 
-type SorcInfrastructure struct {
-	SorcDetailID int64
-	Kind         string
-	TechLevel    int64
-	Qty          int64
+type ReportProbes struct {
+	ReportID int64
+	ID       int64
 }
 
-type SorcInventory struct {
-	SorcDetailID int64
-	Kind         string
-	TechLevel    int64
-	QtyAssembled int64
-	QtyStored    int64
+type ReportSpies struct {
+	ReportID int64
+	ID       int64
 }
 
-type SorcPopulation struct {
-	SorcDetailID int64
-	Kind         string
-	Qty          int64
+type ReportSurveys struct {
+	ReportID int64
+	ID       int64
 }
 
-type SorcSuperstructure struct {
-	SorcDetailID int64
-	Kind         string
-	TechLevel    int64
-	Qty          int64
+type Reports struct {
+	SorcID int64
+	ID     int64
+	TurnNo int64
+}
+
+type SorcCodes struct {
+	Code string
+	Name string
 }
 
 type Sorcs struct {
-	ID       int64
-	EmpireID int64
-	Kind     int64
+	EmpireID    int64
+	ID          int64
+	SorcCd      string
+	TechLevel   int64
+	Name        string
+	OrbitID     int64
+	IsOnSurface int64
+	Rations     float64
+	Sol         float64
+	BirthRate   float64
+	DeathRate   float64
 }
 
 type Stars struct {
-	ID       int64
 	SystemID int64
+	ID       int64
 	Sequence string
-	Scarcity int64
 }
 
 type SystemDistances struct {
@@ -157,18 +201,18 @@ type SystemDistances struct {
 }
 
 type Systems struct {
-	ID       int64
-	GameID   int64
-	X        int64
-	Y        int64
-	Z        int64
-	Scarcity int64
+	ClusterID int64
+	ID        int64
+	X         int64
+	Y         int64
+	Z         int64
 }
 
-type Units struct {
-	Code          string
-	Mass          int64
-	IsOperational int64
+type UnitCodes struct {
+	Code      string
+	TechLevel int64
+	Name      string
+	Category  string
 }
 
 type Users struct {

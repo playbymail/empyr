@@ -5,9 +5,13 @@ sql:
       - "sqlc/schema.sql"
     queries:
       - "sqlc/queries.sql"
+      - "sqlc/clusters.sql"
+      - "sqlc/deposits.sql"
       - "sqlc/empires.sql"
       - "sqlc/games.sql"
+      - "sqlc/orbits.sql"
       - "sqlc/planets.sql"
+      - "sqlc/sorcs.sql"
       - "sqlc/stars.sql"
       - "sqlc/systems.sql"
       - "sqlc/users.sql"

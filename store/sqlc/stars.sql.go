@@ -7,176 +7,112 @@ package sqlc
 
 import (
 	"context"
-	"database/sql"
 )
 
-const readAllStars = `-- name: ReadAllStars :many
+const createStar = `-- name: CreateStar :one
 
-SELECT systems.id      AS system_id,
-       stars.id        as star_id,
-       stars.sequence  as sequence,
-       systems.x       as x,
-       systems.y       as y,
-       systems.z       as z,
-       count(stars.id) AS number_of_stars
-FROM games
-         LEFT JOIN systems on games.id = systems.game_id
-         LEFT JOIN stars on systems.id = stars.system_id
-WHERE games.id = ?1
-ORDER BY systems.id
+INSERT INTO stars (system_id, sequence)
+VALUES (?1, ?2)
+RETURNING id
 `
 
-type ReadAllStarsRow struct {
-	SystemID      sql.NullInt64
-	StarID        sql.NullInt64
-	Sequence      sql.NullString
-	X             sql.NullInt64
-	Y             sql.NullInt64
-	Z             sql.NullInt64
-	NumberOfStars int64
+type CreateStarParams struct {
+	SystemID int64
+	Sequence string
 }
 
 //	Copyright (c) 2025 Michael D Henderson. All rights reserved.
 //
-// ReadAllStars reads the stars data for a game.
-func (q *Queries) ReadAllStars(ctx context.Context, gameID int64) ([]ReadAllStarsRow, error) {
-	rows, err := q.db.QueryContext(ctx, readAllStars, gameID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadAllStarsRow
-	for rows.Next() {
-		var i ReadAllStarsRow
-		if err := rows.Scan(
-			&i.SystemID,
-			&i.StarID,
-			&i.Sequence,
-			&i.X,
-			&i.Y,
-			&i.Z,
-			&i.NumberOfStars,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+// CreateStar creates a new star in an existing system.
+func (q *Queries) CreateStar(ctx context.Context, arg CreateStarParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createStar, arg.SystemID, arg.Sequence)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
-const readStarSurvey = `-- name: ReadStarSurvey :many
-SELECT systems.id                  AS system_id,
-       stars.id                    as star_id,
-       orbits.id                   as orbit_id,
-       planets.id                  as planet_id,
-       systems.x                   as x,
-       systems.y                   as y,
-       systems.z                   as z,
-       stars.sequence              as sequence,
-       orbits.kind                 as orbit_kind,
-       orbits.orbit_no             as orbit_no,
-       planets.kind                as planet_kind,
-       deposits.kind               as deposit_kind,
-       sum(deposits.remaining_qty) as quantity
-FROM games,
+const readAllStarsInCluster = `-- name: ReadAllStarsInCluster :many
+SELECT systems.id     AS system_id,
+       stars.id       AS star_id,
+       stars.sequence AS sequence,
+       systems.x      AS x,
+       systems.y      AS y,
+       systems.z      AS z
+FROM clusters,
      systems,
-     stars,
-     orbits,
-     planets,
-     deposits
-WHERE stars.id = ?1
-  AND stars.system_id = systems.id
-  AND systems.game_id = games.id
-  AND orbits.star_id = stars.id
-  AND planets.orbit_id = orbits.id
-  AND deposits.planet_id = planets.id
-GROUP BY systems.id, stars.id, orbits.id, planets.id, deposits.kind
-ORDER BY systems.id, stars.id, orbits.id, planets.id, deposits.kind
-`
-
-type ReadStarSurveyRow struct {
-	SystemID    int64
-	StarID      int64
-	OrbitID     int64
-	PlanetID    int64
-	X           int64
-	Y           int64
-	Z           int64
-	Sequence    string
-	OrbitKind   int64
-	OrbitNo     int64
-	PlanetKind  int64
-	DepositKind int64
-	Quantity    sql.NullFloat64
-}
-
-// ReadStarSurvey reads the star survey data for a game.
-func (q *Queries) ReadStarSurvey(ctx context.Context, starID int64) ([]ReadStarSurveyRow, error) {
-	rows, err := q.db.QueryContext(ctx, readStarSurvey, starID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadStarSurveyRow
-	for rows.Next() {
-		var i ReadStarSurveyRow
-		if err := rows.Scan(
-			&i.SystemID,
-			&i.StarID,
-			&i.OrbitID,
-			&i.PlanetID,
-			&i.X,
-			&i.Y,
-			&i.Z,
-			&i.Sequence,
-			&i.OrbitKind,
-			&i.OrbitNo,
-			&i.PlanetKind,
-			&i.DepositKind,
-			&i.Quantity,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const readStarsInSystem = `-- name: ReadStarsInSystem :many
-SELECT stars.id
-FROM systems,
      stars
-WHERE systems.id = ?1
+WHERE clusters.id = ?1
+  AND systems.cluster_id = clusters.id
   AND stars.system_id = systems.id
 ORDER BY systems.id, stars.sequence
 `
 
-// ReadStarsInSystem returns a list of stars in a system.
-func (q *Queries) ReadStarsInSystem(ctx context.Context, systemID int64) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, readStarsInSystem, systemID)
+type ReadAllStarsInClusterRow struct {
+	SystemID int64
+	StarID   int64
+	Sequence string
+	X        int64
+	Y        int64
+	Z        int64
+}
+
+// ReadAllStarsInCluster returns a list of all the stars in a cluster.
+func (q *Queries) ReadAllStarsInCluster(ctx context.Context, clusterID int64) ([]ReadAllStarsInClusterRow, error) {
+	rows, err := q.db.QueryContext(ctx, readAllStarsInCluster, clusterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []int64
+	var items []ReadAllStarsInClusterRow
 	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
+		var i ReadAllStarsInClusterRow
+		if err := rows.Scan(
+			&i.SystemID,
+			&i.StarID,
+			&i.Sequence,
+			&i.X,
+			&i.Y,
+			&i.Z,
+		); err != nil {
 			return nil, err
 		}
-		items = append(items, id)
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readAllStarsInSystem = `-- name: ReadAllStarsInSystem :many
+SELECT stars.id, stars.sequence
+FROM stars
+WHERE stars.system_id = ?1
+ORDER BY stars.id
+`
+
+type ReadAllStarsInSystemRow struct {
+	ID       int64
+	Sequence string
+}
+
+// ReadAllStarsInSystem returns a list of stars in a system.
+func (q *Queries) ReadAllStarsInSystem(ctx context.Context, systemID int64) ([]ReadAllStarsInSystemRow, error) {
+	rows, err := q.db.QueryContext(ctx, readAllStarsInSystem, systemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadAllStarsInSystemRow
+	for rows.Next() {
+		var i ReadAllStarsInSystemRow
+		if err := rows.Scan(&i.ID, &i.Sequence); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

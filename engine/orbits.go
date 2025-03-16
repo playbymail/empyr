@@ -119,9 +119,6 @@ func generateHomeSystemOrbits(r *rand.Rand, star *Star_t) (orbits [11]*Orbit_t, 
 	for k, v := range []Orbit_e{RockyPlanet, RockyPlanet, EarthlikePlanet, RockyPlanet, AsteroidBelt, GasGiant, IceGiant, IceGiant, AsteroidBelt} {
 		orbits[k+1].Kind = v
 	}
-	for k, v := range []Scarcity_e{POOR, POOR, RICH, POOR, RICH, POOR, POOR, POOR, RICH, RICH} {
-		orbits[k+1].Scarcity = v
-	}
 	// generate the planet for each orbit
 	for k := int64(1); k <= 10; k++ {
 		orbit := orbits[k]
@@ -152,7 +149,6 @@ func generateSystemOrbits(r *rand.Rand, star *Star_t) (orbits [11]*Orbit_t, err 
 	for k := int64(1); k <= 10; k++ {
 		orbit := orbits[k]
 		orbit.Kind = rings[k]
-		orbit.Scarcity = star.Scarcity
 		orbit.Planet, err = createPlanet(r, orbit)
 		if err != nil {
 			return orbits, fmt.Errorf("planet: %w", err)

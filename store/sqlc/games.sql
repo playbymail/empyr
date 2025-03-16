@@ -1,6 +1,28 @@
 --  Copyright (c) 2025 Michael D Henderson. All rights reserved.
 
--- ReadAllGameInfo returns all games in the database, even the inactive ones.
+-- CreateGame creates a new game.
+--
+-- name: CreateGame :one
+INSERT INTO games (code, name, display_name)
+VALUES (:code, :name, :display_name)
+RETURNING id;
+
+-- DeleteGameByID deletes an existing game using its ID.
+--
+-- name: DeleteGameByID :exec
+DELETE
+FROM games
+WHERE id = :game_id;
+
+-- DeleteGameByCode deletes an existing game using its code.
+--
+-- name: DeleteGameByCode :exec
+DELETE
+FROM games
+WHERE code = :game_code;
+
+
+-- ReadAllGameInfo returns a list of all games in the database, even the inactive ones.
 --
 -- name: ReadAllGameInfo :many
 SELECT games.id,
@@ -8,19 +30,44 @@ SELECT games.id,
        games.name,
        games.display_name,
        games.is_active,
-       count(empires.id) as empire_count,
-       count(empires.id) as player_count,
        games.current_turn,
-       games.last_empire_no,
-       games.home_system_id,
-       games.home_star_id,
-       games.home_orbit_id,
-       games.home_planet_id
+       games.last_empire_no
 FROM games
-         LEFT OUTER JOIN empires ON games.id = empires.game_id
-ORDER BY code;
+ORDER BY games.code;
 
--- ReadGameInfoByCode returns a game.
+-- ReadAllGamesByUser returns all games that the user has a empire in.
+--
+-- name: ReadAllGamesByUser :many
+SELECT games.id,
+       games.code,
+       games.name,
+       games.display_name,
+       games.current_turn,
+       games.is_active,
+       empires.id as empire_id,
+       empires.empire_no
+FROM empires,
+     games
+WHERE empires.user_id = :user_id
+  AND games.id = empires.game_id
+ORDER BY games.code;
+
+-- ReadCurrentTurnByGameID gets the current turn for a game.
+--
+-- name: ReadCurrentTurnByGameID :one
+SELECT current_turn
+FROM games
+WHERE id = :game_id;
+
+-- ReadCurrentTurnByGameCode gets the current turn for a game.
+--
+-- name: ReadCurrentTurnByGameCode :one
+SELECT current_turn
+FROM games
+WHERE code = :game_code;
+
+
+-- ReadGameInfoByCode returns data for a single game using the game code.
 --
 -- name: ReadGameInfoByCode :one
 SELECT games.id,
@@ -29,17 +76,13 @@ SELECT games.id,
        games.display_name,
        games.is_active,
        games.current_turn,
-       games.last_empire_no,
-       games.home_system_id,
-       games.home_star_id,
-       games.home_orbit_id,
-       games.home_planet_id
+       games.last_empire_no
 FROM games
 WHERE games.code = :game_code;
 
--- ReadUsersGames returns all active games that the user has a player in.
+-- ReadGameSummaryByUserGame returns a game summary for a user in a game.
 --
--- name: ReadUsersGames :many
+-- name: ReadGameSummaryByEmpire :one
 SELECT games.id,
        games.code,
        games.name,
@@ -48,34 +91,16 @@ SELECT games.id,
        games.current_turn,
        empires.id as empire_id,
        empires.empire_no
-FROM games
-         LEFT JOIN empires ON games.id = empires.game_id AND empires.user_id = :user_id
-WHERE is_active = 1
+FROM empires,
+     games
+WHERE empires.user_id = :user_id
+  AND games.id = empires.game_id
+  AND games.id = :game_id
 ORDER BY code;
 
--- ReadEmpireGameSummary returns a summary of the empire's game.
+-- ReadActiveGameSummariesByUser returns a list of all active games that the user has an empire in.
 --
--- name: ReadEmpireGameSummary :one
-SELECT games.id,
-       games.code,
-       games.name,
-       games.display_name,
-       games.is_active,
-       games.current_turn,
-       empires.id as empire_id,
-       empires.empire_no
-FROM games
-         LEFT JOIN empires ON games.id = empires.game_id AND empires.user_id = :user_id
-WHERE games.code = :game_code
-  AND games.is_active = 1
-  AND empires.user_id = :user_id
-  AND empires.empire_no = :empire_no
-ORDER BY code;
-
--- GetListOfActiveGamesForUser returns a list of all active games
--- that the user is a player in.
---
--- name: GetListOfActiveGamesForUser :many
+-- name: ReadActiveGameSummariesByUser :many
 SELECT games.id,
        games.code,
        games.name,
@@ -85,7 +110,50 @@ SELECT games.id,
        empires.empire_no
 FROM games,
      empires
-WHERE games.is_active = 1
-  AND empires.user_id = :user_id
-  AND empires.game_id = games.id
+WHERE empires.user_id = :user_id
+  AND games.id = empires.game_id
+  AND games.id = :game_id
+  AND games.is_active = 1
 ORDER BY code;
+
+-- ReadGameByCode gets a game by its code.
+--
+-- name: ReadGameByCode :one
+SELECT id,
+       code,
+       name,
+       display_name,
+       current_turn,
+       last_empire_no
+FROM games
+WHERE code = :game_code;
+
+-- UpdateCurrentTurnByGameID increments the game turn number.
+--
+-- name: UpdateCurrentTurnByGameID :exec
+UPDATE games
+SET current_turn = :turn_number
+WHERE id = :game_id;
+
+-- UpdateCurrentTurnByGameCode increments the game turn number.
+--
+-- name: UpdateCurrentTurnByGameCode :exec
+UPDATE games
+SET current_turn = :turn_number
+WHERE code = :game_code;
+
+-- UpdateEmpireCounterByGameID updates the empire metadata in the games table.
+--
+-- name: UpdateEmpireCounterByGameID :exec
+UPDATE games
+SET last_empire_no = :empire_no
+WHERE id = :game_id;
+
+-- UpdateEmpireCounterByGameCode updates the empire metadata in the games table.
+--
+-- name: UpdateEmpireCounterByGameCode :exec
+UPDATE games
+SET last_empire_no = :empire_no
+WHERE code = :game_code;
+
+

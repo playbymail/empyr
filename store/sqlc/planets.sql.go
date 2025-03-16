@@ -9,74 +9,25 @@ import (
 	"context"
 )
 
-const readPlanetSurvey = `-- name: ReadPlanetSurvey :many
+const createPlanet = `-- name: CreatePlanet :one
 
-SELECT systems.x              as x,
-       systems.y              as y,
-       systems.z              as z,
-       stars.sequence         as sequence,
-       orbits.orbit_no        as orbit_no,
-       planets.kind           as planet_kind,
-       deposits.deposit_no    as deposit_no,
-       deposits.kind          as deposit_kind,
-       deposits.remaining_qty as quantity
-FROM systems,
-     stars,
-     orbits,
-     planets,
-     deposits
-WHERE planets.id = ?1
-  AND stars.system_id = systems.id
-  AND orbits.star_id = stars.id
-  AND planets.orbit_id = orbits.id
-  AND deposits.planet_id = planets.id
-ORDER BY deposits.deposit_no
+INSERT INTO planets (orbit_id, kind, habitability)
+VALUES (?1, ?2, ?3)
+RETURNING id
 `
 
-type ReadPlanetSurveyRow struct {
-	X           int64
-	Y           int64
-	Z           int64
-	Sequence    string
-	OrbitNo     int64
-	PlanetKind  int64
-	DepositNo   int64
-	DepositKind int64
-	Quantity    int64
+type CreatePlanetParams struct {
+	OrbitID      int64
+	Kind         string
+	Habitability int64
 }
 
 //	Copyright (c) 2025 Michael D Henderson. All rights reserved.
 //
-// ReadPlanetSurvey reads the planet survey data for a game.
-func (q *Queries) ReadPlanetSurvey(ctx context.Context, planetID int64) ([]ReadPlanetSurveyRow, error) {
-	rows, err := q.db.QueryContext(ctx, readPlanetSurvey, planetID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadPlanetSurveyRow
-	for rows.Next() {
-		var i ReadPlanetSurveyRow
-		if err := rows.Scan(
-			&i.X,
-			&i.Y,
-			&i.Z,
-			&i.Sequence,
-			&i.OrbitNo,
-			&i.PlanetKind,
-			&i.DepositNo,
-			&i.DepositKind,
-			&i.Quantity,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+// CreatePlanet creates a new planet.
+func (q *Queries) CreatePlanet(ctx context.Context, arg CreatePlanetParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createPlanet, arg.OrbitID, arg.Kind, arg.Habitability)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }

@@ -57,16 +57,383 @@ func (q *Queries) CreateEmpire(ctx context.Context, arg CreateEmpireParams) (int
 	return id, err
 }
 
-const readNextEmpireNumber = `-- name: ReadNextEmpireNumber :one
+const readAllEmpireCountByGame = `-- name: ReadAllEmpireCountByGame :one
+SELECT game_id, count(id)
+FROM empires
+GROUP BY game_id
+ORDER BY game_id
+`
+
+type ReadAllEmpireCountByGameRow struct {
+	GameID int64
+	Count  int64
+}
+
+// ReadAllEmpireCountsByGame returns the number of empires in all games.
+func (q *Queries) ReadAllEmpireCountByGame(ctx context.Context) (ReadAllEmpireCountByGameRow, error) {
+	row := q.db.QueryRowContext(ctx, readAllEmpireCountByGame)
+	var i ReadAllEmpireCountByGameRow
+	err := row.Scan(&i.GameID, &i.Count)
+	return i, err
+}
+
+const readAllEmpiresByGameCode = `-- name: ReadAllEmpiresByGameCode :many
+SELECT games.id AS game_id, empires.id AS empire_id, empire_no
+FROM games,
+     empires
+WHERE games.code = ?1
+  AND empires.game_id = games.id
+ORDER BY empire_no
+`
+
+type ReadAllEmpiresByGameCodeRow struct {
+	GameID   int64
+	EmpireID int64
+	EmpireNo int64
+}
+
+// ReadAllEmpiresByGameCode returns the data for all empires in a game.
+func (q *Queries) ReadAllEmpiresByGameCode(ctx context.Context, gameCode string) ([]ReadAllEmpiresByGameCodeRow, error) {
+	rows, err := q.db.QueryContext(ctx, readAllEmpiresByGameCode, gameCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadAllEmpiresByGameCodeRow
+	for rows.Next() {
+		var i ReadAllEmpiresByGameCodeRow
+		if err := rows.Scan(&i.GameID, &i.EmpireID, &i.EmpireNo); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readAllEmpiresByGameID = `-- name: ReadAllEmpiresByGameID :many
+SELECT games.id AS game_id, empires.id AS empire_id, empire_no
+FROM games,
+     empires
+WHERE games.id = ?1
+  AND empires.game_id = games.id
+ORDER BY empire_no
+`
+
+type ReadAllEmpiresByGameIDRow struct {
+	GameID   int64
+	EmpireID int64
+	EmpireNo int64
+}
+
+// ReadAllEmpiresByGameID returns the data for all empires in a game.
+func (q *Queries) ReadAllEmpiresByGameID(ctx context.Context, gameID int64) ([]ReadAllEmpiresByGameIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, readAllEmpiresByGameID, gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadAllEmpiresByGameIDRow
+	for rows.Next() {
+		var i ReadAllEmpiresByGameIDRow
+		if err := rows.Scan(&i.GameID, &i.EmpireID, &i.EmpireNo); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readEmpireByGameCodeByID = `-- name: ReadEmpireByGameCodeByID :one
+SELECT games.id AS game_id, empires.id AS empire_id, empire_no
+FROM games,
+     empires
+WHERE games.code = ?1
+  AND empires.game_id = games.id
+  AND empires.empire_no = ?2
+`
+
+type ReadEmpireByGameCodeByIDParams struct {
+	GameCode string
+	EmpireNo int64
+}
+
+type ReadEmpireByGameCodeByIDRow struct {
+	GameID   int64
+	EmpireID int64
+	EmpireNo int64
+}
+
+// ReadEmpireByGameCodeByID returns the data for a single empire in a game.
+func (q *Queries) ReadEmpireByGameCodeByID(ctx context.Context, arg ReadEmpireByGameCodeByIDParams) (ReadEmpireByGameCodeByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, readEmpireByGameCodeByID, arg.GameCode, arg.EmpireNo)
+	var i ReadEmpireByGameCodeByIDRow
+	err := row.Scan(&i.GameID, &i.EmpireID, &i.EmpireNo)
+	return i, err
+}
+
+const readEmpireByGameCodeUserEmpireNo = `-- name: ReadEmpireByGameCodeUserEmpireNo :one
+SELECT games.id           AS game_id,
+       games.code         AS game_code,
+       games.name         AS game_name,
+       games.display_name AS game_display_name,
+       games.current_turn AS game_current_turn,
+       empires.user_id,
+       empires.id         AS empire_id,
+       empires.empire_no,
+       empires.is_active  AS empire_is_active,
+       empires.name       as empire_name,
+       empires.home_system_id,
+       empires.home_star_id,
+       empires.home_orbit_id,
+       empires.home_planet_id
+FROM games,
+     empires
+WHERE games.code = ?1
+  AND games.is_active = 1
+  AND empires.user_id = ?2
+  AND empires.empire_no = ?3
+  AND empires.is_active = 1
+`
+
+type ReadEmpireByGameCodeUserEmpireNoParams struct {
+	GameCode string
+	UserID   int64
+	EmpireNo int64
+}
+
+type ReadEmpireByGameCodeUserEmpireNoRow struct {
+	GameID          int64
+	GameCode        string
+	GameName        string
+	GameDisplayName string
+	GameCurrentTurn int64
+	UserID          int64
+	EmpireID        int64
+	EmpireNo        int64
+	EmpireIsActive  int64
+	EmpireName      string
+	HomeSystemID    int64
+	HomeStarID      int64
+	HomeOrbitID     int64
+	HomePlanetID    int64
+}
+
+// ReadEmpireByGameCodeUserEmpireNo reads an empire for a user in an active game.
+func (q *Queries) ReadEmpireByGameCodeUserEmpireNo(ctx context.Context, arg ReadEmpireByGameCodeUserEmpireNoParams) (ReadEmpireByGameCodeUserEmpireNoRow, error) {
+	row := q.db.QueryRowContext(ctx, readEmpireByGameCodeUserEmpireNo, arg.GameCode, arg.UserID, arg.EmpireNo)
+	var i ReadEmpireByGameCodeUserEmpireNoRow
+	err := row.Scan(
+		&i.GameID,
+		&i.GameCode,
+		&i.GameName,
+		&i.GameDisplayName,
+		&i.GameCurrentTurn,
+		&i.UserID,
+		&i.EmpireID,
+		&i.EmpireNo,
+		&i.EmpireIsActive,
+		&i.EmpireName,
+		&i.HomeSystemID,
+		&i.HomeStarID,
+		&i.HomeOrbitID,
+		&i.HomePlanetID,
+	)
+	return i, err
+}
+
+const readEmpireByGameIDByID = `-- name: ReadEmpireByGameIDByID :one
+SELECT games.id AS game_id, empires.id AS empire_id, empire_no
+FROM games,
+     empires
+WHERE games.id = ?1
+  AND empires.game_id = games.id
+  AND empires.empire_no = ?2
+`
+
+type ReadEmpireByGameIDByIDParams struct {
+	GameID   int64
+	EmpireNo int64
+}
+
+type ReadEmpireByGameIDByIDRow struct {
+	GameID   int64
+	EmpireID int64
+	EmpireNo int64
+}
+
+// ReadEmpireByGameIDByID returns the data for a single empire in a game.
+func (q *Queries) ReadEmpireByGameIDByID(ctx context.Context, arg ReadEmpireByGameIDByIDParams) (ReadEmpireByGameIDByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, readEmpireByGameIDByID, arg.GameID, arg.EmpireNo)
+	var i ReadEmpireByGameIDByIDRow
+	err := row.Scan(&i.GameID, &i.EmpireID, &i.EmpireNo)
+	return i, err
+}
+
+const readEmpireByGameIDUserIDEmpireNo = `-- name: ReadEmpireByGameIDUserIDEmpireNo :one
+SELECT games.id           AS game_id,
+       games.code         AS game_code,
+       games.name         AS game_name,
+       games.display_name AS game_display_name,
+       games.current_turn AS game_current_turn,
+       users.id           AS user_id,
+       empires.id         AS empire_id,
+       empires.empire_no,
+       empires.is_active  AS empire_is_active,
+       empires.name       AS empire_name,
+       empires.home_system_id,
+       empires.home_star_id,
+       empires.home_orbit_id,
+       empires.home_planet_id
+FROM empires,
+     games,
+     users
+WHERE games.id = ?1
+  AND users.id = ?2
+  AND empires.user_id = users.id
+  AND empires.game_id = games.id
+  AND empires.empire_no = ?3
+`
+
+type ReadEmpireByGameIDUserIDEmpireNoParams struct {
+	GameID   int64
+	UserID   int64
+	EmpireNo int64
+}
+
+type ReadEmpireByGameIDUserIDEmpireNoRow struct {
+	GameID          int64
+	GameCode        string
+	GameName        string
+	GameDisplayName string
+	GameCurrentTurn int64
+	UserID          int64
+	EmpireID        int64
+	EmpireNo        int64
+	EmpireIsActive  int64
+	EmpireName      string
+	HomeSystemID    int64
+	HomeStarID      int64
+	HomeOrbitID     int64
+	HomePlanetID    int64
+}
+
+// ReadEmpireByGameIDUserIDEmpireNo reads an empire for a user in a game.
+func (q *Queries) ReadEmpireByGameIDUserIDEmpireNo(ctx context.Context, arg ReadEmpireByGameIDUserIDEmpireNoParams) (ReadEmpireByGameIDUserIDEmpireNoRow, error) {
+	row := q.db.QueryRowContext(ctx, readEmpireByGameIDUserIDEmpireNo, arg.GameID, arg.UserID, arg.EmpireNo)
+	var i ReadEmpireByGameIDUserIDEmpireNoRow
+	err := row.Scan(
+		&i.GameID,
+		&i.GameCode,
+		&i.GameName,
+		&i.GameDisplayName,
+		&i.GameCurrentTurn,
+		&i.UserID,
+		&i.EmpireID,
+		&i.EmpireNo,
+		&i.EmpireIsActive,
+		&i.EmpireName,
+		&i.HomeSystemID,
+		&i.HomeStarID,
+		&i.HomeOrbitID,
+		&i.HomePlanetID,
+	)
+	return i, err
+}
+
+const readEmpireByID = `-- name: ReadEmpireByID :one
+SELECT empires.game_id,
+       empires.user_id,
+       empires.empire_no,
+       empires.name,
+       empires.home_system_id,
+       empires.home_star_id,
+       empires.home_orbit_id,
+       empires.home_planet_id
+FROM empires
+WHERE empires.id = ?1
+`
+
+type ReadEmpireByIDRow struct {
+	GameID       int64
+	UserID       int64
+	EmpireNo     int64
+	Name         string
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
+	HomePlanetID int64
+}
+
+// ReadEmpireByID reads an empire by its id.
+// This should only be used by admins. Regular users should use ReadEmpireByUserGame.
+func (q *Queries) ReadEmpireByID(ctx context.Context, empireID int64) (ReadEmpireByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, readEmpireByID, empireID)
+	var i ReadEmpireByIDRow
+	err := row.Scan(
+		&i.GameID,
+		&i.UserID,
+		&i.EmpireNo,
+		&i.Name,
+		&i.HomeSystemID,
+		&i.HomeStarID,
+		&i.HomeOrbitID,
+		&i.HomePlanetID,
+	)
+	return i, err
+}
+
+const readEmpireCountByGameCode = `-- name: ReadEmpireCountByGameCode :one
+SELECT count(empire_no) as empire_count
+FROM empires
+WHERE empires.game_id = (SELECT id FROM games WHERE games.code = ?1)
+`
+
+// ReadEmpireCountByGameCode returns the number of empires in a game.
+func (q *Queries) ReadEmpireCountByGameCode(ctx context.Context, gameCode string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, readEmpireCountByGameCode, gameCode)
+	var empire_count int64
+	err := row.Scan(&empire_count)
+	return empire_count, err
+}
+
+const readEmpireCountByGameID = `-- name: ReadEmpireCountByGameID :one
+SELECT count(empire_no) as empire_count
+FROM empires
+WHERE empires.game_id = ?1
+GROUP BY game_id
+`
+
+// ReadEmpireCountByGameID returns the number of empires in a game.
+func (q *Queries) ReadEmpireCountByGameID(ctx context.Context, gameID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, readEmpireCountByGameID, gameID)
+	var empire_count int64
+	err := row.Scan(&empire_count)
+	return empire_count, err
+}
+
+const readNextEmpireNumberByGame = `-- name: ReadNextEmpireNumberByGame :one
 UPDATE games
 SET last_empire_no = last_empire_no + 1
 WHERE id = ?1
 RETURNING last_empire_no as next_empire_no
 `
 
-// ReadNextEmpireNumber reads the next empire number.
-func (q *Queries) ReadNextEmpireNumber(ctx context.Context, gameID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, readNextEmpireNumber, gameID)
+// ReadNextEmpireNumberByGame reads the next empire number in a game.
+// Has the side effect of incrementing the last_empire_no in that game by 1.
+func (q *Queries) ReadNextEmpireNumberByGame(ctx context.Context, gameID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, readNextEmpireNumberByGame, gameID)
 	var last_empire_no int64
 	err := row.Scan(&last_empire_no)
 	return last_empire_no, err

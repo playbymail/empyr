@@ -81,7 +81,7 @@ func (a *ShowGameAction) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Code:        game.Code,
 			Name:        game.Name,
 			DisplayName: game.DisplayName,
-			IsActive:    game.IsActive,
+			IsActive:    game.EmpireIsActive,
 			CurrentTurn: game.CurrentTurn,
 		}
 	}

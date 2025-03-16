@@ -2,7 +2,10 @@
 
 package engine
 
-import "github.com/playbymail/empyr/store"
+import (
+	"fmt"
+	"github.com/playbymail/empyr/store"
+)
 
 type Engine_t struct {
 	Store *store.Store
@@ -20,17 +23,33 @@ const (
 
 func (r Resource_e) Code() string {
 	switch r {
+	case NONE:
+		return "NONE"
 	case GOLD:
 		return "GOLD"
 	case FUEL:
 		return "FUEL"
 	case METALLICS:
-		return "METL"
+		return "METS"
 	case NON_METALLICS:
-		return "NMTL"
-	default:
-		return "NONE"
+		return "NMTS"
 	}
+	return fmt.Sprintf("Resource_e(%d)", r)
+}
+func (r Resource_e) Descr() string {
+	switch r {
+	case NONE:
+		return "None"
+	case GOLD:
+		return "Gold"
+	case FUEL:
+		return "Fuel"
+	case METALLICS:
+		return "Metallics"
+	case NON_METALLICS:
+		return "Non-metallics"
+	}
+	return fmt.Sprintf("Resource_e(%d)", r)
 }
 
 type Deposit_t struct {
@@ -78,7 +97,6 @@ type Point_t struct {
 type System_t struct {
 	Id          int64
 	Coordinates Point_t
-	Scarcity    Scarcity_e
 	Stars       []*Star_t
 }
 
@@ -86,18 +104,16 @@ type Star_t struct {
 	Id       int64
 	System   *System_t
 	Sequence string // A ... D for the four stars in the system
-	Scarcity Scarcity_e
 	Orbits   [11]*Orbit_t
 }
 
 type Orbit_t struct {
-	Id       int64
-	System   *System_t
-	Star     *Star_t
-	OrbitNo  int64 // value from 1 to 10 for this orbit
-	Kind     Orbit_e
-	Scarcity Scarcity_e
-	Planet   *Planet_t
+	Id      int64
+	System  *System_t
+	Star    *Star_t
+	OrbitNo int64 // value from 1 to 10 for this orbit
+	Kind    Orbit_e
+	Planet  *Planet_t
 }
 
 type Orbit_e int64
@@ -113,19 +129,38 @@ const (
 
 func (e Orbit_e) Code() string {
 	switch e {
+	case EmptyOrbit:
+		return "EMPTY"
 	case AsteroidBelt:
 		return "ASTR"
 	case EarthlikePlanet:
-		return "TERR"
+		return "ERTH"
 	case GasGiant:
 		return "GASG"
 	case IceGiant:
 		return "ICEG"
 	case RockyPlanet:
-		return "TERR"
-	default:
-		return "EMPT"
+		return "RCKY"
 	}
+	return fmt.Sprintf("Orbit_e(%d)", e)
+}
+
+func (e Orbit_e) Descr() string {
+	switch e {
+	case EmptyOrbit:
+		return "empty"
+	case AsteroidBelt:
+		return "asteroid belt"
+	case EarthlikePlanet:
+		return "earth-like planet"
+	case GasGiant:
+		return "gas giant"
+	case IceGiant:
+		return "ice giant"
+	case RockyPlanet:
+		return "rocky planet"
+	}
+	return fmt.Sprintf("Orbit_e(%d)", e)
 }
 
 type Planet_t struct {
@@ -135,7 +170,6 @@ type Planet_t struct {
 	Orbit        *Orbit_t
 	Kind         Planet_e
 	Habitability int64 // 0..25
-	Scarcity     Scarcity_e
 	Deposits     [36]*Deposit_t
 }
 
@@ -150,15 +184,29 @@ const (
 
 func (e Planet_e) Code() string {
 	switch e {
+	case NoPlanet:
+		return "NONE"
 	case AsteroidBeltPlanet:
 		return "ASTR"
 	case GasGiantPlanet:
 		return "GASG"
 	case TerrestrialPlanet:
 		return "TERR"
-	default:
-		return "NONE"
 	}
+	return fmt.Sprintf("Planet_e(%d)", e)
+}
+func (e Planet_e) Descr() string {
+	switch e {
+	case NoPlanet:
+		return "no planet"
+	case AsteroidBeltPlanet:
+		return "asteroid belt"
+	case GasGiantPlanet:
+		return "gas giant"
+	case TerrestrialPlanet:
+		return "terrestrial planet"
+	}
+	return fmt.Sprintf("Planet_e(%d)", e)
 }
 
 type Empire_t struct {

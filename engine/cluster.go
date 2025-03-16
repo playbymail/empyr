@@ -108,7 +108,6 @@ func emptyDeposit(p *Planet_t, no int64) *Deposit_t {
 
 // homeSystemTemplate updates a system using the home system template.
 func homeSystemTemplate(system *System_t, r *rand.Rand) {
-	system.Scarcity = RICH
 	for _, star := range system.Stars {
 		if star != nil {
 			if star.Id == 1 {
@@ -121,7 +120,6 @@ func homeSystemTemplate(system *System_t, r *rand.Rand) {
 }
 
 func coreSystemTemplate(system *System_t, r *rand.Rand) {
-	system.Scarcity = TYPICAL
 	for _, star := range system.Stars {
 		if star != nil {
 			coreStarTemplate(star, r)
@@ -131,7 +129,6 @@ func coreSystemTemplate(system *System_t, r *rand.Rand) {
 
 // homeStarTemplate updates a star using the home star template.
 func homeStarTemplate(star *Star_t, r *rand.Rand) {
-	star.Scarcity = RICH
 	for _, entry := range []struct {
 		No           int
 		OrbitKind    Orbit_e
