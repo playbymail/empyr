@@ -28,15 +28,3 @@ func (q *Queries) CreateOrbit(ctx context.Context, arg CreateOrbitParams) (int64
 	err := row.Scan(&id)
 	return id, err
 }
-
-const deleteEmptyOrbits = `-- name: DeleteEmptyOrbits :exec
-DELETE
-FROM orbits
-WHERE kind = 'EMPTY'
-`
-
-// DeleteEmptyOrbits deletes all orbits with no planets.
-func (q *Queries) DeleteEmptyOrbits(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deleteEmptyOrbits)
-	return err
-}

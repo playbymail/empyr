@@ -1,46 +1,226 @@
-<!DOCTYPE html>
+<!DOCTYPE html>{{- /*gotype:github.com/playbymail/empyr/engine.TurnReport_t*/ -}}
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="generator" content="go"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <meta name="author" content="Michael D Henderson"/>
-    <title>{{.Game}} - {{.EmpireCode}} - {{.TurnCode}}</title>
-    <link rel="stylesheet" href="../../css/monospace.css">
+    <title>{{.Heading.Game}} - {{.Heading.EmpireCode}} - {{.Heading.TurnCode}}</title>
+    <link rel="stylesheet" href="/css/empyr.css">
 </head>
-<body>
+<body style="font-family:'courier'">
 <header>
-    <table class="header">
+    <table>
         <tr>
-            <td colspan="2" rowspan="2" class="width-auto">
-                <h1 class="title">Epimethean Challenge</h1>
-                <span class="subtitle">A reboot of a grander game</span>
-            </td>
-            <th class="width-min">Game</th>
-            <td>A02</td>
-        </tr>
-        <tr>
-            <th>Updated</th>
-            <td class="width-min">
-                <time style="white-space: pre;">{{.CreatedDate}}</time>
-            </td>
-        </tr>
-        <tr>
-            <th class="width-min">Author</th>
-            <td class="width-auto"><a href="https://github.com/playbymail/empyr"><cite>Michael D Henderson</cite></a></td>
-            <th>Version</th>
-            <td class="width-min">0.0.1</td>
+            <td>Game {{.Heading.Game}}</td>
+            <td>Empire # {{.Heading.EmpireNo}}</td>
+            <td>Turn # {{.Heading.TurnNo}}</td>
         </tr>
     </table>
 </header>
 <main>
-    <article>
-        <div class="grid">
-            <input readonly value="Game # {{.Game}}"/>
-            <input readonly value="Empire # {{.EmpireNo}}"/>
-            <input readonly value="Turn # {{.TurnNo}}" style="flex-grow: 1;"/>
-            <input readonly value="Date {{.CreatedDate}}"/>
-        </div>
+{{range .Colonies}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyReport_t*/ -}}
+<article>
+    <h2>{{.Kind}} ({{.Name}}) in System {{.Coordinates}} Orbit # {{.OrbitNo}}</h2>
+    <h3>Vital Statistics</h3>
+    {{with .VitalStatistics}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyStatisticsReport_t*/ -}}
+    <table>
+        <tr>
+            <th style="text-align:left">Category</th>
+            <th style="text-align:left">Value</th>
+        </tr>
+        <tr>
+            <th style="text-align:left">TL</th>
+            <td style="text-align:right">{{.TechLevel}}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left">S.O.L.</th>
+            <td style="text-align:right">{{.StandardOfLiving}}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left">Rations</th>
+            <td style="text-align:right">{{.Rations}}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left">Birth Rate</th>
+            <td style="text-align:right">{{.BirthRate}}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left">Death Rate</th>
+            <td style="text-align:right">{{.DeathRate}}</td>
+        </tr>
+    </table>
+    {{else}}
+        <p>Nothing to report.</p>
+    {{end}}
+
+    <h3>Census Report</h3>
+    {{with .Census}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyCensusReport_t*/ -}}
+    <table border="1">
+        <thead>
+        <tr><th>Group</th><th>Population</th><th>Pct Total Pop</th><th>Employed</th><th>Pay (in CNGD)</th><th>Total Pay</th></tr>
+        </thead>
+        {{range .Population}}{{- /*gotype:github.com/playbymail/empyr/engine.PopulationReport_t*/ -}}
+        <tr><th>{{.Group}}</th><td style="text-align:right">{{.Population}}</td><td style="text-align:right">{{.PctTotalPop}}</td><td>{{.Employed}}</td><td style="text-align:right">{{.PayRate}}</td><td style="text-align:right">{{.TotalPay}}</td></tr>
+        {{end}}
+        <tfoot>
+        <tr><th>Totals</th><th style="text-align:right">{{.TotalPopulation}}</th><th></th><th style="text-align:right">{{.TotalEmployed}}</th><th></th><th style="text-align:right">{{.TotalPay}}</th></tr>
+        </tfoot>
+    </table>
+    {{else}}
+        <p>Nothing to report</p>
+    {{end}}
+
+    <h3>Other Statistics</h3>
+    {{with .Other}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyOtherReport_t*/ -}}
+        <table>
+            <tr><td style="text-align: right">{{.TotalMass}}</td><td>Total Mass</td></tr>
+            <tr><td style="text-align: right">{{.TotalVolume}}</td><td>Space Capacity Total</td></tr>
+            <tr><td style="text-align: right">{{.AvailableVolume}}</td><td>Space Available</td></tr>
+        </table>
+    {{else}}
+        <p>Nothing to report</p>
+    {{end}}
+
+    <h3>Transport Report</h3>
+    {{with .Transports}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyTransportReport_t*/ -}}
+    <table>
+        <tr><td style="text-align: right">{{.Capacity}}</td><td>TPT Capacity</td></tr>
+        <tr><td style="text-align: right">{{.Used}}</td><td>TPT Used</td></tr>
+        <tr><td style="text-align: right">{{.Available}}</td><td>TPT Available</td></tr>
+    </table>
+    {{else}}
+        <p>Nothing to report</p>
+    {{end}}
+
+    <h3>Inventory Report</h3>
+    {{with .Inventory}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyInventoryReport_t*/ -}}
+        <table>
+            <thead><tr><td>Unit</td><td>Non-Assembly Qty</td><td>Disassembled Qty</td><td>Assembled Qty</td><td>OPU?</td></tr></thead>
+            {{range .}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyInventoryLine_t*/ -}}
+                <tr>
+                    <td>{{.Code}}</td>
+                    <td style="text-align: right">{{.NonAssemblyQty}}</td>
+                    <td style="text-align: right">{{.DisassembledQty}}</td>
+                    <td style="text-align: right">{{.AssembledQty}}</td>
+                    <td style="text-align: right">{{.IsOPU}}</td>
+                </tr>
+            {{end}}
+        </table>
+    {{else}}
+    <p>Nothing to report</p>
+    {{end}}
+
+    <h3>Production Report</h3>
+    <h4>Consumed</h4>
+    {{with .ProductionConsumed}}{{- /*gotype:github.com/playbymail/empyr/engine.ProductionConsumedLine_t*/ -}}
+        <table>
+            <thead><tr><td>Category</td><td>FUEL</td><td>GOLD</td><td>METS</td><td>NMTS</td></tr></thead>
+            {{range .}}{{- /*gotype:github.com/playbymail/empyr/engine.ProductionConsumedLine_t*/ -}}
+            <tr>
+            <td>{{.Category}}</td>
+            <td style="text-align: right">{{.Fuel}}</td>
+            <td style="text-align: right">{{.Gold}}</td>
+                <td style="text-align: right">{{.Metals}}</td>
+                <td style="text-align: right">{{.NonMetals}}</td>
+            </tr>
+            {{end}}
+        </table>
+    {{else}}
+    <p>Nothing to report</p>
+    {{end}}
+    <h4>Created</h4>
+    {{with .ProductionCreated}}{{- /*gotype:github.com/playbymail/empyr/engine.ProductionCreatedLine_t*/ -}}
+    <table>
+        <thead><tr><td>Category</td><td>Farmed</td><td>Manufactured</td><td>Mined</td></tr></thead>
+        {{range .}}{{- /*gotype:github.com/playbymail/empyr/engine.ProductionCreatedLine_t*/ -}}
+        <tr>
+            <td>{{.Category}}</td>
+            <td style="text-align: right">{{.Farmed}}</td>
+            <td style="text-align: right">{{.Manufactured}}</td>
+            <td style="text-align: right">{{.Mined}}</td>
+        </tr>
+        {{end}}
+    </table>
+    {{else}}
+    <p>Nothing to report</p>
+    {{end}}
+
+    <h4>Farming</h4>
+    {{with .FarmGroups}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyFarmGroupsReport_t*/ -}}
+    <table>
+        <thead><tr><td>Farm #</td><td>Units</td><td>TL</td></tr></thead>
+        {{range .}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyFarmGroupsReport_t*/ -}}
+            <tr>
+                <td style="text-align: right">{{.GroupNo}}</td>
+                <td style="text-align: right">{{.NbrOfUnits}}</td>
+                <td style="text-align: right">{{.TechLevel}}</td></tr>
+        {{end}}
+    </table>
+    {{else}}
+    <p>Nothing to report</p>
+    {{end}}
+
+    <h4>Mining</h4>
+    {{if .MiningGroups}}
+        <table border="1">
+            <thead><tr><td>Mine #</td><td>Dep #</td><td>Deposit Qty</td><td>Type</td><td>Yield</td><td>TL</td><td>Units</td></tr></thead>
+            {{range $i, $mg := .MiningGroups}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyMiningGroupsReport_t*/ -}}
+                {{range $j, $unit := .Units}}{{- /*gotype:github.com/playbymail/empyr/engine.MiningGroupUnitReport_t*/ -}}
+                <tr>
+                    <td style="text-align: right">{{if $j}}&nbsp;{{else}}{{$mg.GroupNo}}{{end}}</td>
+                    <td style="text-align: right">{{if $j}}&nbsp;{{else}}{{$mg.DepositNo}}{{end}}</td>
+                    <td style="text-align: right">{{if $j}}&nbsp;{{else}}{{$mg.DepositQty}}{{end}}</td>
+                    <td>{{if $j}}&nbsp;{{else}}{{$mg.DepositKind}}{{end}}</td>
+                    <td style="text-align: right">{{if $j}}&nbsp;{{else}}{{$mg.DepositYield}}{{end}}</td>
+                    <td>{{$unit.TechLevel}}</td>
+                    <td style="text-align: right">{{$unit.NbrOfUnits}}</td>
+                </tr>
+                {{end}}
+            {{end}}
+        </table>
+    {{else}}
+        <p>Nothing to report</p>
+    {{end}}
+
+    <h4>Manufacturing</h4>
+    {{if .FactoryGroups}}
+    <table border="1">
+        <thead><tr><td>FG #</td><td>Orders</td><td>Retool?</td><td>TL</td><td>Nbr Of Units</td><td>WIP Pct Complete</td><td>WIP Unit</td><td>WIP Qty</td></tr></thead>
+        {{range $i, $fg := .FactoryGroups}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyFactoryGroupsReport_t*/ -}}
+            {{range $j, $units := .Units}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonyFactoryGroupReport_t*/ -}}
+                {{$unit := .}}
+                {{range $k, $wip := .Pipeline}}
+                    <tr>
+                        <td style="text-align: right">{{if $k}}&nbsp;{{else}}{{$fg.GroupNo}}{{end}}</td>
+                        <td>{{if $k}}&nbsp;{{else}}{{$fg.Orders}}{{end}}</td>
+                        <td style="text-align: right">{{$fg.RetoolTurn}}</td>
+                        <td>{{if $k}}&nbsp;{{else}}{{$unit.TechLevel}}{{end}}</td>
+                        <td style="text-align: right">{{if $k}}&nbsp;{{else}}{{$unit.NbrOfUnits}}{{end}}</td>
+                        <td style="text-align: right">{{$wip.Percentage}}</td>
+                        <td>{{$wip.Unit}}</td>
+                        <td style="text-align: right">{{$wip.Qty}}</td>
+                    </tr>
+                {{end}}
+            {{end}}
+        {{end}}
+    </table>
+    {{else}}
+        <p>Nothing to report</p>
+    {{end}}
+
+    <h3>Domestic Espionage (Internal Spies)</h3>
+    {{with .Spies}}{{- /*gotype:github.com/playbymail/empyr/engine.ColonySpyReport_t*/ -}}
+    {{else}}
+        <p>Nothing to report</p>
+    {{end}}
+</article>
+{{end}}
+{{range .Ships}}
+{{end}}
+{{range .Surveys}}
+<article>
+    <h3>Resources</h3>
 
         <h2>Reports - Turn {{.TurnNo}}</h2>
 
@@ -53,48 +233,60 @@
             </p>
 
             <h4>Vital Statistics ******************</h4>
-            <table>
-                <tr>
-                    <th class="width-min" style="text-align:right">TL</th>
-                    <td class="width-min">{{.TL}}</td>
-                    <th class="width-min" style="text-align:right">S.O.L.</th>
-                    <td class="width-min">{{.SOL}}</td>
-                    <th class="width-min" style="text-align:right">Deaths</th>
-                    <td class="width-min">{{.Census.DeathRate}}%</td>
-                    <th class="width-min" style="text-align:right">Births</th>
-                    <td class="width-min">{{.Census.BirthRate}}%</td>
-                </tr>
-                <tr>
-                    <th class="width-min" style="text-align:right">Rations</th>
-                    <td class="width-min">{{.PayRates.Rations}}%</td>
-                    <td class="width-min" style="text-align:right">USK Pay</td>
-                    <td class="width-min">{{.PayRates.USK}}</td>
-                    <td class="width-min" style="text-align:right">PRO Pay</td>
-                    <td class="width-min">{{.PayRates.PRO}}</td>
-                    <td class="width-min" style="text-align:right">SLD Pay</td>
-                    <td class="width-min">{{.PayRates.SLD}}</td>
-                </tr>
-            </table>
 
             <h4>Other Statistics ******************</h4>
             <h4>Census Report *********************</h4>
-                <table>
-                    <tr><td style="text-align:right">{{.Census.UemQty}}</td><td>UEM</td><td style="text-align:right">{{.Census.UemPct}}</td></tr>
-                    <tr><td style="text-align:right">{{.Census.UskQty}}</td><td>USK</td><td style="text-align:right">{{.Census.UskPct}}</td></tr>
-                    <tr><td style="text-align:right">{{.Census.ProQty}}</td><td>PRO</td><td style="text-align:right">{{.Census.ProPct}}</td></tr>
-                    <tr><td style="text-align:right">{{.Census.SldQty}}</td><td>SLD</td><td style="text-align:right">{{.Census.SldPct}}</td></tr>
-                    <tr><td style="text-align:right">{{.Census.CnwQty}}</td><td>CNW</td><td style="text-align:right">{{.Census.CnwPct}}</td></tr>
-                    <tr><td style="text-align:right">{{.Census.SpyQty}}</td><td>SPY</td><td style="text-align:right">{{.Census.SpyPct}}</td></tr>
-                    <tr><td class="width-min" style="text-align:right">{{.Census.TotalPopulation}}</td><td class="width-auto">Total Population</td><td></td></tr>
-                </table>
+            <table>
+                <tr>
+                    <td style="text-align:right">{{.Census.UemQty}}</td>
+                    <td>UEM</td>
+                    <td style="text-align:right">{{.Census.UemPct}}</td>
+                </tr>
+                <tr>
+                    <td style="text-align:right">{{.Census.UskQty}}</td>
+                    <td>USK</td>
+                    <td style="text-align:right">{{.Census.UskPct}}</td>
+                </tr>
+                <tr>
+                    <td style="text-align:right">{{.Census.ProQty}}</td>
+                    <td>PRO</td>
+                    <td style="text-align:right">{{.Census.ProPct}}</td>
+                </tr>
+                <tr>
+                    <td style="text-align:right">{{.Census.SldQty}}</td>
+                    <td>SLD</td>
+                    <td style="text-align:right">{{.Census.SldPct}}</td>
+                </tr>
+                <tr>
+                    <td style="text-align:right">{{.Census.CnwQty}}</td>
+                    <td>CNW</td>
+                    <td style="text-align:right">{{.Census.CnwPct}}</td>
+                </tr>
+                <tr>
+                    <td style="text-align:right">{{.Census.SpyQty}}</td>
+                    <td>SPY</td>
+                    <td style="text-align:right">{{.Census.SpyPct}}</td>
+                </tr>
+                <tr>
+                    <td class="width-min" style="text-align:right">{{.Census.TotalPopulation}}</td>
+                    <td class="width-auto">Total Population</td>
+                    <td></td>
+                </tr>
+            </table>
 
 
             <h4>Storage/Non-Assembly Items</h4>
             {{with .StorageNonAssemblyItems}}
                 <table>
-                    <tr><th>Quantity</th><th>Unit</th></tr>
+                    <tr>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                    </tr>
                     {{range .}}
-                        <tr><td style="text-align:right">{{.Qty}}</td><td>{{.Code}}</td></tr>
+                        <tr>
+                            <td style="text-align:right">{{.Qty}}</td>
+                            <td>{{.Code}}</td>
+                        </tr>
                     {{end}}
                 </table>
             {{end}}
@@ -102,27 +294,47 @@
             <h4>Storage/Unassembled Items</h4>
             {{with .StorageUnassembledItems}}
                 <table>
-                    <tr><th>Quantity</th><th>Unit</th></tr>
+                    <tr>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                    </tr>
                     {{range .}}
-                        <tr><td style="text-align:right">{{.Qty}}</td><td>{{.Code}}</td></tr>
+                        <tr>
+                            <td style="text-align:right">{{.Qty}}</td>
+                            <td>{{.Code}}</td>
+                        </tr>
                     {{end}}
                 </table>
             {{end}}
 
             <h4>Assembled Items</h4>
             {{with .AssembledItems}}
-            <table>
-                <tr><th>Quantity</th><th>Unit</th></tr>
-                {{range .}}
-                <tr><td style="text-align:right">{{.Qty}}</td><td>{{.Code}}</td></tr>
-                {{end}}
-            </table>
+                <table>
+                    <tr>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                    </tr>
+                    {{range .}}
+                        <tr>
+                            <td style="text-align:right">{{.Qty}}</td>
+                            <td>{{.Code}}</td>
+                        </tr>
+                    {{end}}
+                </table>
             {{end}}
 
             <h4>Mining Groups</h4>
             {{with .MiningGroups}}
                 <table>
-                    <tr><th>Mine #</th><th>Nbr of Units</th><th>TL</th><th>Deposit #</th><th>Deposit Qty</th><th>Type</th><th>Yield</th></tr>
+                    <tr>
+                        <th>Mine #</th>
+                        <th>Nbr of Units</th>
+                        <th>TL</th>
+                        <th>Deposit #</th>
+                        <th>Deposit Qty</th>
+                        <th>Type</th>
+                        <th>Yield</th>
+                    </tr>
                     {{range .}}
                         <tr>
                             <td style="text-align:right">{{.MineNo}}</td>
@@ -131,28 +343,36 @@
                             <td style="text-align:right">{{.DepositNo}}</td>
                             <td style="text-align:right">{{.DepositQty}}</td>
                             <td>{{.Type}}</td>
-                            <td style="text-align:right">{{.YieldPct}}</td></tr>
+                            <td style="text-align:right">{{.YieldPct}}</td>
+                        </tr>
                     {{end}}
                 </table>
             {{end}}
 
             <h4>Factory Groups</h4>
             {{with .FactoryGroups}}
-<pre>
+                <pre>
 Group | Nbr Of Units   | TL | ORDERS   | WIP 25% Complete        | WIP 50% Complete        | WIP 75% Complete
 {{range .}}
-{{.GroupNo}} | {{.NbrOfUnits}} | {{.TL}} | {{.OrderCode}} | {{.WIP25.UnitsInProgress}} {{.WIP25.Code}} | {{.WIP50.UnitsInProgress}} {{.WIP50.Code}} | {{.WIP75.UnitsInProgress}} {{.WIP75.Code}}
+    {{.GroupNo}} | {{.NbrOfUnits}} | {{.TL}} | {{.OrderCode}} | {{.WIP25.UnitsInProgress}} {{.WIP25.Code}} | {{.WIP50.UnitsInProgress}} {{.WIP50.Code}} | {{.WIP75.UnitsInProgress}} {{.WIP75.Code}}
 {{end}}
 </pre>
-            <p>NB: The table above is really wide and poorly formatted. You must scroll left and right to see all the data.</p>
+                <p>NB: The table above is really wide and poorly formatted. You must scroll left and right to see all
+                    the data.</p>
             {{end}}
 
             <h4>Domestic Espionage (Internal Spies)</h4>
             {{with .InternalSpies}}
                 <table>
-                    <tr><th>Quantity</th><th>Group</th></tr>
+                    <tr>
+                        <th>Quantity</th>
+                        <th>Group</th>
+                    </tr>
                     {{range .}}
-                        <tr><td style="text-align:right">{{.Qty}}</td><td>{{.Group}}</td></tr>
+                        <tr>
+                            <td style="text-align:right">{{.Qty}}</td>
+                            <td>{{.Group}}</td>
+                        </tr>
                     {{end}}
                 </table>
                 {{range .}}
@@ -178,6 +398,7 @@ Group | Nbr Of Units   | TL | ORDERS   | WIP 25% Complete        | WIP 50% Compl
             </nav>
         </footer>
     </article>
+{{end}}
 </main>
 <hr>
 <footer>

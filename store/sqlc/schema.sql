@@ -163,21 +163,74 @@ CREATE TABLE planets
 
 CREATE TABLE unit_codes
 (
-    code       TEXT    NOT NULL PRIMARY KEY,
-    tech_level INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
-    name       TEXT    NOT NULL UNIQUE,
-    category   TEXT    NOT NULL
+    code           TEXT    NOT NULL PRIMARY KEY,
+    name           TEXT    NOT NULL UNIQUE,
+    category       TEXT    NOT NULL,
+    is_operational INTEGER NOT NULL CHECK (is_operational IN (0, 1)),
+    is_consumable  INTEGER NOT NULL CHECK (is_consumable IN (0, 1)),
+    is_resource    INTEGER NOT NULL CHECK (is_resource IN (0, 1))
 );
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('NONE', 0, 'none', 'RESOURCES');
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('GOLD', 0, 'Gold', 'RESOURCES');
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('FUEL', 0, 'Fuel', 'RESOURCES');
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('METS', 0, 'Metallic', 'RESOURCES');
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('NMTS', 0, 'Non-metallic', 'RESOURCES');
+
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('ANM', 'Anti-Missiles', 'Vehicles', 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('ASC', 'Assault Craft', 'Vehicles', 0, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('ASW', 'Assault Weapons', 'Vehicles', 0, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('AUT', 'Automation', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('CNGD', 'Consumer Goods', 'Consumables', 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('ESH', 'Energy Shields', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('EWP', 'Energy Weapons', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('FCT', 'Factories', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('FOOD', 'Food', 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('FRM', 'Farms', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('FUEL', 'Fuel', 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('GOLD', 'Gold', 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('HEN', 'Hyper Engines', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('LAB', 'Laboratories', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('LFS', 'Life Supports', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('METS', 'Metals', 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('MIN', 'Mines', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('MSL', 'Missile Launchers', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('MSS', 'Missiles', 'Vehicles', 0, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('MTBT', 'Military Robots', 'Bots', 0, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('MTSP', 'Military Supplies', 'Consumables', 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('NMTS', 'Non-Metals', 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('PWP', 'Power Plants', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('RPV', 'Robot Probe Vehicles', 'Bots', 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('RSCH', 'Research', 'Consumables', 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('SEN', 'Sensors', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('SLS', 'Light Structure', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('SPD', 'Space Drives', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('STU', 'Structure', 'Assembly', 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
+VALUES ('TPT', 'Transports', 'Vehicles', 0, 0, 0);
 
 CREATE TABLE deposits
 (
@@ -292,24 +345,16 @@ CREATE TABLE sorcs
             ON DELETE CASCADE
 );
 
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('STUN', 0, 'Structural Units', 'UNITS');
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('FCT-1', 1, 'Factory', 'UNITS');
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('FRM-1', 1, 'Farm', 'UNITS');
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('MIN-1', 1, 'Mine', 'UNITS');
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('MSL-1', 1, 'Missile', 'UNITS');
-INSERT INTO unit_codes (code, tech_level, name, category)
-VALUES ('SEN-1', 1, 'Sensor', 'UNITS');
-
 CREATE TABLE inventory
 (
-    sorc_id INTEGER NOT NULL,
-    unit_cd TEXT    NOT NULL,
-    qty     INTEGER NOT NULL CHECK (qty >= 0),
+    sorc_id      INTEGER NOT NULL,
+    unit_cd      TEXT    NOT NULL,
+    tech_level   INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
+    qty          INTEGER NOT NULL CHECK (qty >= 0),
+    mass         REAL    NOT NULL CHECK (mass >= 0),
+    volume       REAL    NOT NULL CHECK (volume >= 0),
+    is_assembled INTEGER NOT NULL DEFAULT 0 CHECK (is_assembled IN (0, 1)),
+    is_stored    INTEGER NOT NULL DEFAULT 0 CHECK (is_stored IN (0, 1)),
     CONSTRAINT fk_sorc_id
         FOREIGN KEY (sorc_id)
             REFERENCES sorcs (id)
@@ -322,22 +367,29 @@ CREATE TABLE inventory
 
 CREATE TABLE population_codes
 (
-    code          TEXT NOT NULL PRIMARY KEY,
-    name          TEXT NOT NULL UNIQUE,
-    base_pay_rate REAL NOT NULL CHECK (base_pay_rate >= 0)
+    code          TEXT    NOT NULL PRIMARY KEY,
+    name          TEXT    NOT NULL UNIQUE,
+    base_pay_rate REAL    NOT NULL CHECK (base_pay_rate >= 0),
+    sort_order    INTEGER NOT NULL
 );
-INSERT INTO population_codes (code, name, base_pay_rate)
-VALUES ('UEM', 'Unemployable', 0);
-INSERT INTO population_codes (code, name, base_pay_rate)
-VALUES ('USK', 'Unskilled', 0.125);
-INSERT INTO population_codes (code, name, base_pay_rate)
-VALUES ('PRO', 'Professional', 0.375);
-INSERT INTO population_codes (code, name, base_pay_rate)
-VALUES ('SLD', 'Soldier', 0.25);
-INSERT INTO population_codes (code, name, base_pay_rate)
-VALUES ('CNW', 'Construction Worker', 0.5);
-INSERT INTO population_codes (code, name, base_pay_rate)
-VALUES ('SPY', 'Spy', 0.625);
+INSERT INTO population_codes (code, name, base_pay_rate, sort_order)
+VALUES ('CNW', 'Construction Worker', 0.5000, 5);
+INSERT INTO population_codes (code, name, base_pay_rate, sort_order)
+VALUES ('PLC', 'Police', 0.2500, 7);
+INSERT INTO population_codes (code, name, base_pay_rate, sort_order)
+VALUES ('PRO', 'Professional', 0.3750, 3);
+INSERT INTO population_codes (code, name, base_pay_rate, sort_order)
+VALUES ('SAG', 'Special Agents', 0.6250, 8);
+INSERT INTO population_codes (code, name, base_pay_rate, sort_order)
+VALUES ('SLD', 'Soldier', 0.2500, 4);
+INSERT INTO population_codes (code, name, base_pay_rate, sort_order)
+VALUES ('SPY', 'Spy', 0.6250, 6);
+INSERT INTO population_codes (code, name, base_pay_rate, sort_order)
+VALUES ('TRN', 'Trainees', 0.1250, 9);
+INSERT INTO population_codes (code, name, base_pay_rate, sort_order)
+VALUES ('UEM', 'Unemployable', 0.0000, 1);
+INSERT INTO population_codes (code, name, base_pay_rate, sort_order)
+VALUES ('USK', 'Unskilled', 0.1250, 2);
 
 CREATE TABLE population
 (
@@ -373,6 +425,7 @@ CREATE TABLE farm_group
     farm_group_id INTEGER NOT NULL,
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     unit_cd       TEXT    NOT NULL,
+    tech_level    INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
     nbr_of_units  INTEGER NOT NULL CHECK (nbr_of_units >= 0),
     CONSTRAINT fk_farm_group_id
         FOREIGN KEY (farm_group_id)
@@ -386,11 +439,12 @@ CREATE TABLE farm_group
 
 CREATE TABLE factory_groups
 (
-    sorc_id        INTEGER NOT NULL,
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    group_no       INTEGER NOT NULL CHECK (group_no BETWEEN 1 AND 30),
-    retool_turn_no INTEGER,
-    orders_cd      TEXT    NOT NULL,
+    sorc_id           INTEGER NOT NULL,
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_no          INTEGER NOT NULL CHECK (group_no BETWEEN 1 AND 30),
+    orders_cd         TEXT    NOT NULL,
+    orders_tech_level INTEGER NOT NULL CHECK (orders_tech_level BETWEEN 0 AND 10),
+    retool_turn_no    INTEGER,
     UNIQUE (sorc_id, group_no),
     CONSTRAINT fk_sorc_id
         FOREIGN KEY (sorc_id)
@@ -404,13 +458,16 @@ CREATE TABLE factory_groups
 
 CREATE TABLE factory_group
 (
-    factory_group_id INTEGER NOT NULL,
-    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    unit_cd          TEXT    NOT NULL,
-    nbr_of_units     INTEGER NOT NULL CHECK (nbr_of_units >= 0),
-    wip_25pct_qty    INTEGER NOT NULL CHECK (wip_25pct_qty >= 0),
-    wip_50pct_qty    INTEGER NOT NULL CHECK (wip_50pct_qty >= 0),
-    wip_75pct_qty    INTEGER NOT NULL CHECK (wip_75pct_qty >= 0),
+    factory_group_id  INTEGER NOT NULL,
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    unit_cd           TEXT    NOT NULL,
+    tech_level        INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
+    nbr_of_units      INTEGER NOT NULL CHECK (nbr_of_units >= 0),
+    orders_cd         TEXT    NOT NULL,
+    orders_tech_level INTEGER NOT NULL CHECK (orders_tech_level BETWEEN 0 AND 10),
+    wip_25pct_qty     INTEGER NOT NULL CHECK (wip_25pct_qty >= 0),
+    wip_50pct_qty     INTEGER NOT NULL CHECK (wip_50pct_qty >= 0),
+    wip_75pct_qty     INTEGER NOT NULL CHECK (wip_75pct_qty >= 0),
     CONSTRAINT fk_factory_group_id
         FOREIGN KEY (factory_group_id)
             REFERENCES factory_groups (id)
@@ -426,7 +483,7 @@ CREATE TABLE mining_groups
     sorc_id    INTEGER NOT NULL,
     deposit_id INTEGER NOT NULL,
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    group_no   INTEGER NOT NULL CHECK (group_no BETWEEN 1 AND 30),
+    group_no   INTEGER NOT NULL CHECK (group_no BETWEEN 1 AND 35),
     UNIQUE (sorc_id, group_no),
     CONSTRAINT fk_sorc_id
         FOREIGN KEY (sorc_id)
@@ -443,10 +500,11 @@ CREATE TABLE mining_group
     mining_group_id INTEGER NOT NULL,
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     unit_cd         TEXT    NOT NULL,
+    tech_level      INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
     nbr_of_units    INTEGER NOT NULL CHECK (nbr_of_units >= 0),
     CONSTRAINT fk_mining_group_id
         FOREIGN KEY (mining_group_id)
-            REFERENCES farm_groups (id)
+            REFERENCES mining_groups (id)
             ON DELETE CASCADE,
     CONSTRAINT fk_unit_cd
         FOREIGN KEY (unit_cd)
@@ -462,6 +520,37 @@ CREATE TABLE reports
     CONSTRAINT fk_sorc_id
         FOREIGN KEY (sorc_id)
             REFERENCES sorcs (id)
+            ON DELETE CASCADE
+);
+
+CREATE TABLE report_production_inputs
+(
+    report_id  INTEGER NOT NULL,
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    category   TEXT    NOT NULL,
+    fuel       INTEGER NOT NULL CHECK (fuel >= 0),
+    gold       INTEGER NOT NULL CHECK (gold >= 0),
+    metals     INTEGER NOT NULL CHECK (metals >= 0),
+    non_metals INTEGER NOT NULL CHECK (non_metals >= 0),
+    CONSTRAINT fk_report_id
+        FOREIGN KEY (report_id)
+            REFERENCES reports (id)
+            ON DELETE CASCADE
+);
+
+CREATE TABLE report_production_outputs
+(
+    report_id    INTEGER NOT NULL,
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    category     TEXT    NOT NULL,
+    unit_cd      TEXT    NOT NULL,
+    tech_level   INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
+    farmed       INTEGER NOT NULL CHECK (farmed >= 0),
+    mined        INTEGER NOT NULL CHECK (mined >= 0),
+    manufactured INTEGER NOT NULL CHECK (manufactured >= 0),
+    CONSTRAINT fk_report_id
+        FOREIGN KEY (report_id)
+            REFERENCES reports (id)
             ON DELETE CASCADE
 );
 

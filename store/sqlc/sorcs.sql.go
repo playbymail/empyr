@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createSorC = `-- name: CreateSorC :one
@@ -47,21 +48,192 @@ func (q *Queries) CreateSorC(ctx context.Context, arg CreateSorCParams) (int64, 
 	return id, err
 }
 
+const createSorCFactoryGroup = `-- name: CreateSorCFactoryGroup :one
+INSERT INTO factory_groups (sorc_id, group_no, orders_cd, orders_tech_level, retool_turn_no)
+VALUES (?1, ?2, ?3, ?4, ?5)
+RETURNING id
+`
+
+type CreateSorCFactoryGroupParams struct {
+	SorcID          int64
+	GroupNo         int64
+	OrdersCd        string
+	OrdersTechLevel int64
+	RetoolTurnNo    sql.NullInt64
+}
+
+// CreateSorCFactoryGroup creates a new ship or colony factory group.
+func (q *Queries) CreateSorCFactoryGroup(ctx context.Context, arg CreateSorCFactoryGroupParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSorCFactoryGroup,
+		arg.SorcID,
+		arg.GroupNo,
+		arg.OrdersCd,
+		arg.OrdersTechLevel,
+		arg.RetoolTurnNo,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createSorCFactoryGroupUnit = `-- name: CreateSorCFactoryGroupUnit :one
+INSERT INTO factory_group (factory_group_id, unit_cd, tech_level, nbr_of_units, orders_cd, orders_tech_level,
+                           wip_25pct_qty, wip_50pct_qty, wip_75pct_qty)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7,
+        ?8, ?9)
+RETURNING id
+`
+
+type CreateSorCFactoryGroupUnitParams struct {
+	FactoryGroupID  int64
+	UnitCd          string
+	TechLevel       int64
+	NbrOfUnits      int64
+	OrdersCd        string
+	OrdersTechLevel int64
+	Wip25pctQty     int64
+	Wip50pctQty     int64
+	Wip75pctQty     int64
+}
+
+// CreateSorCFactoryGroupUnit creates a new ship or colony factory group unit.
+func (q *Queries) CreateSorCFactoryGroupUnit(ctx context.Context, arg CreateSorCFactoryGroupUnitParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSorCFactoryGroupUnit,
+		arg.FactoryGroupID,
+		arg.UnitCd,
+		arg.TechLevel,
+		arg.NbrOfUnits,
+		arg.OrdersCd,
+		arg.OrdersTechLevel,
+		arg.Wip25pctQty,
+		arg.Wip50pctQty,
+		arg.Wip75pctQty,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createSorCFarmGroup = `-- name: CreateSorCFarmGroup :one
+INSERT INTO farm_groups (sorc_id, group_no)
+VALUES (?1, ?2)
+RETURNING id
+`
+
+type CreateSorCFarmGroupParams struct {
+	SorcID  int64
+	GroupNo int64
+}
+
+// CreateSorCFarmGroup creates a new ship or colony farm group.
+func (q *Queries) CreateSorCFarmGroup(ctx context.Context, arg CreateSorCFarmGroupParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSorCFarmGroup, arg.SorcID, arg.GroupNo)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createSorCFarmGroupUnit = `-- name: CreateSorCFarmGroupUnit :one
+INSERT INTO farm_group (farm_group_id, unit_cd, tech_level, nbr_of_units)
+VALUES (?1, ?2, ?3, ?4)
+RETURNING id
+`
+
+type CreateSorCFarmGroupUnitParams struct {
+	FarmGroupID int64
+	UnitCd      string
+	TechLevel   int64
+	NbrOfUnits  int64
+}
+
+// CreateSorCFarmGroupUnit creates a new ship or colony farm group unit.
+func (q *Queries) CreateSorCFarmGroupUnit(ctx context.Context, arg CreateSorCFarmGroupUnitParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSorCFarmGroupUnit,
+		arg.FarmGroupID,
+		arg.UnitCd,
+		arg.TechLevel,
+		arg.NbrOfUnits,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createSorCInventory = `-- name: CreateSorCInventory :exec
-INSERT INTO inventory (sorc_id, unit_cd, qty)
-VALUES (?1, ?2, ?3)
+INSERT INTO inventory (sorc_id, unit_cd, tech_level, qty, mass, volume, is_assembled, is_stored)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
 `
 
 type CreateSorCInventoryParams struct {
-	SorcID int64
-	UnitCd string
-	Qty    int64
+	SorcID      int64
+	UnitCd      string
+	TechLevel   int64
+	Qty         int64
+	Mass        float64
+	Volume      float64
+	IsAssembled int64
+	IsStored    int64
 }
 
 // CreateSorCInventory creates a new ship or colony inventory entry.
 func (q *Queries) CreateSorCInventory(ctx context.Context, arg CreateSorCInventoryParams) error {
-	_, err := q.db.ExecContext(ctx, createSorCInventory, arg.SorcID, arg.UnitCd, arg.Qty)
+	_, err := q.db.ExecContext(ctx, createSorCInventory,
+		arg.SorcID,
+		arg.UnitCd,
+		arg.TechLevel,
+		arg.Qty,
+		arg.Mass,
+		arg.Volume,
+		arg.IsAssembled,
+		arg.IsStored,
+	)
 	return err
+}
+
+const createSorCMiningGroup = `-- name: CreateSorCMiningGroup :one
+INSERT INTO mining_groups (sorc_id, group_no, deposit_id)
+VALUES (?1, ?2, ?3)
+RETURNING id
+`
+
+type CreateSorCMiningGroupParams struct {
+	SorcID    int64
+	GroupNo   int64
+	DepositID int64
+}
+
+// CreateSorCMiningGroup creates a new ship or colony mining group.
+func (q *Queries) CreateSorCMiningGroup(ctx context.Context, arg CreateSorCMiningGroupParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSorCMiningGroup, arg.SorcID, arg.GroupNo, arg.DepositID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createSorCMiningGroupUnit = `-- name: CreateSorCMiningGroupUnit :one
+INSERT INTO mining_group (mining_group_id, unit_cd, tech_level, nbr_of_units)
+VALUES (?1, ?2, ?3, ?4)
+RETURNING id
+`
+
+type CreateSorCMiningGroupUnitParams struct {
+	MiningGroupID int64
+	UnitCd        string
+	TechLevel     int64
+	NbrOfUnits    int64
+}
+
+// CreateSorCMiningGroupUnit creates a new ship or colony mining group unit.
+func (q *Queries) CreateSorCMiningGroupUnit(ctx context.Context, arg CreateSorCMiningGroupUnitParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSorCMiningGroupUnit,
+		arg.MiningGroupID,
+		arg.UnitCd,
+		arg.TechLevel,
+		arg.NbrOfUnits,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const createSorCPopulation = `-- name: CreateSorCPopulation :exec
@@ -94,7 +266,7 @@ SELECT sorcs.id        AS sorcs_id,
        systems.x,
        systems.y,
        systems.z,
-       stars.sequence  as suffix,
+       stars.sequence  AS suffix,
        orbits.orbit_no,
        sorc_codes.name AS sorc_kind,
        sorcs.tech_level,
@@ -104,15 +276,16 @@ SELECT sorcs.id        AS sorcs_id,
        sorcs.death_rate,
        sorcs.sol
 FROM sorcs,
-     sorc_codes,
      orbits,
      stars,
-     systems
+     systems,
+     sorc_codes
 WHERE sorcs.empire_id = ?1
   AND sorcs.sorc_cd IN ('COPN', 'CENC', 'CORB')
-  AND sorcs.sorc_cd = sorc_codes.code
-  AND orbits.star_id = stars.id
+  AND orbits.id = sorcs.orbit_id
+  AND stars.id = orbits.star_id
   AND systems.id = stars.system_id
+  AND sorc_codes.code = sorcs.sorc_cd
 ORDER BY sorcs.id
 `
 
@@ -156,6 +329,355 @@ func (q *Queries) ReadAllColoniesByEmpire(ctx context.Context, empireID int64) (
 			&i.BirthRate,
 			&i.DeathRate,
 			&i.Sol,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readSorCFactoryGroup = `-- name: ReadSorCFactoryGroup :many
+SELECT orders_cd,
+       orders_tech_level,
+       tech_level AS factory_tech_level,
+       nbr_of_units,
+       wip_25pct_qty,
+       wip_50pct_qty,
+       wip_75pct_qty
+FROM factory_group
+WHERE factory_group_id = ?1
+ORDER BY orders_cd, tech_level
+`
+
+type ReadSorCFactoryGroupRow struct {
+	OrdersCd         string
+	OrdersTechLevel  int64
+	FactoryTechLevel int64
+	NbrOfUnits       int64
+	Wip25pctQty      int64
+	Wip50pctQty      int64
+	Wip75pctQty      int64
+}
+
+// ReadSorCFactoryGroup reads the factory group for a given ship or colony.
+func (q *Queries) ReadSorCFactoryGroup(ctx context.Context, factoryGroupID int64) ([]ReadSorCFactoryGroupRow, error) {
+	rows, err := q.db.QueryContext(ctx, readSorCFactoryGroup, factoryGroupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadSorCFactoryGroupRow
+	for rows.Next() {
+		var i ReadSorCFactoryGroupRow
+		if err := rows.Scan(
+			&i.OrdersCd,
+			&i.OrdersTechLevel,
+			&i.FactoryTechLevel,
+			&i.NbrOfUnits,
+			&i.Wip25pctQty,
+			&i.Wip50pctQty,
+			&i.Wip75pctQty,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readSorCFactoryGroups = `-- name: ReadSorCFactoryGroups :many
+SELECT id AS group_id,
+       group_no,
+       orders_cd,
+       orders_tech_level,
+       retool_turn_no
+FROM factory_groups
+WHERE sorc_id = ?1
+ORDER BY group_no
+`
+
+type ReadSorCFactoryGroupsRow struct {
+	GroupID         int64
+	GroupNo         int64
+	OrdersCd        string
+	OrdersTechLevel int64
+	RetoolTurnNo    sql.NullInt64
+}
+
+// ReadSorCFactoryGroups reads the factory groups for a given ship or colony.
+func (q *Queries) ReadSorCFactoryGroups(ctx context.Context, sorcID int64) ([]ReadSorCFactoryGroupsRow, error) {
+	rows, err := q.db.QueryContext(ctx, readSorCFactoryGroups, sorcID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadSorCFactoryGroupsRow
+	for rows.Next() {
+		var i ReadSorCFactoryGroupsRow
+		if err := rows.Scan(
+			&i.GroupID,
+			&i.GroupNo,
+			&i.OrdersCd,
+			&i.OrdersTechLevel,
+			&i.RetoolTurnNo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readSorCFarmGroups = `-- name: ReadSorCFarmGroups :many
+SELECT farm_groups.group_no,
+       farm_group.tech_level,
+       sum(farm_group.nbr_of_units) AS nbr_of_units
+FROM farm_groups,
+     farm_group
+WHERE farm_groups.sorc_id = ?1
+  AND farm_groups.id = farm_group.farm_group_id
+GROUP BY farm_groups.group_no, farm_group.tech_level
+ORDER BY farm_groups.group_no, farm_group.tech_level
+`
+
+type ReadSorCFarmGroupsRow struct {
+	GroupNo    int64
+	TechLevel  int64
+	NbrOfUnits sql.NullFloat64
+}
+
+// ReadSorCFarmGroups reads the farm groups for a given ship or colony.
+func (q *Queries) ReadSorCFarmGroups(ctx context.Context, sorcID int64) ([]ReadSorCFarmGroupsRow, error) {
+	rows, err := q.db.QueryContext(ctx, readSorCFarmGroups, sorcID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadSorCFarmGroupsRow
+	for rows.Next() {
+		var i ReadSorCFarmGroupsRow
+		if err := rows.Scan(&i.GroupNo, &i.TechLevel, &i.NbrOfUnits); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readSorCInventory = `-- name: ReadSorCInventory :many
+SELECT inventory.unit_cd,
+       inventory.tech_level,
+       unit_codes.name AS unit_kind,
+       inventory.qty,
+       inventory.mass,
+       inventory.volume,
+       inventory.is_assembled,
+       inventory.is_stored
+FROM inventory,
+     unit_codes
+WHERE inventory.sorc_id = ?1
+  AND unit_codes.code = inventory.unit_cd
+ORDER BY inventory.unit_cd, inventory.tech_level, inventory.qty
+`
+
+type ReadSorCInventoryRow struct {
+	UnitCd      string
+	TechLevel   int64
+	UnitKind    string
+	Qty         int64
+	Mass        float64
+	Volume      float64
+	IsAssembled int64
+	IsStored    int64
+}
+
+// ReadSorCInventory reads the inventory for a given ship or colony.
+func (q *Queries) ReadSorCInventory(ctx context.Context, sorcID int64) ([]ReadSorCInventoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, readSorCInventory, sorcID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadSorCInventoryRow
+	for rows.Next() {
+		var i ReadSorCInventoryRow
+		if err := rows.Scan(
+			&i.UnitCd,
+			&i.TechLevel,
+			&i.UnitKind,
+			&i.Qty,
+			&i.Mass,
+			&i.Volume,
+			&i.IsAssembled,
+			&i.IsStored,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readSorCMiningGroup = `-- name: ReadSorCMiningGroup :many
+SELECT mining_group.tech_level,
+       sum(mining_group.nbr_of_units) AS nbr_of_units
+FROM mining_group
+WHERE mining_group_id = ?1
+GROUP BY tech_level
+ORDER BY tech_level
+`
+
+type ReadSorCMiningGroupRow struct {
+	TechLevel  int64
+	NbrOfUnits sql.NullFloat64
+}
+
+// ReadSorCMiningGroup returns the data for a given mining group.
+func (q *Queries) ReadSorCMiningGroup(ctx context.Context, groupID int64) ([]ReadSorCMiningGroupRow, error) {
+	rows, err := q.db.QueryContext(ctx, readSorCMiningGroup, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadSorCMiningGroupRow
+	for rows.Next() {
+		var i ReadSorCMiningGroupRow
+		if err := rows.Scan(&i.TechLevel, &i.NbrOfUnits); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readSorCMiningGroups = `-- name: ReadSorCMiningGroups :many
+SELECT mining_groups.id AS group_id,
+       mining_groups.group_no,
+       deposits.deposit_no,
+       deposits.remaining_qty,
+       deposits.kind    AS deposit_kind,
+       deposits.yield_pct
+FROM mining_groups,
+     deposits
+WHERE mining_groups.sorc_id = ?1
+  AND deposits.id = mining_groups.deposit_id
+ORDER BY mining_groups.group_no, deposits.deposit_no
+`
+
+type ReadSorCMiningGroupsRow struct {
+	GroupID      int64
+	GroupNo      int64
+	DepositNo    int64
+	RemainingQty int64
+	DepositKind  string
+	YieldPct     int64
+}
+
+// ReadSorCMiningGroups reads the mining groups for a given ship or colony.
+func (q *Queries) ReadSorCMiningGroups(ctx context.Context, sorcID int64) ([]ReadSorCMiningGroupsRow, error) {
+	rows, err := q.db.QueryContext(ctx, readSorCMiningGroups, sorcID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadSorCMiningGroupsRow
+	for rows.Next() {
+		var i ReadSorCMiningGroupsRow
+		if err := rows.Scan(
+			&i.GroupID,
+			&i.GroupNo,
+			&i.DepositNo,
+			&i.RemainingQty,
+			&i.DepositKind,
+			&i.YieldPct,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readSorCPopulation = `-- name: ReadSorCPopulation :many
+SELECT population.population_cd,
+       population_codes.name AS population_kind,
+       population.qty,
+       population.pay_rate,
+       population.rebel_qty
+FROM population,
+     population_codes
+WHERE population.sorc_id = ?1
+  AND population_codes.code = population.population_cd
+ORDER BY population_codes.sort_order
+`
+
+type ReadSorCPopulationRow struct {
+	PopulationCd   string
+	PopulationKind string
+	Qty            int64
+	PayRate        float64
+	RebelQty       int64
+}
+
+// ReadSorCPopulation reads the population for a given ship or colony.
+func (q *Queries) ReadSorCPopulation(ctx context.Context, sorcID int64) ([]ReadSorCPopulationRow, error) {
+	rows, err := q.db.QueryContext(ctx, readSorCPopulation, sorcID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadSorCPopulationRow
+	for rows.Next() {
+		var i ReadSorCPopulationRow
+		if err := rows.Scan(
+			&i.PopulationCd,
+			&i.PopulationKind,
+			&i.Qty,
+			&i.PayRate,
+			&i.RebelQty,
 		); err != nil {
 			return nil, err
 		}

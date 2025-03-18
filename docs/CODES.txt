@@ -1,0 +1,86 @@
+Code Item_Name            Category    Class   Mass  Volume  Metals to Build  Non-Metals to Build  Operational Requirements                                       Output and Notes
+UEM  Unemployables        Population  Living  1     1       0                0                    Food and Consumer Goods                                        Population growth occurs in this category
+USK  Unskilled Workers    Population  Living  1     1       0                0                    Food and Consumer Goods                                        Provides labor to operate certain assembled items
+CNW  Construction Worker  Population  Living  1     1       0                0                    Food and Consumer Goods                                        Provides labor to assemble, disassemble, add on, and scrap items to/from SC's
+SLD  Soldier              Population  Living  1     1       0                0                    Food and Consumer Goods + 1 x Military Supplies during combat  Provides combat factors as well as labor for certain weapons systems
+PRO  Professionals        Population  Living  1     1       0                0                    Food and Consumer Goods                                        Provides administrative and managerial services to operate certain assembled items
+TRNE Trainees             Population  Living  1     1       0                0                    Food and Consumer Goods + Professionals to perform Training    Trainees are in training to become Professionals
+SPY  Spy                  Population  Living  1     1       0                0                    Food and Consumer Goods
+PLC  Police               Population  Living  1     1       0                0                    Food and Consumer Goods                                        Drafted to keep the peace and suppress rebellion by arresting rebels
+SAG  Special Agents       Population  Living  1     1       0                0                    Food and Consumer Goods                                        Used to infiltrate rebel population sectors and assist police in locating rebels
+
+
+Code   Item_Name                 Category     Mass         Volume      Metals To Build  Non-Metals to Build  Operational Requirements                                     Output and Notes
+ANM    Anti-Missiles             Vehicles     4 x TL       4 x TL      2 x TL           2 x TL               Missile Launcher of same TL                                  Destroys Missiles; see combat
+ASC    Assault Craft             Vehicles     5 x TL       5 x TL      3 x TL           2 x TL               1 soldier or military robot equivalent + 0.1 fuel in combat  Provides 10 x TL combat factors; does not require transports to attack
+ASW    Assault Weapons           Vehicles     2 x TL       2 x TL      1 x TL           1 x TL               1 soldier or military robot equivalent                       Provides 2 x TL^2 combat factors
+AUT    Automation                Assembly     4 x TL       2 x TL      2 x TL           2 x TL               Must be assembled                                            Replaces 1 x TL^2 Unskilled; see Automation in Production chapter
+CNGD   Consumer Goods            Consumables  0.6          0.3         0.2              0.4                                                                               Consumption determines SOL
+ESH    Energy Shields            Assembly     20 x TL      10 x TL     10 x TL          10 x TL              1 soldier / 100, uses 10 x TL fuel                           Deflects 10 x TL^2 energy units per use
+EWP    Energy Weapons            Assembly     10 x TL      5 x TL      5 x TL           5 x TL               1 soldier / 100, uses 4 x TL fuel                            Destroys 10 x TL^2 mass per hit
+FCT    Factories                 Assembly     2 x TL + 12  TL + 6      8 + TL           4 + TL               1 professional + 3 unskilled, uses 0.5 fuel or power         Produces 20 x TL mass per turn; see Manufacturing
+FOOD   Food                      Consumables  6            3           0                0                                                                                 Feeds 4 to 16 population each turn; see Basic Needs
+FRM    Farms                     Assembly     2 x TL + 6   TL + 3      4 + TL           2 + TL               1 professional + 3 unskilled, fuel varies                    Production varies via TL; see Farming
+FUEL   Fuel                      Consumables  1            0.5         0                0                                                                                 Raw material used by many units
+GOLD   Gold                      Consumables  1            0.5         0                0                                                                                 Raw material with no use in the game
+HEN    Hyper Engines             Assembly     45 x TL      22.5 x TL   25 x TL          20 x TL              1 professional / 100, uses 40 fuel per light year            Lift capacity 1045 x TL, range is 3 x √TL
+LAB    Laboratories              Assembly     2 x TL + 8   TL + 4      5 + TL           3 + TL               3 professional + 1 unskilled, 0.5 fuel/power                 Produces 0.25 research per turn
+LFS    Life Supports             Assembly     8 x TL       4 x TL      3 x TL           5 x TL               1 x TL fuel or power                                         Supports 1 x TL^2 population
+METS   Metals                    Consumables  1            0.5         0                0                                                                                 Raw material used in production
+MIN    Mines                     Assembly     2 x TL + 10  TL + 5      5 + TL           5 + TL               1 professional + 3 unskilled, 0.5 fuel or power              Mines 25 x TL per turn in raw ore, Actual net depends on yield of deposit; see Mining
+MSL    Missile Launchers         Assembly     25 x TL      12.5 x TL   15 + TL          10 + TL              1 soldier / 100                                              Launches 1 missile per attack; see Combat
+MSS    Missiles                  Vehicles     4 x TL       4 x TL      2 x TL           2 x TL               Missile Launcher of same TL                                  Destroys 100 x TL^2 Mass
+MTBT   Military Robots           Bots         2 x TL + 20  TL + 10     10 + TL          10 + TL              2 x TL military supplies                                     Same as 2 x TL soldiers
+MTSP   Military Supplies         Consumables  0.04         0.02        0.02             0.02                                                                              Required by soldiers in combat
+NMTS   Non-Metals                Consumables  1            0.5         0                0                                                                                 Raw material used in production
+PWP    Power Plants              Assembly     2 x TL + 10  TL + 5      5 + TL           5 + TL                                                                            Produces TL Power per turn (think hydro electric)
+RPV    Robot Probe Vehicles      Bots         500 / TL     500 / TL    200 / TL         300 / TL                                                                          Obtains probe data, expended when used
+RSCH   Research                  Consumables  0            0           0                0                                                                                 Expended to increase TLs
+SEN    Sensors                   Assembly     3000 x TL    1500 x TL   1000 x TL        2000 x TL            uses 0.05 x TL fuel                                          Used to obtain probe information
+SLS    Light Structure           Assembly     0.01 x TL    0.005 x TL  0.005 x TL       0.005 x TL           May only be built in Orbiting Colonies                       Encloses (1 x TL^2) divided by type factor
+SPD    Space Drives              Assembly     25 x TL      12.5 X TL   15 X TL          10 x TL              1 professional / 100, uses 1 x TL fuel                       Produces 3000 x TL^2 thrust
+STU    Structure                 Assembly     0.1 x TL     0.05 x TL   0.07 x TL        0.03 x TL                                                                         Encloses (1 x TL^2) divided by type factor
+TPT    Transports                Vehicles     4 x TL       4 x TL      2 x TL           2 x TL               1 professional / 10, uses 0.1 x TL^2 fuel                    Transports 20 x TL^2 Mass
+
+
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('ANM' , 'Anti-Missiles'       , 'Vehicles'   , 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('ASC' , 'Assault Craft'       , 'Vehicles'   , 0, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('ASW' , 'Assault Weapons'     , 'Vehicles'   , 0, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('AUT' , 'Automation'          , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('CNGD', 'Consumer Goods'      , 'Consumables', 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('ESH' , 'Energy Shields'      , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('EWP' , 'Energy Weapons'      , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('FCT' , 'Factories'           , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('FOOD', 'Food'                , 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('FRM' , 'Farms'               , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('FUEL', 'Fuel'                , 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('GOLD', 'Gold'                , 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('HEN' , 'Hyper Engines'       , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('LAB' , 'Laboratories'        , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('LFS' , 'Life Supports'       , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('METS', 'Metals'              , 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('MIN' , 'Mines'               , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('MSL' , 'Missile Launchers'   , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('MSS' , 'Missiles'            , 'Vehicles'   , 0, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('MTBT', 'Military Robots'     , 'Bots'       , 0, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('MTSP', 'Military Supplies'   , 'Consumables', 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('NMTS', 'Non-Metals'          , 'Consumables', 0, 1, 1);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('PWP' , 'Power Plants'        , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('RPV' , 'Robot Probe Vehicles', 'Bots'       , 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('RSCH', 'Research'            , 'Consumables', 0, 1, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('SEN' , 'Sensors'             , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('SLS' , 'Light Structure'     , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('SPD' , 'Space Drives'        , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('STU' , 'Structure'           , 'Assembly'   , 1, 0, 0);
+INSERT INTO unit_codes (code, name, category, is_assembly, is_consumable, is_resource) VALUES ('TPT' , 'Transports'          , 'Vehicles'   , 0, 0, 0);
+
+
+INSERT INTO population_codes (code, name, base_pay_rate) VALUES ('CNW', 'Construction Worker', 0.5000);
+INSERT INTO population_codes (code, name, base_pay_rate) VALUES ('PLC', 'Police'             , 0.2500);
+INSERT INTO population_codes (code, name, base_pay_rate) VALUES ('PRO', 'Professional'       , 0.3750);
+INSERT INTO population_codes (code, name, base_pay_rate) VALUES ('SAG', 'Special Agents'     , 0.6250);
+INSERT INTO population_codes (code, name, base_pay_rate) VALUES ('SLD', 'Soldier'            , 0.2500);
+INSERT INTO population_codes (code, name, base_pay_rate) VALUES ('SPY', 'Spy'                , 0.6250);
+INSERT INTO population_codes (code, name, base_pay_rate) VALUES ('TRN', 'Trainees'           , 0.1250);
+INSERT INTO population_codes (code, name, base_pay_rate) VALUES ('UEM', 'Unemployable'       , 0.0000);
+INSERT INTO population_codes (code, name, base_pay_rate) VALUES ('USK', 'Unskilled'          , 0.1250);

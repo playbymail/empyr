@@ -11,6 +11,7 @@ sql:
       - "sqlc/games.sql"
       - "sqlc/orbits.sql"
       - "sqlc/planets.sql"
+      - "sqlc/reports.sql"
       - "sqlc/sorcs.sql"
       - "sqlc/stars.sql"
       - "sqlc/systems.sql"

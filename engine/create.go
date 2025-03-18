@@ -285,23 +285,6 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		}
 	}
 
-	// clean up the deposits table. we added empty deposits to keep players
-	// from guessing system resources based on the number of deposits they have
-	// seen.
-	err = q.DeleteEmptyDeposits(e.Store.Context)
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("delete empty deposits"), err)
-	}
-
-	// clean up the orbits table. we added empty orbits to keep players from
-	// guessing system resources based on the number of orbits they have seen.
-	// if constraints are implemented properly, this should also delete the
-	// planets and deposits.
-	err = q.DeleteEmptyOrbits(e.Store.Context)
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("delete empty orbits"), err)
-	}
-
 	// calculate the system distances to help reporting
 	if calculateSystemDistances {
 		err = q.PopulateSystemDistanceByCluster(e.Store.Context, clusterID)

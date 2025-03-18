@@ -37,14 +37,81 @@ func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (i
 	return id, err
 }
 
-const deleteEmptyDeposits = `-- name: DeleteEmptyDeposits :exec
-DELETE
+const readDepositByNo = `-- name: ReadDepositByNo :one
+SELECT deposits.id, deposits.deposit_no, deposits.kind, deposits.remaining_qty, deposits.yield_pct
 FROM deposits
-WHERE kind = 'NONE'
+WHERE deposits.planet_id = ?1
+  AND deposits.deposit_no = ?2
 `
 
-// DeleteEmptyDeposits deletes all empty deposits.
-func (q *Queries) DeleteEmptyDeposits(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deleteEmptyDeposits)
-	return err
+type ReadDepositByNoParams struct {
+	PlanetID  int64
+	DepositNo int64
+}
+
+type ReadDepositByNoRow struct {
+	ID           int64
+	DepositNo    int64
+	Kind         string
+	RemainingQty int64
+	YieldPct     int64
+}
+
+// ReadDepositByNo reads a deposit by its deposit number and planet ID.
+func (q *Queries) ReadDepositByNo(ctx context.Context, arg ReadDepositByNoParams) (ReadDepositByNoRow, error) {
+	row := q.db.QueryRowContext(ctx, readDepositByNo, arg.PlanetID, arg.DepositNo)
+	var i ReadDepositByNoRow
+	err := row.Scan(
+		&i.ID,
+		&i.DepositNo,
+		&i.Kind,
+		&i.RemainingQty,
+		&i.YieldPct,
+	)
+	return i, err
+}
+
+const readDepositsByPlanet = `-- name: ReadDepositsByPlanet :many
+SELECT deposits.id, deposits.deposit_no, deposits.kind, deposits.remaining_qty, deposits.yield_pct
+FROM deposits
+WHERE deposits.planet_id = ?1
+ORDER BY deposits.deposit_no
+`
+
+type ReadDepositsByPlanetRow struct {
+	ID           int64
+	DepositNo    int64
+	Kind         string
+	RemainingQty int64
+	YieldPct     int64
+}
+
+// ReadDepositsByPlanet returns a list of all deposits on a planet.
+func (q *Queries) ReadDepositsByPlanet(ctx context.Context, planetID int64) ([]ReadDepositsByPlanetRow, error) {
+	rows, err := q.db.QueryContext(ctx, readDepositsByPlanet, planetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadDepositsByPlanetRow
+	for rows.Next() {
+		var i ReadDepositsByPlanetRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DepositNo,
+			&i.Kind,
+			&i.RemainingQty,
+			&i.YieldPct,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

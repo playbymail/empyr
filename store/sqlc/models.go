@@ -41,27 +41,32 @@ type Empires struct {
 }
 
 type FactoryGroup struct {
-	FactoryGroupID int64
-	ID             int64
-	UnitCd         string
-	NbrOfUnits     int64
-	Wip25pctQty    int64
-	Wip50pctQty    int64
-	Wip75pctQty    int64
+	FactoryGroupID  int64
+	ID              int64
+	UnitCd          string
+	TechLevel       int64
+	NbrOfUnits      int64
+	OrdersCd        string
+	OrdersTechLevel int64
+	Wip25pctQty     int64
+	Wip50pctQty     int64
+	Wip75pctQty     int64
 }
 
 type FactoryGroups struct {
-	SorcID       int64
-	ID           int64
-	GroupNo      int64
-	RetoolTurnNo sql.NullInt64
-	OrdersCd     string
+	SorcID          int64
+	ID              int64
+	GroupNo         int64
+	OrdersCd        string
+	OrdersTechLevel int64
+	RetoolTurnNo    sql.NullInt64
 }
 
 type FarmGroup struct {
 	FarmGroupID int64
 	ID          int64
 	UnitCd      string
+	TechLevel   int64
 	NbrOfUnits  int64
 }
 
@@ -84,9 +89,14 @@ type Games struct {
 }
 
 type Inventory struct {
-	SorcID int64
-	UnitCd string
-	Qty    int64
+	SorcID      int64
+	UnitCd      string
+	TechLevel   int64
+	Qty         int64
+	Mass        float64
+	Volume      float64
+	IsAssembled int64
+	IsStored    int64
 }
 
 type MetaMigrations struct {
@@ -100,6 +110,7 @@ type MiningGroup struct {
 	MiningGroupID int64
 	ID            int64
 	UnitCd        string
+	TechLevel     int64
 	NbrOfUnits    int64
 }
 
@@ -146,11 +157,33 @@ type PopulationCodes struct {
 	Code        string
 	Name        string
 	BasePayRate float64
+	SortOrder   int64
 }
 
 type ReportProbes struct {
 	ReportID int64
 	ID       int64
+}
+
+type ReportProductionInputs struct {
+	ReportID  int64
+	ID        int64
+	Category  string
+	Fuel      int64
+	Gold      int64
+	Metals    int64
+	NonMetals int64
+}
+
+type ReportProductionOutputs struct {
+	ReportID     int64
+	ID           int64
+	Category     string
+	UnitCd       string
+	TechLevel    int64
+	Farmed       int64
+	Mined        int64
+	Manufactured int64
 }
 
 type ReportSpies struct {
@@ -209,10 +242,12 @@ type Systems struct {
 }
 
 type UnitCodes struct {
-	Code      string
-	TechLevel int64
-	Name      string
-	Category  string
+	Code          string
+	Name          string
+	Category      string
+	IsOperational int64
+	IsConsumable  int64
+	IsResource    int64
 }
 
 type Users struct {

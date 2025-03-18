@@ -16,6 +16,8 @@
 .env.local
 .env.*.local
 .idea/
+bin/setup_a01.sh
+bin/empyr
 notes.txt
 
 .DS_Store
