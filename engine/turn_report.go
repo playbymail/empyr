@@ -157,7 +157,3 @@ type PopulationReport_t struct {
 	TotalPay    string // total pay, eg "1,000,000"
 	qty         int64
 }
-
-type SurveyReport_t struct {
-	ID int64
-}

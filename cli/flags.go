@@ -63,6 +63,9 @@ var flags struct {
 	Sessions struct {
 		Secret string
 	}
+	Surveys struct {
+		Path string
+	}
 	Verbose bool
 	Version semver.Version
 }
@@ -98,6 +101,8 @@ func applyEnvironmentVariables() {
 	xiiint(&flags.Server.MaxHeaderBytes, "_SERVER_MAXHEADERBYTES")
 
 	xiistr(&flags.Sessions.Secret, "_SESSIONS_SECRET")
+
+	xiistr(&flags.Surveys.Path, "_SURVEYS_PATH")
 
 	xiibool(&flags.Verbose, "_VERBOSE")
 }

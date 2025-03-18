@@ -27,6 +27,7 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	flags.Application.Assets.Public = "app/assets/public"
 	flags.Application.Assets.Templates = "app/assets/templates"
 	flags.Reports.Path = "reports"
+	flags.Surveys.Path = "surveys"
 	flags.Server.Scheme = "http"
 	flags.Server.Host = "localhost"
 	flags.Server.Port = "8080"
@@ -61,7 +62,7 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 
 	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdShow, cmdStart, cmdVersion)
 
-	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap, cmdCreateTurnReport, cmdCreateTurnReports)
+	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap, cmdCreateSystemSurveyReport, cmdCreateSystemSurveyReports, cmdCreateTurnReport, cmdCreateTurnReports)
 	cmdCreateDatabase.Flags().BoolVar(&flags.Database.ForceCreate, "force-create", flags.Database.ForceCreate, "force creation of the database")
 	cmdCreateDatabase.Flags().StringVar(&flags.Database.Path, "path", flags.Database.Path, "path to the database")
 	cmdCreateEmpire.Flags().StringVar(&flags.Empire.UserHandle, "user", flags.Empire.UserHandle, "user handle for empire")
@@ -78,6 +79,12 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	}
 	cmdCreateGame.Flags().StringVar(&flags.Game.Description, "descr", flags.Game.Description, "description of the game")
 	cmdCreateGame.Flags().BoolVar(&flags.Game.ForceCreate, "force-create", flags.Game.ForceCreate, "force creation of the game")
+	cmdCreateSystemSurveyReport.Flags().Int64("empire-no", 0, "empire number for the report")
+	if err := cmdCreateSystemSurveyReport.MarkFlagRequired("empire-no"); err != nil {
+		return nil, err
+	}
+	cmdCreateSystemSurveyReport.Flags().Int64Var(&flags.Game.TurnNo, "turn-no", flags.Game.TurnNo, "turn number for the report")
+	cmdCreateSystemSurveyReports.Flags().Int64Var(&flags.Game.TurnNo, "turn-no", flags.Game.TurnNo, "turn number for the report")
 	cmdCreateTurnReport.Flags().Int64("empire-no", 0, "empire number for the report")
 	if err := cmdCreateTurnReport.MarkFlagRequired("empire-no"); err != nil {
 		return nil, err

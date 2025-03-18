@@ -214,6 +214,88 @@ var cmdCreateSystemMap = &cobra.Command{
 	},
 }
 
+// cmdCreateSystemSurveyReport creates system survey reports for one empire in a game
+var cmdCreateSystemSurveyReport = &cobra.Command{
+	Use:   "system-survey-report --empire-no --turn-no",
+	Short: "create system survey reports for one empire in a game",
+	Long:  `Create system survey reports for one empire in a game.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		started := time.Now()
+		defer func() {
+			log.Printf("create: system-survey-report: elapsed time: %v\n", time.Now().Sub(started))
+		}()
+
+		repo, err := store.Open(flags.Database.Path, context.Background())
+		if err != nil {
+			log.Fatalf("error: store.open: %v\n", err)
+		}
+		defer repo.Close()
+		e, err := engine.Open(repo)
+		if err != nil {
+			log.Fatalf("error: engine.open: %v\n", err)
+		}
+
+		var empireNo int64
+		if n, err := strconv.Atoi(cmd.Flag("empire-no").Value.String()); err != nil || n < 1 || n > 256 {
+			log.Fatalf("error: empire-no must be between 1 and 255")
+		} else {
+			empireNo = int64(n)
+		}
+		if flags.Game.TurnNo < 0 || flags.Game.TurnNo > 9999 {
+			log.Fatalf("error: turn-no must be between 0 and 9999")
+		}
+
+		empireSurveysPath := filepath.Join(flags.Surveys.Path, fmt.Sprintf("e%03d", empireNo), "surveys")
+		reportName := filepath.Join(empireSurveysPath, fmt.Sprintf("e%03d-turn-%04d.html", empireNo, flags.Game.TurnNo))
+
+		data, err := engine.CreateSystemSurveyReportCommand(e, &engine.CreateSystemSurveyReportParams_t{Code: flags.Game.Code, TurnNo: flags.Game.TurnNo, EmpireNo: empireNo})
+		if err != nil {
+			log.Fatalf("error: system survey report: %v\n", err)
+		}
+
+		if err := os.WriteFile(reportName, data, 0644); err != nil {
+			log.Fatalf("error: os.WriteFile: %v\n", err)
+		}
+		log.Printf("created system survey report empire %3d as %s\n", empireNo, reportName)
+
+		log.Printf("create: system-survey-report: completed\n")
+	},
+}
+
+// cmdCreateSystemSurveyReports creates turn reports for all the empires in a game
+var cmdCreateSystemSurveyReports = &cobra.Command{
+	Use:   "system-survey-reports --turn-no",
+	Short: "create turn reports for all empires in a game",
+	Long:  `Create turn reports for all empires in a game.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		started := time.Now()
+		defer func() {
+			log.Printf("create: system-survey-reports: elapsed time: %v\n", time.Now().Sub(started))
+		}()
+
+		repo, err := store.Open(flags.Database.Path, context.Background())
+		if err != nil {
+			log.Fatalf("error: store.open: %v\n", err)
+		}
+		defer repo.Close()
+		e, err := engine.Open(repo)
+		if err != nil {
+			log.Fatalf("error: engine.open: %v\n", err)
+		}
+
+		err = engine.CreateSystemSurveyReportsCommand(e, &engine.CreateSystemSurveyReportsParams_t{
+			Code:   flags.Game.Code,
+			TurnNo: flags.Game.TurnNo,
+			Path:   flags.Surveys.Path,
+		})
+		if err != nil {
+			log.Fatalf("error: engine.CreateSystemSurveyReportsCommand: %v\n", err)
+		}
+
+		log.Printf("create: system-survey-reports: completed\n")
+	},
+}
+
 // cmdCreateTurnReport creates turn report for one empire in a game
 var cmdCreateTurnReport = &cobra.Command{
 	Use:   "turn-report --empire-no --turn-no",
@@ -245,14 +327,10 @@ var cmdCreateTurnReport = &cobra.Command{
 			log.Fatalf("error: turn-no must be between 0 and 9999")
 		}
 
-		empireReportPath := filepath.Join(flags.Reports.Path, fmt.Sprintf("e%03d", empireNo), "reports")
-		reportName := filepath.Join(empireReportPath, fmt.Sprintf("e%03d-turn-%04d.html", empireNo, flags.Game.TurnNo))
+		empireReportsPath := filepath.Join(flags.Reports.Path, fmt.Sprintf("e%03d", empireNo), "reports")
+		reportName := filepath.Join(empireReportsPath, fmt.Sprintf("e%03d-turn-%04d.html", empireNo, flags.Game.TurnNo))
 
-		data, err := engine.CreateTurnReportCommand(e, &engine.CreateTurnReportParams_t{
-			Code:     flags.Game.Code,
-			TurnNo:   flags.Game.TurnNo,
-			EmpireNo: empireNo,
-		}, empireReportPath)
+		data, err := engine.CreateTurnReportCommand(e, &engine.CreateTurnReportParams_t{Code: flags.Game.Code, TurnNo: flags.Game.TurnNo, EmpireNo: empireNo})
 		if err != nil {
 			log.Fatalf("error: turn report: %v\n", err)
 		}
