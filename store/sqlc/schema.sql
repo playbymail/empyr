@@ -253,13 +253,14 @@ CREATE TABLE deposits
 
 CREATE TABLE users
 (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    handle     TEXT     NOT NULL UNIQUE,
-    magic_link TEXT     NOT NULL UNIQUE,
-    is_active  INTEGER  NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
-    is_admin   INTEGER  NOT NULL DEFAULT 0 CHECK (is_admin IN (0, 1)),
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    username        TEXT     NOT NULL UNIQUE,
+    email           TEXT     NOT NULL UNIQUE,
+    hashed_password TEXT     NOT NULL UNIQUE,
+    is_active       INTEGER  NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
+    is_admin        INTEGER  NOT NULL DEFAULT 0 CHECK (is_admin IN (0, 1)),
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE empires

@@ -5,9 +5,10 @@ package domains
 type UserID int64
 
 type User struct {
-	ID      UserID
-	Handle  string
-	IsAdmin bool
-	IsUser  bool
-	Roles   map[string]bool
+	ID       UserID
+	Username string
+	Email    string
+	IsAdmin  bool
+	IsUser   bool
+	Roles    map[string]bool
 }

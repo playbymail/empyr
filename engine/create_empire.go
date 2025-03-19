@@ -9,16 +9,16 @@ import (
 )
 
 type CreateEmpireParams_t struct {
-	Code       string
-	UserHandle string
+	Code     string
+	Username string
 }
 
 func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, error) {
-	log.Printf("create: empire: code %q: handle %q\n", cfg.Code, cfg.UserHandle)
+	log.Printf("create: empire: code %q: handle %q\n", cfg.Code, cfg.Username)
 
-	if cfg.UserHandle == "" {
+	if cfg.Username == "" {
 		return 0, 0, ErrMissingHandle
-	} else if _, err := IsValidHandle(cfg.UserHandle); err != nil {
+	} else if _, err := IsValidHandle(cfg.Username); err != nil {
 		return 0, 0, err
 	}
 
@@ -29,7 +29,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 	defer tx.Rollback()
 
 	var userID int64
-	if row, err := q.ReadUserByHandle(e.Store.Context, cfg.UserHandle); err != nil {
+	if row, err := q.ReadUserByUsername(e.Store.Context, cfg.Username); err != nil {
 		return 0, 0, err
 	} else {
 		userID = row.ID
@@ -372,7 +372,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		{groupNo: 2, depositNo: 2, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 40_817}}},
 		{groupNo: 3, depositNo: 6, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 159_421}}},
 	}
-	if cfg.UserHandle == "jimw" {
+	if cfg.Username == "jimw" {
 		miningGroups = []miningGroup{
 			{groupNo: 1, depositNo: 1, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 20000}}},
 			{groupNo: 2, depositNo: 2, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 90000}}},
@@ -410,7 +410,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 			{groupNo: 34, depositNo: 34, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 20}}},
 			{groupNo: 35, depositNo: 35, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 20}}},
 		}
-	} else if cfg.UserHandle == "longshadow" {
+	} else if cfg.Username == "longshadow" {
 		miningGroups = []miningGroup{
 			{groupNo: 1, depositNo: 1, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 1000}}},
 			{groupNo: 2, depositNo: 2, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 74000}}},

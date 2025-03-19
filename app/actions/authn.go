@@ -26,7 +26,7 @@ func (a *LoginUserAction) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handle, key := r.PathValue("handle"), r.PathValue("magicKey")
 	log.Printf("action: loginUser: %q %q\n", handle, key)
 	// use the key to authenticate the user
-	user, err := a.Authentication.AuthenticateMagicKey(handle, key)
+	user, err := a.Authentication.ValidateCredentials(handle, key)
 	if err != nil {
 		// respond by showing the login page with an error
 		a.Responder.Respond(w, false, user, err)

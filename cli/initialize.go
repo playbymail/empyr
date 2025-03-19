@@ -62,7 +62,7 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 
 	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdShow, cmdStart, cmdVersion)
 
-	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap, cmdCreateSystemSurveyReport, cmdCreateSystemSurveyReports, cmdCreateTurnReport, cmdCreateTurnReports)
+	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap, cmdCreateSystemSurveyReport, cmdCreateSystemSurveyReports, cmdCreateTurnReport, cmdCreateTurnReports, cmdCreateUser)
 	cmdCreateDatabase.Flags().BoolVar(&flags.Database.ForceCreate, "force-create", flags.Database.ForceCreate, "force creation of the database")
 	cmdCreateDatabase.Flags().StringVar(&flags.Database.Path, "path", flags.Database.Path, "path to the database")
 	cmdCreateEmpire.Flags().StringVar(&flags.Empire.UserHandle, "user", flags.Empire.UserHandle, "user handle for empire")
@@ -91,6 +91,16 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	}
 	cmdCreateTurnReport.Flags().Int64Var(&flags.Game.TurnNo, "turn-no", flags.Game.TurnNo, "turn number for the report")
 	cmdCreateTurnReports.Flags().Int64Var(&flags.Game.TurnNo, "turn-no", flags.Game.TurnNo, "turn number for the report")
+	cmdCreateUser.Flags().Bool("is-admin", false, "admin user")
+	cmdCreateUser.Flags().String("email", "", "user email")
+	if err := cmdCreateUser.MarkFlagRequired("email"); err != nil {
+		return nil, err
+	}
+	cmdCreateUser.Flags().String("password", "", "user password")
+	cmdCreateUser.Flags().String("user", "", "user name")
+	if err := cmdCreateUser.MarkFlagRequired("user"); err != nil {
+		return nil, err
+	}
 
 	cmdDB.PersistentFlags().String("path", "", "path to the database")
 	if err := cmdDB.MarkPersistentFlagRequired("path"); err != nil {

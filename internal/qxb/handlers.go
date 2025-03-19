@@ -5,6 +5,7 @@ package qxb
 import (
 	"fmt"
 	"github.com/playbymail/empyr/internal/services/smgr"
+	"github.com/playbymail/empyr/store"
 	"log"
 	"net/http"
 	"os"
@@ -16,33 +17,35 @@ import (
 
 // really this is just middleware
 
-func NewQXB(root string, mgr *smgr.SessionManager) (*QXB, error) {
-	log.Printf("qxb: root %q\n", root)
+func NewQXB(assets string, mgr *smgr.SessionManager, db *store.Store) (*QXB, error) {
+	log.Printf("qxb: assets %q\n", assets)
 	// we must have an absolute path to detect directory traversal attacks
-	if path, err := filepath.Abs(root); err != nil {
-		log.Printf("error: %q: %v\n", root, err)
-		panic(fmt.Sprintf("%s: invalid directory: %v", root, err))
+	if path, err := filepath.Abs(assets); err != nil {
+		log.Printf("error: %q: %v\n", assets, err)
+		panic(fmt.Sprintf("%s: invalid directory: %v", assets, err))
 	} else {
-		root = path
+		assets = path
 	}
-	// the root must exist and be a directory
-	if sb, err := os.Stat(root); err != nil {
-		log.Printf("qxb: %q: %v\n", root, err)
+	// the assets path must exist and be a directory
+	if sb, err := os.Stat(assets); err != nil {
+		log.Printf("qxb: assets: %q: %v\n", assets, err)
 		return nil, err
 	} else if !sb.IsDir() {
-		log.Printf("qxb: %q: not a directory\n", root)
-		return nil, fmt.Errorf("%s: not a directory", root)
+		log.Printf("qxb: assets: %q: not a directory\n", assets)
+		return nil, fmt.Errorf("%s: not a directory", assets)
 	}
 
 	return &QXB{
-		root: root,
-		mgr:  mgr,
+		assets: assets,
+		mgr:    mgr,
+		db:     db,
 	}, nil
 }
 
 type QXB struct {
-	root string
-	mgr  *smgr.SessionManager
+	assets string
+	mgr    *smgr.SessionManager
+	db     *store.Store
 }
 
 var (
@@ -51,9 +54,54 @@ var (
 	hiddenFiles = regexp.MustCompile(`/\.`)
 )
 
-func (q *QXB) Handle(next http.Handler) http.Handler {
-	log.Printf("qxb: registered as middleware\n")
-	next = q.mgr.Handle(next)
+func (q *QXB) AdminOnly(next http.Handler) http.Handler {
+	log.Printf("qxb: admin: registered as middleware\n")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s: entered\n", r.Method, r.URL.Path)
+		if session := smgr.GetSession(r); session == nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		} else if username, ok := session.Get("username").(string); !ok || username == "" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		} else if row, err := q.db.Queries.ReadUserByUsername(q.db.Context, username); err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		} else if row.ID == 0 || row.IsActive != 1 {
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		} else if row.IsAdmin != 1 {
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (q *QXB) MustAuth(next http.Handler) http.Handler {
+	log.Printf("qxb: auth: registered as middleware\n")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s: entered\n", r.Method, r.URL.Path)
+		if session := smgr.GetSession(r); session == nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		} else if username, ok := session.Get("username").(string); !ok || username == "" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		} else if row, err := q.db.Queries.ReadUserByUsername(q.db.Context, username); err != nil {
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		} else if row.ID == 0 || row.IsActive != 1 {
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (q *QXB) Assets(next http.Handler) http.Handler {
+	log.Printf("qxb: assets: registered as middleware\n")
+	next = q.mgr.Sessions(next)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s: entered\n", r.Method, r.URL.Path)
@@ -76,13 +124,13 @@ func (q *QXB) Handle(next http.Handler) http.Handler {
 		}
 
 		// build the full file path
-		fullPath := filepath.Join(q.root, path)
+		fullPath := filepath.Join(q.assets, path)
 		// log.Printf("%s %s: full %q\n", r.Method, r.URL, fullPath)
 
 		// prevent directory traversal attacks. (note: the filepath.Clean
 		// function already does this, but we do it again to be safe.)
-		if !strings.HasPrefix(fullPath, q.root) {
-			// log.Printf("%s %s: path is outside of root directory\n", r.Method, r.URL)
+		if !strings.HasPrefix(fullPath, q.assets) {
+			// log.Printf("%s %s: path is outside of assets directory\n", r.Method, r.URL)
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}

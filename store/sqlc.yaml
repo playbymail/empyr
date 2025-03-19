@@ -5,6 +5,7 @@ sql:
       - "sqlc/schema.sql"
     queries:
       - "sqlc/queries.sql"
+      - "sqlc/authn.sql"
       - "sqlc/clusters.sql"
       - "sqlc/deposits.sql"
       - "sqlc/empires.sql"

@@ -36,6 +36,8 @@ github.com/maloquacious/cerrors v0.0.0-20230521213745-fc509e049165 h1:KbvfgGj+HA
 github.com/maloquacious/cerrors v0.0.0-20230521213745-fc509e049165/go.mod h1:fL49lB4RVFrkiU0Oy/e31uU/zbG1m8afkq8vsGY+PL8=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
+github.com/mdhender/phrases/v2 v2.0.0 h1:P/FijTflCVczp7XsRjvByL6pOZVyxl3D77HYlW5pptk=
+github.com/mdhender/phrases/v2 v2.0.0/go.mod h1:c8fcyB2VOa/3miAd1BV4aNJBHC88TFVpOGokhunUSp8=
 github.com/mdhender/semver v0.0.0-20240121182447-31da48bf9537 h1:7Ux/5351hvWxMbIdwLjdWGTrDKlS+N870pFt5kW2OoI=
 github.com/mdhender/semver v0.0.0-20240121182447-31da48bf9537/go.mod h1:mCbEE77BIdyn6yZkD06/4W+9Q6AldeZSL+1PQk9q0VY=
 github.com/mdhender/xii v0.4.3 h1:9rkXS9nvqA2K2+6ZxImPZqExevz3Sx7+xOO/XJ5O/+0=

@@ -48,7 +48,7 @@ var cmdStartServer = &cobra.Command{
 			flags.Sessions.Domain,
 			"empyr-sm")
 
-		q, err := qxb.NewQXB(flags.Application.Assets.Public, mgr)
+		q, err := qxb.NewQXB(flags.Application.Assets.Public, mgr, repo)
 		if err != nil {
 			log.Fatalf("error: qxb.new: %v\n", err)
 		}
@@ -81,7 +81,7 @@ var cmdStartServer = &cobra.Command{
 		srv := server.New(cfg)
 
 		// start the server. blocks until the server receives a signal to stop.
-		err = srv.Start(q.Handle(a.Router(authService, gamesService, sessionsService)))
+		err = srv.Start(q.Assets(a.Router(authService, gamesService, sessionsService)))
 
 		// force the repository to close before we exit.
 		_ = repo.Close()

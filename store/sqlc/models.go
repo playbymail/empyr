@@ -251,11 +251,12 @@ type UnitCodes struct {
 }
 
 type Users struct {
-	ID        int64
-	Handle    string
-	MagicLink string
-	IsActive  int64
-	IsAdmin   int64
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID             int64
+	Username       string
+	Email          string
+	HashedPassword string
+	IsActive       int64
+	IsAdmin        int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }

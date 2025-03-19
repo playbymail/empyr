@@ -5,6 +5,7 @@ package smgr
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -42,19 +43,19 @@ type SessionManager struct {
 	anonymous          string
 }
 
-func (m *SessionManager) Handle(next http.Handler) http.Handler {
+func (sm *SessionManager) Sessions(next http.Handler) http.Handler {
 	log.Printf("smgr: registered as middleware\n")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s: entered\n", r.Method, r.URL.Path)
 
 		// start the session
-		session, rws := m.start(r)
+		session, rws := sm.start(r)
 
 		// create a new response writer
 		sw := &sessionResponseWriter{
 			ResponseWriter: w,
-			sessionManager: m,
+			sessionManager: sm,
 			request:        rws,
 		}
 
@@ -72,7 +73,7 @@ func (m *SessionManager) Handle(next http.Handler) http.Handler {
 		w.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
 
 		if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch || r.Method == http.MethodDelete {
-			if !m.verifyCSRFToken(rws, session) {
+			if !sm.verifyCSRFToken(rws, session) {
 				http.Error(sw, "CSRF token mismatch", http.StatusForbidden)
 				return
 			}
@@ -82,26 +83,46 @@ func (m *SessionManager) Handle(next http.Handler) http.Handler {
 		next.ServeHTTP(sw, rws)
 
 		// save the session
-		m.save(session)
+		sm.save(session)
 
 		// write the session cookie to the response if not already written
 		writeCookieIfNecessary(sw)
 	})
 }
 
+func (sm *SessionManager) Login(r *http.Request, username string) error {
+	session := GetSession(r)
+	err := sm.migrate(session)
+	if err != nil {
+		return fmt.Errorf("failed to migrate session: %w", err)
+	}
+	session.Put("username", username)
+	return nil
+}
+
+func (sm *SessionManager) Logout(r *http.Request) error {
+	session := GetSession(r)
+	err := sm.migrate(session)
+	if err != nil {
+		return fmt.Errorf("failed to migrate session: %w", err)
+	}
+	session.Put("username", "")
+	return nil
+}
+
 // gc calls the store to perform garbage collection (reap expired sessions).
-func (m *SessionManager) gc(d time.Duration) {
+func (sm *SessionManager) gc(d time.Duration) {
 	ticker := time.NewTicker(d)
 	for range ticker.C {
-		_ = m.store.gc(m.idleExpiration, m.absoluteExpiration)
+		_ = sm.store.gc(sm.idleExpiration, sm.absoluteExpiration)
 	}
 }
 
 // migrate deletes an existing session and creates a new one with a fresh ID
-func (m *SessionManager) migrate(session *Session) error {
+func (sm *SessionManager) migrate(session *Session) error {
 	session.mu.Lock()
 	defer session.mu.Unlock()
-	err := m.store.destroy(session.id)
+	err := sm.store.destroy(session.id)
 	if err != nil {
 		return err
 	}
@@ -110,9 +131,9 @@ func (m *SessionManager) migrate(session *Session) error {
 }
 
 // save updates the session's lastActivityAt field and writes it to the store.
-func (m *SessionManager) save(session *Session) error {
+func (sm *SessionManager) save(session *Session) error {
 	session.lastActivityAt = time.Now()
-	err := m.store.write(session)
+	err := sm.store.write(session)
 	if err != nil {
 		log.Printf("error: session: save: failed to write session to store: %v", err)
 		return err
@@ -124,30 +145,30 @@ type sessionContextKey struct{}
 
 // start retrieves the session by reading the session cookie or generates a new one if needed.
 // It then attaches the session to the request using context values.
-func (m *SessionManager) start(r *http.Request) (*Session, *http.Request) {
+func (sm *SessionManager) start(r *http.Request) (*Session, *http.Request) {
 	var session *Session
 
 	// read session from cookie
-	log.Printf("smgr: start: reading session from cookie %q\n", m.cookieName)
-	cookie, err := r.Cookie(m.cookieName)
+	log.Printf("smgr: start: reading session from cookie %q\n", sm.cookieName)
+	cookie, err := r.Cookie(sm.cookieName)
 	if err == nil {
-		log.Printf("smgr: start: cookie: session from cookie %q\n", m.cookieName)
+		log.Printf("smgr: start: cookie: session from cookie %q\n", sm.cookieName)
 		log.Printf("smgr: start: cookie: session from cookie %q\n", cookie.Value)
-		session, err = m.store.read(cookie.Value)
+		session, err = sm.store.read(cookie.Value)
 		if err != nil {
 			log.Printf("error: session: cookie: failed to read session from store: %v", err)
 		}
 	} else {
-		log.Printf("smgr: start: cookie: no session from cookie %q\n", m.cookieName)
+		log.Printf("smgr: start: cookie: no session from cookie %q\n", sm.cookieName)
 	}
 
 	// generate a new session
 	if session == nil {
 		log.Printf("smgr: start: generating new session: session == nil\n")
-	} else if !m.validate(session) {
+	} else if !sm.validate(session) {
 		log.Printf("smgr: start: generating new session: session is invalid\n")
 	}
-	if session == nil || !m.validate(session) {
+	if session == nil || !sm.validate(session) {
 		session = newSession()
 	}
 
@@ -160,11 +181,11 @@ func (m *SessionManager) start(r *http.Request) (*Session, *http.Request) {
 
 // validate ensures the session is valid for use.
 // It is invalid if it is expired or has been idle for too long.
-func (m *SessionManager) validate(session *Session) bool {
-	if time.Since(session.createdAt) > m.absoluteExpiration ||
-		time.Since(session.lastActivityAt) > m.idleExpiration {
+func (sm *SessionManager) validate(session *Session) bool {
+	if time.Since(session.createdAt) > sm.absoluteExpiration ||
+		time.Since(session.lastActivityAt) > sm.idleExpiration {
 		// delete the session from the store
-		err := m.store.destroy(session.id)
+		err := sm.store.destroy(session.id)
 		if err != nil {
 			log.Printf("error: %v\n", err)
 		}
@@ -176,7 +197,7 @@ func (m *SessionManager) validate(session *Session) bool {
 
 // verifyCSRFToken extracts the CSRF token from a given session and validates it
 // against the csrf_token form value or the X-CSRF-Token header in the request.
-func (m *SessionManager) verifyCSRFToken(r *http.Request, session *Session) bool {
+func (sm *SessionManager) verifyCSRFToken(r *http.Request, session *Session) bool {
 	sToken, ok := session.Get("csrf_token").(string)
 	if !ok {
 		return false

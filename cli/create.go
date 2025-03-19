@@ -6,7 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/mdhender/phrases/v2"
 	"github.com/playbymail/empyr/engine"
+	"github.com/playbymail/empyr/internal/domains"
 	"github.com/playbymail/empyr/pkg/stdlib"
 	"github.com/playbymail/empyr/store"
 	"github.com/spf13/cobra"
@@ -81,8 +83,8 @@ var cmdCreateEmpire = &cobra.Command{
 		}
 
 		empireId, empireNo, err := engine.CreateEmpireCommand(e, &engine.CreateEmpireParams_t{
-			Code:       flags.Game.Code,
-			UserHandle: userHandle,
+			Code:     flags.Game.Code,
+			Username: userHandle,
 		})
 		if err != nil {
 			log.Fatalf("error: engine.CreateEmpireCommand: %v\n", err)
@@ -375,5 +377,48 @@ var cmdCreateTurnReports = &cobra.Command{
 		}
 
 		log.Printf("create: turn-reports: completed\n")
+	},
+}
+
+// cmdCreateUser implements the create user command
+var cmdCreateUser = &cobra.Command{
+	Use:   "user --username username --password password --is-admin",
+	Short: "create a new user",
+	Long:  `Create a new user.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		started := time.Now()
+		defer func() {
+			log.Printf("create: user: elapsed time: %v\n", time.Now().Sub(started))
+		}()
+
+		repo, err := store.Open(flags.Database.Path, context.Background())
+		if err != nil {
+			log.Fatalf("error: store.open: %v\n", err)
+		}
+		defer repo.Close()
+
+		isAdmin := cmd.Flag("is-admin").Value.String() == "true"
+		username := cmd.Flag("user").Value.String()
+		email := cmd.Flag("email").Value.String()
+
+		password := cmd.Flag("password").Value.String()
+		if password == "" {
+			password = phrases.Generate(4)
+		}
+
+		log.Printf("create: user %q: email %q: is-admin %v\n", username, email, isAdmin)
+
+		var userID domains.UserID
+		if isAdmin {
+			userID, err = repo.RegisterAdminUser(username, email, password)
+		} else {
+			userID, err = repo.RegisterUser(username, email, password)
+		}
+		if err != nil {
+			log.Fatalf("error: repo.RegisterUser: %v\n", err)
+		}
+		log.Printf("create: user %q: password %q: id %d\n", username, password, userID)
+
+		log.Printf("create: user: completed\n")
 	},
 }
