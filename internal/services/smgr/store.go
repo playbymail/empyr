@@ -36,27 +36,21 @@ type InMemorySessionStore struct {
 func (s *InMemorySessionStore) read(id string) (*Session, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
 	session, _ := s.sessions[id]
-
 	return session, nil
 }
 
 func (s *InMemorySessionStore) write(session *Session) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	s.sessions[session.id] = session
-
 	return nil
 }
 
 func (s *InMemorySessionStore) destroy(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	delete(s.sessions, id)
-
 	return nil
 }
 

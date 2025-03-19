@@ -15,13 +15,16 @@ func NewSessionManager(
 	gcInterval,
 	idleExpiration,
 	absoluteExpiration time.Duration,
+	domain string,
 	cookieName string) *SessionManager {
 
 	m := &SessionManager{
 		store:              store,
 		idleExpiration:     idleExpiration,
 		absoluteExpiration: absoluteExpiration,
+		domain:             domain,
 		cookieName:         cookieName,
+		anonymous:          "d0aba137-d7a7-4e25-86f9-ab6094b33a46",
 	}
 
 	go m.gc(gcInterval)
@@ -35,10 +38,16 @@ type SessionManager struct {
 	idleExpiration     time.Duration
 	absoluteExpiration time.Duration
 	cookieName         string
+	domain             string
+	anonymous          string
 }
 
 func (m *SessionManager) Handle(next http.Handler) http.Handler {
+	log.Printf("smgr: registered as middleware\n")
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s: entered\n", r.Method, r.URL.Path)
+
 		// start the session
 		session, rws := m.start(r)
 
@@ -119,15 +128,25 @@ func (m *SessionManager) start(r *http.Request) (*Session, *http.Request) {
 	var session *Session
 
 	// read session from cookie
+	log.Printf("smgr: start: reading session from cookie %q\n", m.cookieName)
 	cookie, err := r.Cookie(m.cookieName)
 	if err == nil {
+		log.Printf("smgr: start: cookie: session from cookie %q\n", m.cookieName)
+		log.Printf("smgr: start: cookie: session from cookie %q\n", cookie.Value)
 		session, err = m.store.read(cookie.Value)
 		if err != nil {
 			log.Printf("error: session: cookie: failed to read session from store: %v", err)
 		}
+	} else {
+		log.Printf("smgr: start: cookie: no session from cookie %q\n", m.cookieName)
 	}
 
 	// generate a new session
+	if session == nil {
+		log.Printf("smgr: start: generating new session: session == nil\n")
+	} else if !m.validate(session) {
+		log.Printf("smgr: start: generating new session: session is invalid\n")
+	}
 	if session == nil || !m.validate(session) {
 		session = newSession()
 	}

@@ -6,9 +6,11 @@ import (
 	"context"
 	"github.com/playbymail/empyr/app"
 	"github.com/playbymail/empyr/internal/jot"
+	"github.com/playbymail/empyr/internal/qxb"
 	"github.com/playbymail/empyr/internal/services/auth"
 	"github.com/playbymail/empyr/internal/services/games"
 	"github.com/playbymail/empyr/internal/services/sessions"
+	"github.com/playbymail/empyr/internal/services/smgr"
 	"github.com/playbymail/empyr/server"
 	"github.com/playbymail/empyr/store"
 	"github.com/spf13/cobra"
@@ -38,6 +40,19 @@ var cmdStartServer = &cobra.Command{
 			_ = repo.Close()
 		}()
 
+		mgr := smgr.NewSessionManager(
+			smgr.NewInMemorySessionStore(),
+			15*time.Minute,
+			12*time.Hour,
+			24*time.Hour,
+			flags.Sessions.Domain,
+			"empyr-sm")
+
+		q, err := qxb.NewQXB(flags.Application.Assets.Public, mgr)
+		if err != nil {
+			log.Fatalf("error: qxb.new: %v\n", err)
+		}
+
 		// make a new jot factory
 		jf := jot.NewFactory(flags.Sessions.Secret)
 
@@ -66,7 +81,7 @@ var cmdStartServer = &cobra.Command{
 		srv := server.New(cfg)
 
 		// start the server. blocks until the server receives a signal to stop.
-		err = srv.Start(a.Router(authService, gamesService, sessionsService))
+		err = srv.Start(q.Handle(a.Router(authService, gamesService, sessionsService)))
 
 		// force the repository to close before we exit.
 		_ = repo.Close()

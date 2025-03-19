@@ -61,6 +61,7 @@ var flags struct {
 		MaxHeaderBytes int64
 	}
 	Sessions struct {
+		Domain string
 		Secret string
 	}
 	Surveys struct {
@@ -100,6 +101,7 @@ func applyEnvironmentVariables() {
 	xiistr(&flags.Server.Port, "_SERVER_PORT")
 	xiiint(&flags.Server.MaxHeaderBytes, "_SERVER_MAXHEADERBYTES")
 
+	xiistr(&flags.Sessions.Domain, "_SESSIONS_DOMAIN")
 	xiistr(&flags.Sessions.Secret, "_SESSIONS_SECRET")
 
 	xiistr(&flags.Surveys.Path, "_SURVEYS_PATH")

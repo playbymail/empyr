@@ -3,6 +3,7 @@
 package smgr
 
 import (
+	"log"
 	"net/http"
 	"time"
 )
@@ -39,12 +40,18 @@ func writeCookieIfNecessary(w *sessionResponseWriter) {
 		// todo: panic can happen after database commits. prolly not great.
 		panic("session not found in request context")
 	}
+	var domain string
+	if w.sessionManager.domain == "localhost" {
+		domain = ""
+	} else {
+		domain = w.sessionManager.domain
+	}
 	cookie := &http.Cookie{
 		Name:  w.sessionManager.cookieName,
 		Value: session.id,
 		// restricts the cookie to this specific domain, preventing it
 		// from being sent to unauthorized sites.
-		Domain: "mywebsite.com",
+		Domain: domain,
 		// protects the cookie from being accessed by JavaScript, reducing
 		// the risk of cross-site scripting (XSS) attacks.
 		HttpOnly: true,
@@ -63,6 +70,8 @@ func writeCookieIfNecessary(w *sessionResponseWriter) {
 		// sets the expiration date based on the idle session timeout.
 		MaxAge: int(w.sessionManager.idleExpiration / time.Second),
 	}
+	log.Printf("writeCookieIfNecessary: setting cookie %q\n", cookie.Name)
+	log.Printf("writeCookieIfNecessary: setting cookie %+v\n", *cookie)
 	http.SetCookie(w.ResponseWriter, cookie)
 	w.done = true
 }
