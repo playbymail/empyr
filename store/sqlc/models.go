@@ -160,6 +160,15 @@ type PopulationCodes struct {
 	SortOrder   int64
 }
 
+type ProbeOrders struct {
+	SorcID    int64
+	TurnNo    int64
+	TechLevel int64
+	Kind      string
+	TargetID  int64
+	Status    sql.NullString
+}
+
 type ReportProbes struct {
 	ReportID int64
 	ID       int64
@@ -225,6 +234,14 @@ type Stars struct {
 	SystemID int64
 	ID       int64
 	Sequence string
+}
+
+type SurveyOrders struct {
+	SorcID    int64
+	TurnNo    int64
+	TechLevel int64
+	OrbitID   int64
+	Status    sql.NullString
 }
 
 type SystemDistances struct {

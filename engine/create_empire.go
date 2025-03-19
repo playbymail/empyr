@@ -42,6 +42,7 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 	if gameRow.CurrentTurn != 0 {
 		return 0, 0, ErrGameInProgress
 	}
+	turnNo := gameRow.CurrentTurn
 	clusterRow, err := q.ReadClusterMetaByGameID(e.Store.Context, gameRow.ID)
 	if err != nil {
 		return 0, 0, err
@@ -162,10 +163,27 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		}
 	}
 
+	// insert survey and probe orders
+	err = q.CreateSorCSurveyOrder(e.Store.Context, sqlc.CreateSorCSurveyOrderParams{SorcID: sorcId, TurnNo: turnNo, TechLevel: 1, OrbitID: clusterRow.HomeOrbitID})
+	if err != nil {
+		log.Printf("create: empire: survey %v\n", err)
+		return 0, 0, err
+	}
+	err = q.CreateSorCProbeOrder(e.Store.Context, sqlc.CreateSorCProbeOrderParams{SorcID: sorcId, TurnNo: turnNo, TechLevel: 1, Kind: "system", TargetID: clusterRow.HomeSystemID})
+	if err != nil {
+		log.Printf("create: empire: probe system %v\n", err)
+		return 0, 0, err
+	}
+	err = q.CreateSorCProbeOrder(e.Store.Context, sqlc.CreateSorCProbeOrderParams{SorcID: sorcId, TurnNo: turnNo, TechLevel: 1, Kind: "star", TargetID: clusterRow.HomeStarID})
+	if err != nil {
+		log.Printf("create: empire: probe star %v\n", err)
+		return 0, 0, err
+	}
+
 	// populate reports
 	reportId, err := q.CreateReport(e.Store.Context, sqlc.CreateReportParams{
 		SorcID: sorcId,
-		TurnNo: 0,
+		TurnNo: turnNo,
 	})
 	if err != nil {
 		log.Printf("create: empire: sorc prod %+v\n", err)

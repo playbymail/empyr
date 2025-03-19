@@ -261,6 +261,54 @@ func (q *Queries) CreateSorCPopulation(ctx context.Context, arg CreateSorCPopula
 	return err
 }
 
+const createSorCProbeOrder = `-- name: CreateSorCProbeOrder :exec
+INSERT INTO probe_orders (sorc_id, turn_no, tech_level, kind, target_id)
+VALUES (?1, ?2, ?3, ?4, ?5)
+`
+
+type CreateSorCProbeOrderParams struct {
+	SorcID    int64
+	TurnNo    int64
+	TechLevel int64
+	Kind      string
+	TargetID  int64
+}
+
+// CreateSorCProbeOrder creates a new ship or colony probe order.
+func (q *Queries) CreateSorCProbeOrder(ctx context.Context, arg CreateSorCProbeOrderParams) error {
+	_, err := q.db.ExecContext(ctx, createSorCProbeOrder,
+		arg.SorcID,
+		arg.TurnNo,
+		arg.TechLevel,
+		arg.Kind,
+		arg.TargetID,
+	)
+	return err
+}
+
+const createSorCSurveyOrder = `-- name: CreateSorCSurveyOrder :exec
+INSERT INTO survey_orders (sorc_id, turn_no, tech_level, orbit_id)
+VALUES (?1, ?2, ?3, ?4)
+`
+
+type CreateSorCSurveyOrderParams struct {
+	SorcID    int64
+	TurnNo    int64
+	TechLevel int64
+	OrbitID   int64
+}
+
+// CreateSorCSurveyOrder creates a new ship or colony survey order.
+func (q *Queries) CreateSorCSurveyOrder(ctx context.Context, arg CreateSorCSurveyOrderParams) error {
+	_, err := q.db.ExecContext(ctx, createSorCSurveyOrder,
+		arg.SorcID,
+		arg.TurnNo,
+		arg.TechLevel,
+		arg.OrbitID,
+	)
+	return err
+}
+
 const readAllColoniesByEmpire = `-- name: ReadAllColoniesByEmpire :many
 SELECT sorcs.id        AS sorcs_id,
        systems.x,
@@ -690,4 +738,42 @@ func (q *Queries) ReadSorCPopulation(ctx context.Context, sorcID int64) ([]ReadS
 		return nil, err
 	}
 	return items, nil
+}
+
+const readSorCProbeOrders = `-- name: ReadSorCProbeOrders :exec
+SELECT DISTINCT tech_level, kind, target_id, status
+FROM probe_orders
+WHERE sorc_id = ?1
+  AND turn_no = ?2
+ORDER BY tech_level, kind, target_id
+`
+
+type ReadSorCProbeOrdersParams struct {
+	SorcID int64
+	TurnNo int64
+}
+
+// ReadSorCProbeOrders returns a list of probe orderss issued by a ship or colony on a given turn.
+func (q *Queries) ReadSorCProbeOrders(ctx context.Context, arg ReadSorCProbeOrdersParams) error {
+	_, err := q.db.ExecContext(ctx, readSorCProbeOrders, arg.SorcID, arg.TurnNo)
+	return err
+}
+
+const readSorCSurveyOrders = `-- name: ReadSorCSurveyOrders :exec
+SELECT DISTINCT tech_level, orbit_id, status
+FROM survey_orders
+WHERE sorc_id = ?1
+  AND turn_no = ?2
+ORDER BY tech_level, orbit_id
+`
+
+type ReadSorCSurveyOrdersParams struct {
+	SorcID int64
+	TurnNo int64
+}
+
+// ReadSorCSurveyOrders returns a list of survey orders issued by a ship or colony on a given turn.
+func (q *Queries) ReadSorCSurveyOrders(ctx context.Context, arg ReadSorCSurveyOrdersParams) error {
+	_, err := q.db.ExecContext(ctx, readSorCSurveyOrders, arg.SorcID, arg.TurnNo)
+	return err
 }

@@ -513,6 +513,34 @@ CREATE TABLE mining_group
             ON DELETE CASCADE
 );
 
+
+CREATE TABLE probe_orders
+(
+    sorc_id    INTEGER NOT NULL,
+    turn_no    INTEGER NOT NULL CHECK (turn_no >= 0),
+    tech_level INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
+    kind       TEXT    NOT NULL CHECK (kind in ('system', 'star', 'orbit', 'sorc')),
+    target_id  INTEGER NOT NULL,
+    status     TEXT,
+    CONSTRAINT fk_sorc_id
+        FOREIGN KEY (sorc_id)
+            REFERENCES sorcs (id)
+            ON DELETE CASCADE
+);
+
+CREATE TABLE survey_orders
+(
+    sorc_id    INTEGER NOT NULL,
+    turn_no    INTEGER NOT NULL CHECK (turn_no >= 0),
+    tech_level INTEGER NOT NULL CHECK (tech_level BETWEEN 0 AND 10),
+    orbit_id   INTEGER NOT NULL,
+    status     TEXT,
+    CONSTRAINT fk_sorc_id
+        FOREIGN KEY (sorc_id)
+            REFERENCES sorcs (id)
+            ON DELETE CASCADE
+);
+
 CREATE TABLE reports
 (
     sorc_id INTEGER NOT NULL,
@@ -601,4 +629,3 @@ CREATE TABLE system_distances
             REFERENCES systems (id)
             ON DELETE CASCADE
 );
-

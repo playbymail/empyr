@@ -61,6 +61,17 @@ INSERT INTO mining_group (mining_group_id, unit_cd, tech_level, nbr_of_units)
 VALUES (:mining_group_id, :unit_cd, :tech_level, :nbr_of_units)
 RETURNING id;
 
+-- CreateSorCProbeOrder creates a new ship or colony probe order.
+--
+-- name: CreateSorCProbeOrder :exec
+INSERT INTO probe_orders (sorc_id, turn_no, tech_level, kind, target_id)
+VALUES (:sorc_id, :turn_no, :tech_level, :kind, :target_id);
+
+-- CreateSorCSurveyOrder creates a new ship or colony survey order.
+--
+-- name: CreateSorCSurveyOrder :exec
+INSERT INTO survey_orders (sorc_id, turn_no, tech_level, orbit_id)
+VALUES (:sorc_id, :turn_no, :tech_level, :orbit_id);
 
 -- ReadAllColoniesByEmpire reads the colonies for a given empire in a game.
 --
@@ -185,3 +196,21 @@ FROM mining_group
 WHERE mining_group_id = :group_id
 GROUP BY tech_level
 ORDER BY tech_level;
+
+-- ReadSorCProbeOrders returns a list of probe orderss issued by a ship or colony on a given turn.
+--
+-- name: ReadSorCProbeOrders :exec
+SELECT DISTINCT tech_level, kind, target_id, status
+FROM probe_orders
+WHERE sorc_id = :sorc_id
+  AND turn_no = :turn_no
+ORDER BY tech_level, kind, target_id;
+
+-- ReadSorCSurveyOrders returns a list of survey orders issued by a ship or colony on a given turn.
+--
+-- name: ReadSorCSurveyOrders :exec
+SELECT DISTINCT tech_level, orbit_id, status
+FROM survey_orders
+WHERE sorc_id = :sorc_id
+  AND turn_no = :turn_no
+ORDER BY tech_level, orbit_id;
