@@ -90,7 +90,8 @@ func (q *Queries) ReadAllStarsInCluster(ctx context.Context, clusterID int64) ([
 
 const readAllStarsInSystem = `-- name: ReadAllStarsInSystem :many
 SELECT stars.id, systems.x, systems.y, systems.z, stars.sequence
-FROM systems, stars
+FROM systems,
+     stars
 WHERE systems.id = ?1
   AND stars.system_id = systems.id
 ORDER BY stars.id
@@ -132,6 +133,36 @@ func (q *Queries) ReadAllStarsInSystem(ctx context.Context, systemID int64) ([]R
 		return nil, err
 	}
 	return items, nil
+}
+
+const readStarByID = `-- name: ReadStarByID :one
+SELECT stars.id, stars.sequence, systems.x, systems.y, systems.z
+FROM stars,
+     systems
+WHERE stars.id = ?1
+  AND systems.id = stars.system_id
+`
+
+type ReadStarByIDRow struct {
+	ID       int64
+	Sequence string
+	X        int64
+	Y        int64
+	Z        int64
+}
+
+// ReadStarByID returns a star by its ID.
+func (q *Queries) ReadStarByID(ctx context.Context, starID int64) (ReadStarByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, readStarByID, starID)
+	var i ReadStarByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Sequence,
+		&i.X,
+		&i.Y,
+		&i.Z,
+	)
+	return i, err
 }
 
 const readStarSurvey = `-- name: ReadStarSurvey :many

@@ -15,5 +15,18 @@ type SystemSurveyReport_t struct {
 }
 
 type SurveyReport_t struct {
-	ID int64
+	ID       int64
+	SorCID   int64
+	Name     string // name of the system, eg "02/13/28A"
+	StarID   int64  // star ID, eg 1
+	OrbitID  int64
+	OrbitNo  int64
+	Deposits []*SurveyReportLine_t
+}
+
+type SurveyReportLine_t struct {
+	DepositNo string
+	Resource  string
+	Quantity  string
+	YieldPct  string
 }

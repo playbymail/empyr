@@ -167,7 +167,7 @@ func CreateExcelReportCommand(e *Engine_t, cfg *CreateExcelReportParams_t, path 
 		_ = f.SetCellValue(sheet, "F1", "Deposit Qty")
 		_ = f.SetCellValue(sheet, "G1", "Yield Pct")
 		rowNo := 2
-		rows, err := e.Store.Queries.ReadPlanetSurvey(e.Store.Context, empireRow.HomePlanetID)
+		rows, err := e.Store.Queries.ReadOrbitSurvey(e.Store.Context, empireRow.HomePlanetID)
 		if err != nil {
 			log.Printf("error: %v\n", err)
 			return err

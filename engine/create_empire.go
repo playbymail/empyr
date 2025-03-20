@@ -390,7 +390,16 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		{groupNo: 2, depositNo: 2, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 40_817}}},
 		{groupNo: 3, depositNo: 6, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 159_421}}},
 	}
-	if cfg.Username == "jimw" {
+	if cfg.Username == "cortrah" {
+		miningGroups = []miningGroup{
+			{groupNo: 1, depositNo: 1, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 41_000}}},
+			{groupNo: 2, depositNo: 2, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 40_817}}},
+			{groupNo: 3, depositNo: 4, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 18_762}}},
+			{groupNo: 4, depositNo: 6, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 159_421}}},
+			{groupNo: 5, depositNo: 15, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 20_000}}},
+			{groupNo: 6, depositNo: 20, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 20_000}}},
+		}
+	} else if cfg.Username == "jimw" {
 		miningGroups = []miningGroup{
 			{groupNo: 1, depositNo: 1, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 20000}}},
 			{groupNo: 2, depositNo: 2, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 90000}}},

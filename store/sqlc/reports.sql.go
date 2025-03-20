@@ -90,6 +90,138 @@ func (q *Queries) CreateReportProductionOutput(ctx context.Context, arg CreateRe
 	return id, err
 }
 
+const createReportSurvey = `-- name: CreateReportSurvey :one
+INSERT INTO report_surveys (report_id, orbit_id)
+VALUES (?1, ?2)
+RETURNING id
+`
+
+type CreateReportSurveyParams struct {
+	ReportID int64
+	OrbitID  int64
+}
+
+// CreateReportSurvey adds a survey to the given report.
+func (q *Queries) CreateReportSurvey(ctx context.Context, arg CreateReportSurveyParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createReportSurvey, arg.ReportID, arg.OrbitID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createReportSurveyDeposit = `-- name: CreateReportSurveyDeposit :exec
+INSERT INTO report_survey_deposits (report_id, deposit_no, deposit_qty, deposit_kind, deposit_yield_pct)
+VALUES (?1, ?2, ?3, ?4, ?5)
+`
+
+type CreateReportSurveyDepositParams struct {
+	ReportID        int64
+	DepositNo       int64
+	DepositQty      int64
+	DepositKind     string
+	DepositYieldPct int64
+}
+
+// CreateReportSurveyDeposit adds a survey of a deposit to the given report.
+func (q *Queries) CreateReportSurveyDeposit(ctx context.Context, arg CreateReportSurveyDepositParams) error {
+	_, err := q.db.ExecContext(ctx, createReportSurveyDeposit,
+		arg.ReportID,
+		arg.DepositNo,
+		arg.DepositQty,
+		arg.DepositKind,
+		arg.DepositYieldPct,
+	)
+	return err
+}
+
+const deleteAllTurnReports = `-- name: DeleteAllTurnReports :exec
+DELETE
+FROM reports
+WHERE sorc_id in (SELECT sorcs.id
+                  FROM empires,
+                       sorcs
+                  WHERE empires.game_id = ?1
+                    AND empires.id = sorcs.empire_id)
+  AND turn_no = ?2
+`
+
+type DeleteAllTurnReportsParams struct {
+	GameID int64
+	TurnNo int64
+}
+
+// DeleteAllTurnReports deletes all reports for a turn in the game.
+func (q *Queries) DeleteAllTurnReports(ctx context.Context, arg DeleteAllTurnReportsParams) error {
+	_, err := q.db.ExecContext(ctx, deleteAllTurnReports, arg.GameID, arg.TurnNo)
+	return err
+}
+
+const readEmpireReports = `-- name: ReadEmpireReports :many
+SELECT DISTINCT sorcs.id AS sorc_id, reports.id AS report_id
+FROM empires,
+     sorcs,
+     reports
+WHERE empires.id = ?1
+  AND sorcs.empire_id = empires.id
+  AND reports.sorc_id = sorcs.id
+  AND reports.turn_no = ?2
+ORDER BY sorcs.id, reports.id
+`
+
+type ReadEmpireReportsParams struct {
+	EmpireID int64
+	TurnNo   int64
+}
+
+type ReadEmpireReportsRow struct {
+	SorcID   int64
+	ReportID int64
+}
+
+// ReadEmpireReports returns a list of reports for an empire for a turn.
+func (q *Queries) ReadEmpireReports(ctx context.Context, arg ReadEmpireReportsParams) ([]ReadEmpireReportsRow, error) {
+	rows, err := q.db.QueryContext(ctx, readEmpireReports, arg.EmpireID, arg.TurnNo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadEmpireReportsRow
+	for rows.Next() {
+		var i ReadEmpireReportsRow
+		if err := rows.Scan(&i.SorcID, &i.ReportID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readReport = `-- name: ReadReport :one
+SELECT id
+FROM reports
+WHERE sorc_id = ?1
+  AND turn_no = ?2
+`
+
+type ReadReportParams struct {
+	SorcID int64
+	TurnNo int64
+}
+
+// ReadReport returns the report id for a sorc and turn.
+func (q *Queries) ReadReport(ctx context.Context, arg ReadReportParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, readReport, arg.SorcID, arg.TurnNo)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const readReportProductionInputs = `-- name: ReadReportProductionInputs :many
 SELECT category, fuel, gold, metals, non_metals
 FROM reports,
@@ -181,6 +313,88 @@ func (q *Queries) ReadReportProductionOutputs(ctx context.Context, arg ReadRepor
 			&i.Mined,
 			&i.Manufactured,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readSystemSurveyDeposits = `-- name: ReadSystemSurveyDeposits :many
+SELECT deposit_no, deposit_qty, deposit_kind, deposit_yield_pct
+FROM report_survey_deposits
+WHERE report_id = ?1
+ORDER BY deposit_no
+`
+
+type ReadSystemSurveyDepositsRow struct {
+	DepositNo       int64
+	DepositQty      int64
+	DepositKind     string
+	DepositYieldPct int64
+}
+
+// ReadSystemSurveyDeposits returns a list of deposits for a survey report.
+func (q *Queries) ReadSystemSurveyDeposits(ctx context.Context, reportID int64) ([]ReadSystemSurveyDepositsRow, error) {
+	rows, err := q.db.QueryContext(ctx, readSystemSurveyDeposits, reportID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadSystemSurveyDepositsRow
+	for rows.Next() {
+		var i ReadSystemSurveyDepositsRow
+		if err := rows.Scan(
+			&i.DepositNo,
+			&i.DepositQty,
+			&i.DepositKind,
+			&i.DepositYieldPct,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readSystemSurveyReports = `-- name: ReadSystemSurveyReports :many
+SELECT report_id AS report_id,
+       id        AS system_survey_id,
+       orbit_id  AS orbit_id
+FROM report_surveys
+WHERE report_id = ?1
+ORDER BY id, orbit_id
+`
+
+type ReadSystemSurveyReportsRow struct {
+	ReportID       int64
+	SystemSurveyID int64
+	OrbitID        int64
+}
+
+// ReadSystemSurveyReports returns a list of survey reports for a sorc in a given turn.
+func (q *Queries) ReadSystemSurveyReports(ctx context.Context, reportID int64) ([]ReadSystemSurveyReportsRow, error) {
+	rows, err := q.db.QueryContext(ctx, readSystemSurveyReports, reportID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadSystemSurveyReportsRow
+	for rows.Next() {
+		var i ReadSystemSurveyReportsRow
+		if err := rows.Scan(&i.ReportID, &i.SystemSurveyID, &i.OrbitID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

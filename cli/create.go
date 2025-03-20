@@ -266,9 +266,9 @@ var cmdCreateSystemSurveyReport = &cobra.Command{
 
 // cmdCreateSystemSurveyReports creates turn reports for all the empires in a game
 var cmdCreateSystemSurveyReports = &cobra.Command{
-	Use:   "system-survey-reports --turn-no",
-	Short: "create turn reports for all empires in a game",
-	Long:  `Create turn reports for all empires in a game.`,
+	Use:   "system-survey-reports",
+	Short: "create system survey reports for all empires in a game",
+	Long:  `Create system survey reports for all empires in a game.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		started := time.Now()
 		defer func() {
@@ -285,6 +285,7 @@ var cmdCreateSystemSurveyReports = &cobra.Command{
 			log.Fatalf("error: engine.open: %v\n", err)
 		}
 
+		log.Printf("create: system-survey-reports: %q\n", flags.Surveys.Path)
 		err = engine.CreateSystemSurveyReportsCommand(e, &engine.CreateSystemSurveyReportsParams_t{
 			Code:   flags.Game.Code,
 			TurnNo: flags.Game.TurnNo,

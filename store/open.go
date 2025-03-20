@@ -101,7 +101,7 @@ func Open(path string, ctx context.Context) (*Store, error) {
 		return nil, ErrInvalidPath
 	}
 
-	log.Printf("store: open: %s\n", path)
+	//log.Printf("store: open: %s\n", path)
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err

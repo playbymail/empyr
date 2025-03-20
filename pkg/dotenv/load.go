@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/joho/godotenv"
 	"io/fs"
-	"log"
 	"os"
 	"sort"
 	"strings"
@@ -54,7 +53,7 @@ func Load(prefix string) error {
 					return err
 				}
 			} else {
-				log.Printf("env: loaded %q\n", ".env."+local+".local")
+				//log.Printf("env: loaded %q\n", ".env."+local+".local")
 			}
 		}
 	}
@@ -66,7 +65,7 @@ func Load(prefix string) error {
 				return err
 			}
 		} else {
-			log.Printf("env: loaded %q\n", ".env.local")
+			//log.Printf("env: loaded %q\n", ".env.local")
 		}
 	}
 
@@ -78,7 +77,7 @@ func Load(prefix string) error {
 					return err
 				}
 			} else {
-				log.Printf("env: loaded %q\n", ".env."+shared)
+				//log.Printf("env: loaded %q\n", ".env."+shared)
 			}
 		}
 	}
@@ -89,7 +88,7 @@ func Load(prefix string) error {
 			return err
 		}
 	} else {
-		log.Printf("env: loaded %q\n", ".env")
+		//log.Printf("env: loaded %q\n", ".env")
 	}
 
 	return nil

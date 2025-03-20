@@ -391,6 +391,58 @@ func (q *Queries) ReadAllColoniesByEmpire(ctx context.Context, empireID int64) (
 	return items, nil
 }
 
+const readAllSurveyOrdersForGameTurn = `-- name: ReadAllSurveyOrdersForGameTurn :many
+SELECT DISTINCT survey_orders.sorc_id, survey_orders.tech_level, survey_orders.orbit_id, survey_orders.status
+FROM empires,
+     sorcs,
+     survey_orders
+WHERE empires.game_id = ?1
+  AND sorcs.empire_id = empires.id
+  AND survey_orders.turn_no = ?2
+ORDER BY survey_orders.sorc_id, survey_orders.tech_level, survey_orders.orbit_id, survey_orders.status
+`
+
+type ReadAllSurveyOrdersForGameTurnParams struct {
+	GameID int64
+	TurnNo int64
+}
+
+type ReadAllSurveyOrdersForGameTurnRow struct {
+	SorcID    int64
+	TechLevel int64
+	OrbitID   int64
+	Status    sql.NullString
+}
+
+// ReadAllSurveyOrdersGameForTurn returns a list of survey orders issued in a given turn of a game.
+func (q *Queries) ReadAllSurveyOrdersForGameTurn(ctx context.Context, arg ReadAllSurveyOrdersForGameTurnParams) ([]ReadAllSurveyOrdersForGameTurnRow, error) {
+	rows, err := q.db.QueryContext(ctx, readAllSurveyOrdersForGameTurn, arg.GameID, arg.TurnNo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadAllSurveyOrdersForGameTurnRow
+	for rows.Next() {
+		var i ReadAllSurveyOrdersForGameTurnRow
+		if err := rows.Scan(
+			&i.SorcID,
+			&i.TechLevel,
+			&i.OrbitID,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const readSorCFactoryGroup = `-- name: ReadSorCFactoryGroup :many
 SELECT orders_cd,
        orders_tech_level,
@@ -775,5 +827,49 @@ type ReadSorCSurveyOrdersParams struct {
 // ReadSorCSurveyOrders returns a list of survey orders issued by a ship or colony on a given turn.
 func (q *Queries) ReadSorCSurveyOrders(ctx context.Context, arg ReadSorCSurveyOrdersParams) error {
 	_, err := q.db.ExecContext(ctx, readSorCSurveyOrders, arg.SorcID, arg.TurnNo)
+	return err
+}
+
+const resetProbeOrdersStatus = `-- name: ResetProbeOrdersStatus :exec
+UPDATE probe_orders
+SET status = NULL
+WHERE turn_no = ?1
+  AND sorc_id in (SELECT sorcs.id
+                  FROM empires,
+                       sorcs
+                  WHERE empires.game_id = ?2
+                    AND sorcs.empire_id = empires.id)
+`
+
+type ResetProbeOrdersStatusParams struct {
+	TurnNo int64
+	GameID int64
+}
+
+// ResetProbeOrdersStatus resets the status of all probe orders issued in a given turn.
+func (q *Queries) ResetProbeOrdersStatus(ctx context.Context, arg ResetProbeOrdersStatusParams) error {
+	_, err := q.db.ExecContext(ctx, resetProbeOrdersStatus, arg.TurnNo, arg.GameID)
+	return err
+}
+
+const resetSurveyOrdersStatus = `-- name: ResetSurveyOrdersStatus :exec
+UPDATE survey_orders
+SET status = NULL
+WHERE turn_no = ?1
+  AND sorc_id in (SELECT sorcs.id
+                  FROM empires,
+                       sorcs
+                  WHERE empires.game_id = ?2
+                    AND sorcs.empire_id = empires.id)
+`
+
+type ResetSurveyOrdersStatusParams struct {
+	TurnNo int64
+	GameID int64
+}
+
+// ResetSurveyOrdersStatus resets the status of all survey orders issued in a given turn.
+func (q *Queries) ResetSurveyOrdersStatus(ctx context.Context, arg ResetSurveyOrdersStatusParams) error {
+	_, err := q.db.ExecContext(ctx, resetSurveyOrdersStatus, arg.TurnNo, arg.GameID)
 	return err
 }

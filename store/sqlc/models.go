@@ -169,9 +169,24 @@ type ProbeOrders struct {
 	Status    sql.NullString
 }
 
-type ReportProbes struct {
-	ReportID int64
+type ReportProbeSorcs struct {
 	ID       int64
+	ReportID int64
+	EmpireID int64
+	SorcID   int64
+	SorcCd   string
+	SorcMass int64
+}
+
+type ReportProbes struct {
+	ID           int64
+	ReportID     int64
+	OrbitID      int64
+	Habitability int64
+	FuelQty      int64
+	GoldQty      int64
+	MetalsQty    int64
+	NonMetalsQty int64
 }
 
 type ReportProductionInputs struct {
@@ -200,9 +215,18 @@ type ReportSpies struct {
 	ID       int64
 }
 
+type ReportSurveyDeposits struct {
+	ReportID        int64
+	DepositNo       int64
+	DepositQty      int64
+	DepositKind     string
+	DepositYieldPct int64
+}
+
 type ReportSurveys struct {
-	ReportID int64
 	ID       int64
+	ReportID int64
+	OrbitID  int64
 }
 
 type Reports struct {
@@ -265,6 +289,7 @@ type UnitCodes struct {
 	IsOperational int64
 	IsConsumable  int64
 	IsResource    int64
+	Aliases       sql.NullString
 }
 
 type Users struct {

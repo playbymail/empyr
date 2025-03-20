@@ -168,7 +168,8 @@ CREATE TABLE unit_codes
     category       TEXT    NOT NULL,
     is_operational INTEGER NOT NULL CHECK (is_operational IN (0, 1)),
     is_consumable  INTEGER NOT NULL CHECK (is_consumable IN (0, 1)),
-    is_resource    INTEGER NOT NULL CHECK (is_resource IN (0, 1))
+    is_resource    INTEGER NOT NULL CHECK (is_resource IN (0, 1)),
+    aliases        TEXT
 );
 
 INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
@@ -231,6 +232,25 @@ INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_
 VALUES ('STU', 'Structure', 'Assembly', 1, 0, 0);
 INSERT INTO unit_codes (code, name, category, is_operational, is_consumable, is_resource)
 VALUES ('TPT', 'Transports', 'Vehicles', 0, 0, 0);
+
+UPDATE unit_codes
+SET aliases = 'ASWP'
+WHERE code = 'ASW';
+UPDATE unit_codes
+SET aliases = 'FACT, FCTU, FU'
+WHERE code = 'FCT';
+UPDATE unit_codes
+SET aliases = 'FARM, FRMU'
+WHERE code = 'FRM';
+UPDATE unit_codes
+SET aliases = 'MSS'
+WHERE code = 'MTSP';
+UPDATE unit_codes
+SET aliases = 'MINU, MU'
+WHERE code = 'MIN';
+UPDATE unit_codes
+SET aliases = 'STUN'
+WHERE code = 'STU';
 
 CREATE TABLE deposits
 (
@@ -546,6 +566,7 @@ CREATE TABLE reports
     sorc_id INTEGER NOT NULL,
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
     turn_no INTEGER NOT NULL CHECK (turn_no >= 0),
+    UNIQUE (sorc_id, turn_no),
     CONSTRAINT fk_sorc_id
         FOREIGN KEY (sorc_id)
             REFERENCES sorcs (id)
@@ -585,21 +606,55 @@ CREATE TABLE report_production_outputs
 
 CREATE TABLE report_surveys
 (
-    report_id INTEGER NOT NULL,
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    report_id INTEGER NOT NULL,
+    orbit_id  INTEGER NOT NULL,
     CONSTRAINT fk_report_id
         FOREIGN KEY (report_id)
             REFERENCES reports (id)
             ON DELETE CASCADE
 );
 
+CREATE TABLE report_survey_deposits
+(
+    report_id         INTEGER NOT NULL,
+    deposit_no        INTEGER NOT NULL,
+    deposit_qty       INTEGER NOT NULL,
+    deposit_kind      TEXT    NOT NULL,
+    deposit_yield_pct INTEGER NOT NULL,
+    CONSTRAINT fk_report_id
+        FOREIGN KEY (report_id)
+            REFERENCES report_surveys (id)
+            ON DELETE CASCADE
+);
+
 CREATE TABLE report_probes
 (
-    report_id INTEGER NOT NULL,
-    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    report_id      INTEGER NOT NULL,
+    orbit_id       INTEGER NOT NULL,
+    habitability   INTEGER NOT NULL,
+    fuel_qty       INTEGER NOT NULL,
+    gold_qty       INTEGER NOT NULL,
+    metals_qty     INTEGER NOT NULL,
+    non_metals_qty INTEGER NOT NULL,
     CONSTRAINT fk_report_id
         FOREIGN KEY (report_id)
             REFERENCES reports (id)
+            ON DELETE CASCADE
+);
+
+CREATE TABLE report_probe_sorcs
+(
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    report_id INTEGER NOT NULL,
+    empire_id INTEGER NOT NULL, -- fk to empire that controls the planet being reported on
+    sorc_id   INTEGER NOT NULL, -- fk to sorc being reported on
+    sorc_cd   TEXT    NOT NULL,
+    sorc_mass INTEGER NOT NULL, -- estimated mass of sorc
+    CONSTRAINT fk_report_id
+        FOREIGN KEY (report_id)
+            REFERENCES report_probes (id)
             ON DELETE CASCADE
 );
 
@@ -612,7 +667,6 @@ CREATE TABLE report_spies
             REFERENCES reports (id)
             ON DELETE CASCADE
 );
-
 
 CREATE TABLE system_distances
 (

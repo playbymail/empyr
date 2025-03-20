@@ -28,3 +28,97 @@ func (q *Queries) CreateOrbit(ctx context.Context, arg CreateOrbitParams) (int64
 	err := row.Scan(&id)
 	return id, err
 }
+
+const readOrbitPlanet = `-- name: ReadOrbitPlanet :one
+SELECT planets.id
+FROM planets
+WHERE planets.orbit_id = ?1
+`
+
+// ReadOrbitPlanet returns the planet for a given orbit.
+func (q *Queries) ReadOrbitPlanet(ctx context.Context, orbitID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, readOrbitPlanet, orbitID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const readOrbitSurvey = `-- name: ReadOrbitSurvey :many
+SELECT systems.id             AS system_id,
+       stars.id               AS star_id,
+       orbits.id              AS orbit_id,
+       orbits.orbit_no        AS orbit_no,
+       planets.id             AS planet_id,
+       planet_codes.name      AS planet_kind,
+       deposits.id            AS deposit_id,
+       deposits.deposit_no    AS deposit_no,
+       unit_codes.code        AS deposit_kind,
+       deposits.remaining_qty AS deposit_qty,
+       deposits.yield_pct     AS yield_pct
+FROM orbits,
+     planets,
+     planet_codes,
+     deposits,
+     unit_codes,
+     stars,
+     systems
+WHERE orbits.id = ?1
+  AND planets.orbit_id = orbits.id
+  AND planet_codes.code = planets.kind
+  AND deposits.planet_id = planets.id
+  AND unit_codes.code = deposits.kind
+  AND orbits.id = planets.orbit_id
+  AND stars.id = orbits.star_id
+  AND systems.id = stars.system_id
+ORDER BY deposits.deposit_no
+`
+
+type ReadOrbitSurveyRow struct {
+	SystemID    int64
+	StarID      int64
+	OrbitID     int64
+	OrbitNo     int64
+	PlanetID    int64
+	PlanetKind  string
+	DepositID   int64
+	DepositNo   int64
+	DepositKind string
+	DepositQty  int64
+	YieldPct    int64
+}
+
+// ReadOrbitSurvey reads the orbit survey data for a game.
+func (q *Queries) ReadOrbitSurvey(ctx context.Context, orbitID int64) ([]ReadOrbitSurveyRow, error) {
+	rows, err := q.db.QueryContext(ctx, readOrbitSurvey, orbitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadOrbitSurveyRow
+	for rows.Next() {
+		var i ReadOrbitSurveyRow
+		if err := rows.Scan(
+			&i.SystemID,
+			&i.StarID,
+			&i.OrbitID,
+			&i.OrbitNo,
+			&i.PlanetID,
+			&i.PlanetKind,
+			&i.DepositID,
+			&i.DepositNo,
+			&i.DepositKind,
+			&i.DepositQty,
+			&i.YieldPct,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

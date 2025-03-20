@@ -1,3 +1,73 @@
+Unit_Name__________________  Code   Operational  Obsolete_Aliases
+Anti-Missile                 ANM    false
+Assault Craft                ASCR   false
+Assault Weapon               ASWP   false        ASW
+Automation Units             AUT    true
+Construction Worker          CNW    false
+Consumer Goods               CNGD   false
+Energy Shields               ESHD   true
+Energy Weapons               EWP    true
+Factory Units                FCTU   true         FU
+Farm Units                   FRMU   true         FARM, FRM
+Food Resource Units          FOOD   false
+Fuel Resource Units          FUEL   false
+Gold Resource Units          GOLD   false
+Hyper Engines                HDRV   true
+Life Support Units           LFSU   true
+Light Structural Units       LSTU   true
+Metallic Resource Units      METS   false
+Military Robots              MTBT   false
+Military Supplies            MTSP   false        MSS
+Mining Units                 MINU   true         MIN, MU
+Missile Launchers            MSLT   true
+Missiles                     MSL    false
+Non-Metallic Resource Units  NMTS   false
+Professional                 PRO    false
+Research Point               RSCH   false
+Sensors                      SEN    true
+Soldier                      SLD    false
+Space Drives                 SDRV   true
+Spy                          SPY    false
+Structural Units             STU    true         STUN
+Transport                    TPT    false
+Unemployables                UEM    false
+Unskilled Workers            USK    false
+
+Item_Name________________ Code__
+Anti-Missiles             ANM
+Assault Craft             ASC
+Assault Weapons           ASW
+Automation                AUT
+Consumer Goods            CNGD
+Energy Shields            ESH
+Energy Weapons            EWP
+Factories                 FCT
+Food                      FOOD
+Farms                     FRM
+Fuel                      FUEL
+Gold                      GOLD
+Hyper Engines             HEN
+Laboratories              LAB
+Life Supports             LFS
+Metals                    METS
+Mines                     MIN
+Missile Launchers         MSL
+Missiles                  MSS
+Military Robots           MTBT
+Military Supplies         MTSP
+Non-Metals                NMTS
+Power Plants              PWP
+Robot Probe Vehicles      RPV
+Research                  RSCH
+Sensors                   SEN
+Light Structure           SLS
+Space Drives              SPD
+Structure                 STU
+Transports                TPT
+
+
+
+
 Code Item_Name            Category    Class   Mass  Volume  Metals to Build  Non-Metals to Build  Operational Requirements                                       Output and Notes
 UEM  Unemployables        Population  Living  1     1       0                0                    Food and Consumer Goods                                        Population growth occurs in this category
 USK  Unskilled Workers    Population  Living  1     1       0                0                    Food and Consumer Goods                                        Provides labor to operate certain assembled items
@@ -8,6 +78,7 @@ TRNE Trainees             Population  Living  1     1       0                0  
 SPY  Spy                  Population  Living  1     1       0                0                    Food and Consumer Goods
 PLC  Police               Population  Living  1     1       0                0                    Food and Consumer Goods                                        Drafted to keep the peace and suppress rebellion by arresting rebels
 SAG  Special Agents       Population  Living  1     1       0                0                    Food and Consumer Goods                                        Used to infiltrate rebel population sectors and assist police in locating rebels
+
 
 
 Code   Item_Name                 Category     Mass         Volume      Metals To Build  Non-Metals to Build  Operational Requirements                                     Output and Notes

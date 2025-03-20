@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html>{{- /*gotype:github.com/playbymail/empyr/engine.SystemSurveyReport_t*/ -}}
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -34,88 +34,41 @@
     </table>
 </header>
 <main>
+    <h2>Survey - Empire {{.Heading.EmpireCode}} - Turn {{.Heading.TurnNo}}</h2>
+
     <article>
-        <h2>Survey - Empire {{.Heading.EmpireCode}} - Turn {{.Heading.TurnNo}}</h2>
+        {{range .Surveys}}{{- /*gotype:github.com/playbymail/empyr/engine.SurveyReport_t*/ -}}
+        <h3>S/C {{.SorCID}} : Survey {{.ID}} : Star {{.StarID}} ({{.Name}})</h3>
+        <table>
+            <thead>
+            <tr>
+                <td>Deposit No</td>
+                <td>Resource</td>
+                <td>Quantity</td>
+                <td>Yield Pct</td>
+            </tr>
+            </thead>
+            {{range .Deposits}}{{- /*gotype:github.com/playbymail/empyr/engine.SurveyReportLine_t*/ -}}
+                <tr>
+                    <td style="text-align: right">{{.DepositNo}}</td>
+                    <td>{{.Resource}}</td>
+                    <td style="text-align: right">{{.Quantity}}</td>
+                    <td style="text-align: right">{{.YieldPct}}</td>
+                </tr>
+            {{end}}
+        </table>
+        {{end}}
 
-        <article>
-            <h2>Surveys - Turn 0</h2>
+        <table>
+            <tr><td>Empire</td><td>Ship or Colony</td><td>Population</td></tr>
+            <tr><td>1</td><td>Open Surface Colony #1</td><td>7</td></tr>
+            <tr><td>2</td><td>Open Surface Colony #2</td><td>7</td></tr>
+            <tr><td>3</td><td>Open Surface Colony #3</td><td>7</td></tr>
+            <tr><td>4</td><td>Open Surface Colony #4</td><td>7</td></tr>
+        </table>
+        <p>TODO: this table must be moved to the probes section!</p>
 
-            <h3>System 15/15/15A (Star ID #102)</h3>
-            <p>Orbit #1 Survey (Orbit ID #351)</p>
-            <p>Orbit #2 Survey (Orbit ID #315)</p>
-            <p>Orbit #3 Survey (Orbit ID #197, Planet ID #60)</p>
-
-            <table>
-                <tr><td>Empire</td><td>Ship or Colony</td><td>Population</td></tr>
-                <tr><td>1</td><td>Open Surface Colony #1</td><td>7</td></tr>
-                <tr><td>2</td><td>Open Surface Colony #2</td><td>7</td></tr>
-                <tr><td>3</td><td>Open Surface Colony #3</td><td>7</td></tr>
-                <tr><td>4</td><td>Open Surface Colony #4</td><td>7</td></tr>
-            </table>
-
-            <table>
-                <tr><td>Deposit</td><td>Resource</td><td>Quantity</td><td>Yield%</td></tr>
-                <tr><td>1</td><td>GOLD</td><td>11,054,111</td><td>5%</td></tr>
-                <tr><td>2</td><td>FUEL</td><td>76,345,930</td><td>49%</td></tr>
-                <tr><td>3</td><td>FUEL</td><td>71,385,222</td><td>38%</td></tr>
-                <tr><td>4</td><td>FUEL</td><td>55,308,297</td><td>32%</td></tr>
-                <tr><td>5</td><td>METS</td><td>99,000,000</td><td>49%</td></tr>
-                <tr><td>6</td><td>METS</td><td>78,501,996</td><td>69%</td></tr>
-                <tr><td>7</td><td>METS</td><td>68,975,795</td><td>53%</td></tr>
-                <tr><td>8</td><td>METS</td><td>64,578,390</td><td>42%</td></tr>
-                <tr><td>9</td><td>METS</td><td>63,681,344</td><td>63%</td></tr>
-                <tr><td>10</td><td>METS</td><td>54,362,344</td><td>53%</td></tr>
-                <tr><td>11</td><td>METS</td><td>54,011,248</td><td>55%</td></tr>
-                <tr><td>12</td><td>METS</td><td>51,395,825</td><td>40%</td></tr>
-                <tr><td>13</td><td>METS</td><td>51,299,632</td><td>61%</td></tr>
-                <tr><td>14</td><td>METS</td><td>49,051,259</td><td>44%</td></tr>
-                <tr><td>15</td><td>METS</td><td>49,026,927</td><td>52%</td></tr>
-                <tr><td>16</td><td>METS</td><td>45,698,136</td><td>52%</td></tr>
-                <tr><td>17</td><td>METS</td><td>42,547,959</td><td>40%</td></tr>
-                <tr><td>18</td><td>METS</td><td>39,995,141</td><td>47%</td></tr>
-                <tr><td>19</td><td>METS</td><td>30,726,950</td><td>60%</td></tr>
-                <tr><td>20</td><td>NMTS</td><td>82,292,034</td><td>53%</td></tr>
-                <tr><td>21</td><td>NMTS</td><td>72,200,763</td><td>49%</td></tr>
-                <tr><td>22</td><td>NMTS</td><td>71,729,000</td><td>50%</td></tr>
-                <tr><td>23</td><td>NMTS</td><td>69,743,147</td><td>50%</td></tr>
-                <tr><td>24</td><td>NMTS</td><td>68,972,117</td><td>63%</td></tr>
-                <tr><td>25</td><td>NMTS</td><td>61,384,613</td><td>47%</td></tr>
-                <tr><td>26</td><td>NMTS</td><td>54,080,535</td><td>48%</td></tr>
-                <tr><td>27</td><td>NMTS</td><td>50,834,869</td><td>49%</td></tr>
-                <tr><td>28</td><td>NMTS</td><td>48,727,236</td><td>46%</td></tr>
-                <tr><td>29</td><td>NMTS</td><td>45,776,098</td><td>55%</td></tr>
-                <tr><td>30</td><td>NMTS</td><td>45,375,326</td><td>52%</td></tr>
-                <tr><td>31</td><td>NMTS</td><td>45,358,309</td><td>38%</td></tr>
-                <tr><td>32</td><td>NMTS</td><td>44,713,075</td><td>40%</td></tr>
-                <tr><td>33</td><td>NMTS</td><td>44,316,987</td><td>58%</td></tr>
-                <tr><td>34</td><td>NMTS</td><td>43,484,951</td><td>68%</td></tr>
-                <tr><td>35</td><td>NMTS</td><td>41,945,828</td><td>57%</td></tr>
-            </table>
-
-            <p>Orbit #4 Survey (Orbit ID #323)</p>
-            <p>Orbit #5 Survey (Orbit ID #97)</p>
-            <p>Orbit #6 Survey (Orbit ID #316)</p>
-            <p>Orbit #7 Survey (Orbit ID #78)</p>
-            <p>Orbit #8 Survey (Orbit ID #89)</p>
-            <p>Orbit #10 Survey (Orbit ID #91)</p>
-
-            <h3>System 15/15/15B Survey (Star ID #112)</h3>
-            <p>Orbit #4 Survey (Orbit ID #343)</p>
-            <p>Orbit #8 Survey (Orbit ID #324)</p>
-            <p>Orbit #9 Survey (Orbit ID #45)</p>
-
-            <h3>System 15/15/15C Survey (Star ID #97)</h3>
-            <p>Orbit #3 Survey (Orbit ID #183)</p>
-            <p>Orbit #9 Survey (Orbit ID #204)</p>
-            <p>Orbit #10 Survey (Orbit ID #352)</p>
-
-            <h3>System 15/15/15D Survey (Star ID #42)</h3>
-            <p>Orbit #1 Survey (Orbit ID #189)</p>
-            <p>Orbit #3 Survey (Orbit ID #364)</p>
-            <p>Orbit #10 Survey (Orbit ID #198)</p>
-
-
-            <p class="report-created">Created {{.CreatedDateTime}}</p>
+        <p class="report-created">Created {{.CreatedDateTime}}</p>
 
         <footer>
             <nav class="post-footer">

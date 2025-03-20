@@ -214,3 +214,39 @@ FROM survey_orders
 WHERE sorc_id = :sorc_id
   AND turn_no = :turn_no
 ORDER BY tech_level, orbit_id;
+
+-- ReadAllSurveyOrdersGameForTurn returns a list of survey orders issued in a given turn of a game.
+--
+-- name: ReadAllSurveyOrdersForGameTurn :many
+SELECT DISTINCT survey_orders.sorc_id, survey_orders.tech_level, survey_orders.orbit_id, survey_orders.status
+FROM empires,
+     sorcs,
+     survey_orders
+WHERE empires.game_id = :game_id
+  AND sorcs.empire_id = empires.id
+  AND survey_orders.turn_no = :turn_no
+ORDER BY survey_orders.sorc_id, survey_orders.tech_level, survey_orders.orbit_id, survey_orders.status;
+
+-- ResetProbeOrdersStatus resets the status of all probe orders issued in a given turn.
+--
+-- name: ResetProbeOrdersStatus :exec
+UPDATE probe_orders
+SET status = NULL
+WHERE turn_no = :turn_no
+  AND sorc_id in (SELECT sorcs.id
+                  FROM empires,
+                       sorcs
+                  WHERE empires.game_id = :game_id
+                    AND sorcs.empire_id = empires.id);
+
+-- ResetSurveyOrdersStatus resets the status of all survey orders issued in a given turn.
+--
+-- name: ResetSurveyOrdersStatus :exec
+UPDATE survey_orders
+SET status = NULL
+WHERE turn_no = :turn_no
+  AND sorc_id in (SELECT sorcs.id
+                  FROM empires,
+                       sorcs
+                  WHERE empires.game_id = :game_id
+                    AND sorcs.empire_id = empires.id);

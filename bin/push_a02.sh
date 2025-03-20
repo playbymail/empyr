@@ -13,7 +13,8 @@ siteRoot="a02"
 tarball="site-a02.tgz"
 cd "testdata" || exit 2
 echo " info: creating '${tarball}..."
-tar -cz --no-xattrs --no-mac-metadata -f "${tarball}" a02 || exit 2
+# tar -cz --no-xattrs --no-mac-metadata -f "${tarball}" a02 || exit 2
+tar -cz --no-xattrs --no-mac-metadata --disable-copyfile --format=ustar -f "${tarball}" a02 || exit 2
 echo " info: created  '${tarball}'"
 
 ############################################################################

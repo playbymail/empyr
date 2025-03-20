@@ -7,6 +7,14 @@ INSERT INTO stars (system_id, sequence)
 VALUES (:system_id, :sequence)
 RETURNING id;
 
+-- ReadStarByID returns a star by its ID.
+--
+-- name: ReadStarByID :one
+SELECT stars.id, stars.sequence, systems.x, systems.y, systems.z
+FROM stars,
+     systems
+WHERE stars.id = :star_id
+  AND systems.id = stars.system_id;
 
 -- ReadAllStarsInCluster returns a list of all the stars in a cluster.
 --
@@ -29,7 +37,8 @@ ORDER BY systems.id, stars.sequence;
 --
 -- name: ReadAllStarsInSystem :many
 SELECT stars.id, systems.x, systems.y, systems.z, stars.sequence
-FROM systems, stars
+FROM systems,
+     stars
 WHERE systems.id = :system_id
   AND stars.system_id = systems.id
 ORDER BY stars.id;

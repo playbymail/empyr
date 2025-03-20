@@ -36,7 +36,7 @@ func CreateSystemSurveyReportsCommand(e *Engine_t, cfg *CreateSystemSurveyReport
 	} else {
 		gameId, turnNo = row.ID, row.CurrentTurn
 	}
-	log.Printf("game: %d: turn: %d\n", gameId, turnNo)
+	//log.Printf("game: %d: turn: %d\n", gameId, turnNo)
 
 	rows, err := e.Store.Queries.ReadAllEmpiresByGameID(e.Store.Context, gameId)
 	if err != nil {
@@ -63,7 +63,7 @@ func CreateSystemSurveyReportsCommand(e *Engine_t, cfg *CreateSystemSurveyReport
 	for _, row := range rows {
 		empireId, empireNo := row.EmpireID, row.EmpireNo
 		empireSurveysPath := filepath.Join(cfg.Path, fmt.Sprintf("e%03d", empireNo), "surveys")
-		log.Printf("game: %d: turn: %d: empire %d (%d)\n", gameId, turnNo, empireId, empireNo)
+		//log.Printf("game: %d: turn: %d: empire %d (%d)\n", gameId, turnNo, empireId, empireNo)
 		data, err := CreateSystemSurveyReportCommand(e, &CreateSystemSurveyReportParams_t{Code: cfg.Code, TurnNo: cfg.TurnNo, EmpireNo: empireNo})
 		if err != nil {
 			log.Printf("error: turn report: %v\n", err)
@@ -105,12 +105,6 @@ func CreateSystemSurveyReportCommand(e *Engine_t, cfg *CreateSystemSurveyReportP
 		log.Printf("error: %v\n", err)
 		return nil, err
 	}
-	clusterRow, err := e.Store.Queries.ReadClusterMetaByGameID(e.Store.Context, gameRow.ID)
-	if err != nil {
-		log.Printf("error: %v\n", err)
-		return nil, err
-	}
-	_ = clusterRow
 	empireRow, err := e.Store.Queries.ReadEmpireByGameIDByID(e.Store.Context, sqlc.ReadEmpireByGameIDByIDParams{
 		GameID:   gameRow.ID,
 		EmpireNo: cfg.EmpireNo,
@@ -119,7 +113,7 @@ func CreateSystemSurveyReportCommand(e *Engine_t, cfg *CreateSystemSurveyReportP
 		log.Printf("error: %v\n", err)
 		return nil, err
 	}
-	log.Printf("game %d: empire %d: turn %d\n", empireRow.GameID, empireRow.EmpireNo, cfg.TurnNo)
+	//log.Printf("game %d: empire %d: turn %d\n", empireRow.GameID, empireRow.EmpireNo, cfg.TurnNo)
 
 	ts, err := template.New("system-survey-report").Parse(surveySystemReportTmpl)
 	if err != nil {
@@ -137,6 +131,43 @@ func CreateSystemSurveyReportCommand(e *Engine_t, cfg *CreateSystemSurveyReportP
 		CreatedDate:     time.Now().UTC().Format("2006-01-02"),
 		CreatedDateTime: time.Now().UTC().Format(time.RFC3339),
 	}
+
+	// get a list of all the reports for this empire for this turn.
+	// these reports are keyed by the sorc that owns the report.
+	sorcReportRows, err := e.Store.Queries.ReadEmpireReports(e.Store.Context, sqlc.ReadEmpireReportsParams{EmpireID: empireRow.EmpireID, TurnNo: cfg.TurnNo})
+	if err != nil {
+		log.Printf("error: %v\n", err)
+		return nil, err
+	}
+	for _, sorcReportRow := range sorcReportRows {
+		//log.Printf("sorc %d: report %d\n", sorcReportRow.SorcID, sorcReportRow.ReportID)
+		surveyReport := &SurveyReport_t{ID: sorcReportRow.ReportID, SorCID: sorcReportRow.SorcID}
+
+		// get a list of the surveys that the sorc created this turn
+		surveyReportRows, err := e.Store.Queries.ReadSystemSurveyReports(e.Store.Context, sorcReportRow.ReportID)
+		if err != nil {
+			log.Printf("error: %v\n", err)
+			return nil, err
+		}
+		// for each survey, get the survey data and add it to the report
+		for _, surveyReportRow := range surveyReportRows {
+			depositRows, err := e.Store.Queries.ReadSystemSurveyDeposits(e.Store.Context, surveyReportRow.SystemSurveyID)
+			if err != nil {
+				log.Printf("error: %v\n", err)
+				return nil, err
+			}
+			for _, depositRow := range depositRows {
+				surveyReport.Deposits = append(surveyReport.Deposits, &SurveyReportLine_t{
+					DepositNo: fmt.Sprintf("%02d", depositRow.DepositNo),
+					Quantity:  commas(depositRow.DepositQty),
+					Resource:  depositRow.DepositKind,
+					YieldPct:  fmt.Sprintf("%d %%", depositRow.DepositYieldPct),
+				})
+			}
+		}
+		payload.Surveys = append(payload.Surveys, surveyReport)
+	}
+	//log.Printf("game %d: empire %d: turn %d: surveys %d\n", empireRow.GameID, empireRow.EmpireNo, cfg.TurnNo, len(payload.Surveys))
 
 	// buffer will hold the rendered turn report
 	buffer := &bytes.Buffer{}

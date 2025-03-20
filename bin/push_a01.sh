@@ -32,7 +32,7 @@ cp -R app/templates/* "build/${gameCode}/templates/" || exit 2
 # create a compressed tarball of the build folder, without any Mac junk.
 echo " info: creating tarball..."
 cd "build/${gameCode}" || exit 2
-tar -cz --no-xattrs --no-mac-metadata -f "../empyr-${gameCode}.tgz" bin public templates || exit 2
+tar -cz --no-xattrs --no-mac-metadata --disable-copyfile --format=ustar -f "../empyr-${gameCode}.tgz" bin public templates || exit 2
 cd ../..
 
 ############################################################################

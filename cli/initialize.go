@@ -60,7 +60,7 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 
 	cmdRoot.PersistentFlags().BoolVar(&flags.Debug.DumpEnv, "dump-env", flags.Debug.DumpEnv, "dump environment variables")
 
-	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdShow, cmdStart, cmdVersion)
+	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdExecute, cmdShow, cmdStart, cmdVersion)
 
 	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap, cmdCreateSystemSurveyReport, cmdCreateSystemSurveyReports, cmdCreateTurnReport, cmdCreateTurnReports, cmdCreateUser)
 	cmdCreateDatabase.Flags().BoolVar(&flags.Database.ForceCreate, "force-create", flags.Database.ForceCreate, "force creation of the database")
@@ -113,6 +113,8 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	if err := cmdDeleteGame.MarkFlagRequired("code"); err != nil {
 		return nil, err
 	}
+
+	cmdExecute.AddCommand(cmdExecuteProbes, cmdExecuteReset, cmdExecuteSurveys)
 
 	cmdShow.AddCommand(cmdShowEnv)
 
