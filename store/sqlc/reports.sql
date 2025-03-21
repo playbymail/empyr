@@ -105,3 +105,15 @@ SELECT deposit_no, deposit_qty, deposit_kind, deposit_yield_pct
 FROM report_survey_deposits
 WHERE report_id = :report_id
 ORDER BY deposit_no;
+
+-- SelectDepositsSummary returns the summary of deposits for all planets.
+--
+-- name: SelectDepositsSummary :many
+select planet_id,
+       case when kind = 'FUEL' then sum(remaining_qty) else 0 end as fuel_qty,
+       case when kind = 'GOLD' then sum(remaining_qty) else 0 end as gold_qty,
+       case when kind = 'METS' then sum(remaining_qty) else 0 end as mets_qty,
+       case when kind = 'NMTS' then sum(remaining_qty) else 0 end as nmts_qty
+from deposits
+group by planet_id
+order by planet_id;

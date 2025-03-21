@@ -683,3 +683,12 @@ CREATE TABLE system_distances
             REFERENCES systems (id)
             ON DELETE CASCADE
 );
+
+-- create table deposits_summary as
+-- select deposits.planet_id,
+--        case when kind = 'FUEL' then sum(remaining_qty) else 0 end as fuel,
+--        case when kind = 'GOLD' then sum(remaining_qty) else 0 end as gold,
+--        case when kind = 'METS' then sum(remaining_qty) else 0 end as mets,
+--        case when kind = 'NMTS' then sum(remaining_qty) else 0 end as nmts
+-- from deposits
+-- group by planet_id;

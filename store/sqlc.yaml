@@ -3,6 +3,7 @@ sql:
   - engine: "sqlite"
     schema:
       - "sqlc/schema.sql"
+      - "sqlc/reports.ddl"
     queries:
       - "sqlc/queries.sql"
       - "sqlc/authn.sql"

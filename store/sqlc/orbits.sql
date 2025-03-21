@@ -12,11 +12,32 @@ SELECT planets.id
 FROM planets
 WHERE planets.orbit_id = :orbit_id;
 
+-- ReadOrbitStar returns the star for a given orbit.
+--
+-- name: ReadOrbitStar :one
+SELECT systems.id      AS system_id,
+       systems.x       AS x,
+       systems.y       AS y,
+       systems.z       AS z,
+       stars.id        AS star_id,
+       stars.sequence  AS star_sequence,
+       orbits.orbit_no AS orbit_no
+FROM orbits,
+     stars,
+     systems
+WHERE orbits.id = :orbit_id
+  AND stars.id = orbits.star_id
+  AND systems.id = stars.system_id;
+
 -- ReadOrbitSurvey reads the orbit survey data for a game.
 --
 -- name: ReadOrbitSurvey :many
 SELECT systems.id             AS system_id,
+       systems.x              AS x,
+       systems.y              AS y,
+       systems.z              AS z,
        stars.id               AS star_id,
+       stars.sequence         AS star_sequence,
        orbits.id              AS orbit_id,
        orbits.orbit_no        AS orbit_no,
        planets.id             AS planet_id,

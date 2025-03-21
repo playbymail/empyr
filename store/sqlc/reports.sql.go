@@ -407,3 +407,52 @@ func (q *Queries) ReadSystemSurveyReports(ctx context.Context, reportID int64) (
 	}
 	return items, nil
 }
+
+const selectDepositsSummary = `-- name: SelectDepositsSummary :many
+select planet_id,
+       case when kind = 'FUEL' then sum(remaining_qty) else 0 end as fuel_qty,
+       case when kind = 'GOLD' then sum(remaining_qty) else 0 end as gold_qty,
+       case when kind = 'METS' then sum(remaining_qty) else 0 end as mets_qty,
+       case when kind = 'NMTS' then sum(remaining_qty) else 0 end as nmts_qty
+from deposits
+group by planet_id
+order by planet_id
+`
+
+type SelectDepositsSummaryRow struct {
+	PlanetID int64
+	FuelQty  int64
+	GoldQty  int64
+	MetsQty  int64
+	NmtsQty  int64
+}
+
+// SelectDepositsSummary returns the summary of deposits for all planets.
+func (q *Queries) SelectDepositsSummary(ctx context.Context) ([]SelectDepositsSummaryRow, error) {
+	rows, err := q.db.QueryContext(ctx, selectDepositsSummary)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectDepositsSummaryRow
+	for rows.Next() {
+		var i SelectDepositsSummaryRow
+		if err := rows.Scan(
+			&i.PlanetID,
+			&i.FuelQty,
+			&i.GoldQty,
+			&i.MetsQty,
+			&i.NmtsQty,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

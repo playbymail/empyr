@@ -43,9 +43,55 @@ func (q *Queries) ReadOrbitPlanet(ctx context.Context, orbitID int64) (int64, er
 	return id, err
 }
 
+const readOrbitStar = `-- name: ReadOrbitStar :one
+SELECT systems.id      AS system_id,
+       systems.x       AS x,
+       systems.y       AS y,
+       systems.z       AS z,
+       stars.id        AS star_id,
+       stars.sequence  AS star_sequence,
+       orbits.orbit_no AS orbit_no
+FROM orbits,
+     stars,
+     systems
+WHERE orbits.id = ?1
+  AND stars.id = orbits.star_id
+  AND systems.id = stars.system_id
+`
+
+type ReadOrbitStarRow struct {
+	SystemID     int64
+	X            int64
+	Y            int64
+	Z            int64
+	StarID       int64
+	StarSequence string
+	OrbitNo      int64
+}
+
+// ReadOrbitStar returns the star for a given orbit.
+func (q *Queries) ReadOrbitStar(ctx context.Context, orbitID int64) (ReadOrbitStarRow, error) {
+	row := q.db.QueryRowContext(ctx, readOrbitStar, orbitID)
+	var i ReadOrbitStarRow
+	err := row.Scan(
+		&i.SystemID,
+		&i.X,
+		&i.Y,
+		&i.Z,
+		&i.StarID,
+		&i.StarSequence,
+		&i.OrbitNo,
+	)
+	return i, err
+}
+
 const readOrbitSurvey = `-- name: ReadOrbitSurvey :many
 SELECT systems.id             AS system_id,
+       systems.x              AS x,
+       systems.y              AS y,
+       systems.z              AS z,
        stars.id               AS star_id,
+       stars.sequence         AS star_sequence,
        orbits.id              AS orbit_id,
        orbits.orbit_no        AS orbit_no,
        planets.id             AS planet_id,
@@ -74,17 +120,21 @@ ORDER BY deposits.deposit_no
 `
 
 type ReadOrbitSurveyRow struct {
-	SystemID    int64
-	StarID      int64
-	OrbitID     int64
-	OrbitNo     int64
-	PlanetID    int64
-	PlanetKind  string
-	DepositID   int64
-	DepositNo   int64
-	DepositKind string
-	DepositQty  int64
-	YieldPct    int64
+	SystemID     int64
+	X            int64
+	Y            int64
+	Z            int64
+	StarID       int64
+	StarSequence string
+	OrbitID      int64
+	OrbitNo      int64
+	PlanetID     int64
+	PlanetKind   string
+	DepositID    int64
+	DepositNo    int64
+	DepositKind  string
+	DepositQty   int64
+	YieldPct     int64
 }
 
 // ReadOrbitSurvey reads the orbit survey data for a game.
@@ -99,7 +149,11 @@ func (q *Queries) ReadOrbitSurvey(ctx context.Context, orbitID int64) ([]ReadOrb
 		var i ReadOrbitSurveyRow
 		if err := rows.Scan(
 			&i.SystemID,
+			&i.X,
+			&i.Y,
+			&i.Z,
 			&i.StarID,
+			&i.StarSequence,
 			&i.OrbitID,
 			&i.OrbitNo,
 			&i.PlanetID,

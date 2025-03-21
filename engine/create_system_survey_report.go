@@ -141,7 +141,6 @@ func CreateSystemSurveyReportCommand(e *Engine_t, cfg *CreateSystemSurveyReportP
 	}
 	for _, sorcReportRow := range sorcReportRows {
 		//log.Printf("sorc %d: report %d\n", sorcReportRow.SorcID, sorcReportRow.ReportID)
-		surveyReport := &SurveyReport_t{ID: sorcReportRow.ReportID, SorCID: sorcReportRow.SorcID}
 
 		// get a list of the surveys that the sorc created this turn
 		surveyReportRows, err := e.Store.Queries.ReadSystemSurveyReports(e.Store.Context, sorcReportRow.ReportID)
@@ -149,8 +148,24 @@ func CreateSystemSurveyReportCommand(e *Engine_t, cfg *CreateSystemSurveyReportP
 			log.Printf("error: %v\n", err)
 			return nil, err
 		}
+
 		// for each survey, get the survey data and add it to the report
 		for _, surveyReportRow := range surveyReportRows {
+			starRow, err := e.Store.Queries.ReadOrbitStar(e.Store.Context, surveyReportRow.OrbitID)
+			if err != nil {
+				log.Printf("error: %v\n", err)
+				return nil, err
+			}
+			surveyReport := &SurveyReport_t{
+				ID:      sorcReportRow.ReportID,
+				SorCID:  sorcReportRow.SorcID,
+				Name:    fmt.Sprintf("%02d/%02d/%02d%s", starRow.X, starRow.Y, starRow.Z, starRow.StarSequence),
+				StarID:  starRow.StarID,
+				OrbitID: surveyReportRow.OrbitID,
+				OrbitNo: starRow.OrbitNo,
+			}
+
+			// add the deposits to the report
 			depositRows, err := e.Store.Queries.ReadSystemSurveyDeposits(e.Store.Context, surveyReportRow.SystemSurveyID)
 			if err != nil {
 				log.Printf("error: %v\n", err)
@@ -164,8 +179,8 @@ func CreateSystemSurveyReportCommand(e *Engine_t, cfg *CreateSystemSurveyReportP
 					YieldPct:  fmt.Sprintf("%d %%", depositRow.DepositYieldPct),
 				})
 			}
+			payload.Surveys = append(payload.Surveys, surveyReport)
 		}
-		payload.Surveys = append(payload.Surveys, surveyReport)
 	}
 	//log.Printf("game %d: empire %d: turn %d: surveys %d\n", empireRow.GameID, empireRow.EmpireNo, cfg.TurnNo, len(payload.Surveys))
 
