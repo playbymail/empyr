@@ -1,0 +1,76 @@
+-- factory group labor costs
+select group_no,
+       sum(nbr_of_units) as nbr_of_units,
+       case
+           when sum(nbr_of_units) <= 4 then 6
+           when sum(nbr_of_units) <= 49 then 5
+           when sum(nbr_of_units) <= 499 then 4
+           when sum(nbr_of_units) <= 4999 then 3
+           when sum(nbr_of_units) <= 49999 then 2
+           else 1
+       end           as pro_labor_per_unit,
+       case
+           when sum(nbr_of_units) <= 4 then 6 * sum(nbr_of_units)
+           when sum(nbr_of_units) <= 49 then 5 * sum(nbr_of_units)
+           when sum(nbr_of_units) <= 499 then 4 * sum(nbr_of_units)
+           when sum(nbr_of_units) <= 4999 then 3 * sum(nbr_of_units)
+           when sum(nbr_of_units) <= 49999 then 2 * sum(nbr_of_units)
+           else 1 * sum(nbr_of_units)
+           end           as pro_labor,
+       case
+           when sum(nbr_of_units) <= 4 then 18
+           when sum(nbr_of_units) <= 49 then 15
+           when sum(nbr_of_units) <= 499 then 12
+           when sum(nbr_of_units) <= 4999 then 9
+           when sum(nbr_of_units) <= 49999 then 6
+           else 3
+       end           as usk_labor_per_unit,
+       case
+           when sum(nbr_of_units) <= 4 then 18 * sum(nbr_of_units)
+           when sum(nbr_of_units) <= 49 then 15 * sum(nbr_of_units)
+           when sum(nbr_of_units) <= 499 then 12 * sum(nbr_of_units)
+           when sum(nbr_of_units) <= 4999 then 9 * sum(nbr_of_units)
+           when sum(nbr_of_units) <= 49999 then 6 * sum(nbr_of_units)
+           else 3 * sum(nbr_of_units)
+       end           as usk_labor,
+       sum(nbr_of_units) * 0.5 as fuel_consumed
+from factory_groups,
+     factory_group
+where sorc_id = 2
+  and factory_group.factory_group_id = factory_groups.id
+group by group_no;
+
+-- factory groups
+
+-- farming groups
+select group_no,
+       farm_group.tech_level,
+       nbr_of_units,
+       100 * nbr_of_units as food_produced,
+       1 * nbr_of_units   as pro_labor,
+       3 * nbr_of_units   as usk_labor,
+       0.5 * nbr_of_units as fuel_consumed
+from farm_groups,
+     farm_group
+where sorc_id = 2
+  and farm_group.farm_group_id = farm_groups.id
+order by group_no;
+
+-- mining groups
+select mining_groups.group_no,
+       deposits.kind,
+       deposits.yield_pct,
+       mining_group.tech_level,
+       mining_group.nbr_of_units,
+       25 * mining_group.tech_level * mining_group.nbr_of_units                            as raw_ore_mined,
+       25 * mining_group.tech_level * mining_group.nbr_of_units * deposits.yield_pct / 100 as refined_total,
+       1 * mining_group.nbr_of_units                                                       as pro_labor,
+       3 * mining_group.nbr_of_units                                                       as usk_labor,
+       0.5 * mining_group.nbr_of_units                                                     as fuel_consumed
+from mining_groups,
+     deposits,
+     mining_group
+where mining_groups.sorc_id = 2
+  and deposits.id = mining_groups.deposit_id
+  and mining_group.mining_group_id = mining_groups.id
+order by mining_groups.group_no;
