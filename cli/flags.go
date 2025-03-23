@@ -8,7 +8,6 @@ import (
 	"github.com/mdhender/semver"
 	"github.com/mdhender/xii"
 	"log"
-	"time"
 )
 
 // this file defines the command line argument flags structure
@@ -17,12 +16,6 @@ var flags struct {
 	Environment string // development, test, production
 	Env         struct {
 		Prefix string
-	}
-	Application struct {
-		Assets struct {
-			Public    string
-			Templates string
-		}
 	}
 	Database struct {
 		Path        string
@@ -48,34 +41,12 @@ var flags struct {
 		TurnNo      int64
 		ForceCreate bool
 	}
-	Reports struct {
-		Path string
-	}
-	Server struct {
-		Scheme         string
-		Host           string
-		Port           string
-		ReadTimeout    time.Duration
-		WriteTimeout   time.Duration
-		IdleTimeout    time.Duration
-		MaxHeaderBytes int64
-	}
-	Sessions struct {
-		Domain string
-		Secret string
-	}
-	Surveys struct {
-		Path string
-	}
 	Verbose bool
 	Version semver.Version
 }
 
 // painfully apply the environment variables to the arguments
 func applyEnvironmentVariables() {
-	xiistr(&flags.Application.Assets.Public, "_APP_ASSETS_PUBLIC")
-	xiistr(&flags.Application.Assets.Templates, "_APP_ASSETS_TEMPLATES")
-
 	xiistr(&flags.Database.Path, "_DATABASE_PATH")
 	xiibool(&flags.Database.DryRun, "_DATABASE_DRYRUN")
 	xiibool(&flags.Database.ForceCreate, "_DATABASE_FORCECREATE")
@@ -93,18 +64,6 @@ func applyEnvironmentVariables() {
 	xiistr(&flags.Game.Description, "_GAME_DESCRIPTION")
 	xiiint(&flags.Game.TurnNo, "_GAME_TURNNO")
 	xiibool(&flags.Game.ForceCreate, "_GAME_FORCECREATE")
-
-	xiistr(&flags.Reports.Path, "_REPORTS_PATH")
-
-	xiistr(&flags.Server.Scheme, "_SERVER_SCHEME")
-	xiistr(&flags.Server.Host, "_SERVER_HOST")
-	xiistr(&flags.Server.Port, "_SERVER_PORT")
-	xiiint(&flags.Server.MaxHeaderBytes, "_SERVER_MAXHEADERBYTES")
-
-	xiistr(&flags.Sessions.Domain, "_SESSIONS_DOMAIN")
-	xiistr(&flags.Sessions.Secret, "_SESSIONS_SECRET")
-
-	xiistr(&flags.Surveys.Path, "_SURVEYS_PATH")
 
 	xiibool(&flags.Verbose, "_VERBOSE")
 }

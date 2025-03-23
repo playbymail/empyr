@@ -4,7 +4,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/playbymail/empyr/store/sqlc"
 	"github.com/xuri/excelize/v2"
 	"log"
 	"math"
@@ -13,32 +12,23 @@ import (
 
 type CreateExcelReportParams_t struct {
 	Code     string // code of the game to create the turn report for
-	TurnNo   int64  // turn number to create the turn report for
-	EmpireNo int64  // empire number to create the turn report for
+	EmpireID int64  // empire number to create the turn report for
 }
 
 // CreateExcelReportCommand creates a turn report for a game.
 // It returns a byte array containing the turn report as HTML.
 func CreateExcelReportCommand(e *Engine_t, cfg *CreateExcelReportParams_t, path string) error {
-	gameRow, err := e.Store.Queries.ReadGameInfoByCode(e.Store.Context, cfg.Code)
+	gameRow, err := e.Store.Queries.ReadAllGameInfo(e.Store.Context)
 	if err != nil {
 		log.Printf("error: %v\n", err)
 		return err
 	}
-	clusterRow, err := e.Store.Queries.ReadClusterMetaByGameID(e.Store.Context, gameRow.ID)
+	empireRow, err := e.Store.Queries.ReadEmpireByID(e.Store.Context, cfg.EmpireID)
 	if err != nil {
 		log.Printf("error: %v\n", err)
 		return err
 	}
-	empireRow, err := e.Store.Queries.ReadEmpireByGameIDByID(e.Store.Context, sqlc.ReadEmpireByGameIDByIDParams{
-		GameID:   gameRow.ID,
-		EmpireNo: cfg.EmpireNo,
-	})
-	if err != nil {
-		log.Printf("error: %v\n", err)
-		return err
-	}
-	log.Printf("game %d: empire %d: turn %d\n", empireRow.GameID, empireRow.EmpireNo, cfg.TurnNo)
+	log.Printf("game %d: empire %d: turn %d\n", gameRow.Code, empireRow.EmpireID, gameRow.CurrentTurn)
 
 	f := excelize.NewFile()
 	defer func() {
@@ -46,7 +36,7 @@ func CreateExcelReportCommand(e *Engine_t, cfg *CreateExcelReportParams_t, path 
 			fmt.Println(err)
 		}
 	}()
-	pathXls := filepath.Join(path, fmt.Sprintf("%s.t%05d.e%03d.xlsx", cfg.Code, cfg.TurnNo, cfg.EmpireNo))
+	pathXls := filepath.Join(path, fmt.Sprintf("%s.t%05d.e%03d.xlsx", cfg.Code, gameRow.CurrentTurn, empireRow.EmpireID))
 
 	// create the turn report cover sheet
 	sheet := "Cover"
@@ -60,15 +50,15 @@ func CreateExcelReportCommand(e *Engine_t, cfg *CreateExcelReportParams_t, path 
 		_ = f.SetCellValue(sheet, "B1", "Player")
 		_ = f.SetCellValue(sheet, "B2", empireRow.Username)
 		_ = f.SetCellValue(sheet, "C1", "Empire")
-		_ = f.SetCellValue(sheet, "C2", empireRow.EmpireNo)
+		_ = f.SetCellValue(sheet, "C2", empireRow.EmpireID)
 		_ = f.SetCellValue(sheet, "D1", "Current Turn")
-		_ = f.SetCellValue(sheet, "D2", cfg.TurnNo)
+		_ = f.SetCellValue(sheet, "D2", gameRow.CurrentTurn)
 		_ = f.SetCellValue(sheet, "E1", "Home System")
 		_ = f.SetCellValue(sheet, "E2", empireRow.HomeSystemID)
 		_ = f.SetCellValue(sheet, "F1", "Home Star")
 		_ = f.SetCellValue(sheet, "F2", empireRow.HomeStarID)
-		_ = f.SetCellValue(sheet, "G1", "Home Planet")
-		_ = f.SetCellValue(sheet, "G2", empireRow.HomePlanetID)
+		_ = f.SetCellValue(sheet, "G1", "Home Orbit")
+		_ = f.SetCellValue(sheet, "G2", empireRow.HomeOrbitID)
 	}
 
 	// create the systems sheet
@@ -78,7 +68,7 @@ func CreateExcelReportCommand(e *Engine_t, cfg *CreateExcelReportParams_t, path 
 		return err
 	} else {
 		f.SetActiveSheet(index)
-		rows, err := e.Store.Queries.ReadAllSystems(e.Store.Context, clusterRow.ID)
+		rows, err := e.Store.Queries.ReadAllSystems(e.Store.Context)
 		if err != nil {
 			log.Printf("error: %v\n", err)
 			return err
@@ -90,11 +80,11 @@ func CreateExcelReportCommand(e *Engine_t, cfg *CreateExcelReportParams_t, path 
 		_ = f.SetCellValue(sheet, "E1", "Nbr of Stars")
 		rowNo := 2
 		for _, row := range rows {
-			_ = f.SetCellValue(sheet, fmt.Sprintf("A%d", rowNo), row.ID)
+			_ = f.SetCellValue(sheet, fmt.Sprintf("A%d", rowNo), row.SystemID)
 			_ = f.SetCellValue(sheet, fmt.Sprintf("B%d", rowNo), row.X)
 			_ = f.SetCellValue(sheet, fmt.Sprintf("C%d", rowNo), row.Y)
 			_ = f.SetCellValue(sheet, fmt.Sprintf("D%d", rowNo), row.Z)
-			_ = f.SetCellValue(sheet, fmt.Sprintf("E%d", rowNo), row.NumberOfStars)
+			_ = f.SetCellValue(sheet, fmt.Sprintf("E%d", rowNo), row.NbrOfStars)
 			rowNo++
 		}
 	}
@@ -167,14 +157,14 @@ func CreateExcelReportCommand(e *Engine_t, cfg *CreateExcelReportParams_t, path 
 		_ = f.SetCellValue(sheet, "F1", "Deposit Qty")
 		_ = f.SetCellValue(sheet, "G1", "Yield Pct")
 		rowNo := 2
-		rows, err := e.Store.Queries.ReadOrbitSurvey(e.Store.Context, empireRow.HomePlanetID)
+		rows, err := e.Store.Queries.ReadOrbitSurvey(e.Store.Context, empireRow.HomeOrbitID)
 		if err != nil {
 			log.Printf("error: %v\n", err)
 			return err
 		}
 		for _, row := range rows {
 			_ = f.SetCellValue(sheet, fmt.Sprintf("B%d", rowNo), row.OrbitNo)
-			_ = f.SetCellValue(sheet, fmt.Sprintf("C%d", rowNo), row.PlanetKind)
+			_ = f.SetCellValue(sheet, fmt.Sprintf("C%d", rowNo), row.OrbitKind)
 			_ = f.SetCellValue(sheet, fmt.Sprintf("D%d", rowNo), row.DepositNo)
 			_ = f.SetCellValue(sheet, fmt.Sprintf("E%d", rowNo), row.DepositKind)
 			_ = f.SetCellValue(sheet, fmt.Sprintf("F%d", rowNo), row.DepositQty)

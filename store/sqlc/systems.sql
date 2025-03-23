@@ -3,26 +3,18 @@
 -- CreateSystem creates a new system.
 --
 -- name: CreateSystem :one
-INSERT INTO systems (cluster_id, x, y, z)
-VALUES (:cluster_id, :x, :y, :z)
-RETURNING id;
-
+insert into systems (x, y, z, system_name, nbr_of_stars)
+values (:x, :y, :z, :system_name, :nbr_of_stars)
+returning id;
 
 -- ReadAllSystems reads the system data for a game.
 --
 -- name: ReadAllSystems :many
-SELECT systems.id      AS id,
-       systems.x       as x,
-       systems.y       as y,
-       systems.z       as z,
-       count(stars.id) AS number_of_stars
-FROM games,
-     clusters,
-     systems,
-     stars
-WHERE games.id = :game_id
-  AND clusters.game_id = games.id
-  AND systems.cluster_id = clusters.id
-  AND stars.system_id = systems.id
-GROUP BY systems.id, systems.x, systems.y, systems.z
-ORDER BY systems.id;
+select id as system_id,
+       system_name,
+       x  as x,
+       y  as y,
+       z  as z,
+       nbr_of_stars
+from systems
+order by id;

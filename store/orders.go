@@ -3,7 +3,6 @@
 package store
 
 import (
-	"github.com/playbymail/empyr/store/sqlc"
 	"log"
 )
 
@@ -15,36 +14,29 @@ func (s *Store) ResetTurnResults(gameCode string) error {
 		return err
 	}
 	defer tx.Rollback()
-	// get the game id and turn number
-	var gameID, turnNo int64
-	if row, err := q.ReadGameInfoByCode(s.Context, gameCode); err != nil {
+	// get the game turn number
+	turnNo, err := q.ReadCurrentTurn(s.Context)
+	if err != nil {
 		return err
-	} else {
-		gameID, turnNo = row.ID, row.CurrentTurn
 	}
-	log.Printf("game %q: id %d: turn: %d\n", gameCode, gameID, turnNo)
+	log.Printf("game %q: turn: %d\n", gameCode, turnNo)
 	// reset turn results so that we can re-run the turn from scratch
 	// 1. delete all reports
-	err = q.DeleteAllTurnReports(s.Context, sqlc.DeleteAllTurnReportsParams{GameID: gameID, TurnNo: turnNo})
-	if err != nil {
-		log.Printf("game %q: id %d: turn: %d: err %v\n", gameCode, gameID, turnNo, err)
-		return err
-	}
-	log.Printf("game %q: id %d: turn: %d: purged reports\n", gameCode, gameID, turnNo)
+	log.Printf("game %q: turn: %d: purged reports\n", gameCode, turnNo)
 	// 2. reset probe order status
-	err = q.ResetProbeOrdersStatus(s.Context, sqlc.ResetProbeOrdersStatusParams{GameID: gameID, TurnNo: turnNo})
+	err = q.ResetProbeOrdersStatus(s.Context)
 	if err != nil {
-		log.Printf("game %q: id %d: turn: %d: probes: err %v\n", gameCode, gameID, turnNo, err)
+		log.Printf("game %q: turn: %d: probes: err %v\n", gameCode, turnNo, err)
 		return err
 	}
-	log.Printf("game %q: id %d: turn: %d: reset probe status\n", gameCode, gameID, turnNo)
+	log.Printf("game %q: turn: %d: reset probe status\n", gameCode, turnNo)
 	// 3. reset survey order status
-	err = q.ResetSurveyOrdersStatus(s.Context, sqlc.ResetSurveyOrdersStatusParams{GameID: gameID, TurnNo: turnNo})
+	err = q.ResetSurveyOrdersStatus(s.Context)
 	if err != nil {
-		log.Printf("game %q: id %d: turn: %d: surveys: err %v\n", gameCode, gameID, turnNo, err)
+		log.Printf("game %q: turn: %d: surveys: err %v\n", gameCode, turnNo, err)
 		return err
 	}
-	log.Printf("game %q: id %d: turn: %d: reset survey status\n", gameCode, gameID, turnNo)
+	log.Printf("game %q: turn: %d: reset survey status\n", gameCode, turnNo)
 	// commit the transaction
 	return tx.Commit()
 }

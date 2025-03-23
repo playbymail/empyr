@@ -8,80 +8,94 @@ import (
 	"log"
 )
 
+const (
+	ErrEmpireNotAvailable = Error("empire not available")
+	ErrMissingDeposit     = Error("missing deposit")
+)
+
 type CreateEmpireParams_t struct {
-	Code     string
+	EmpireID int64
 	Username string
+	Email    string
 }
 
-func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, error) {
-	log.Printf("create: empire: code %q: handle %q\n", cfg.Code, cfg.Username)
-
+func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, error) {
 	if cfg.Username == "" {
-		return 0, 0, ErrMissingHandle
+		return 0, ErrMissingHandle
 	} else if _, err := IsValidHandle(cfg.Username); err != nil {
-		return 0, 0, err
+		return 0, err
 	}
+	if cfg.Email == "" {
+		cfg.Email = fmt.Sprintf("%s@epimethean.dev", cfg.Username)
+	}
+	log.Printf("create: empire: user %q: email %q\n", cfg.Username, cfg.Email)
 
 	q, tx, err := e.Store.Begin()
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	var userID int64
-	if row, err := q.ReadUserByUsername(e.Store.Context, cfg.Username); err != nil {
-		return 0, 0, err
-	} else {
-		userID = row.ID
-	}
-
-	gameRow, err := q.ReadGameInfoByCode(e.Store.Context, cfg.Code)
+	gameRow, err := q.ReadAllGameInfo(e.Store.Context)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 	if gameRow.CurrentTurn != 0 {
-		return 0, 0, ErrGameInProgress
-	}
-	turnNo := gameRow.CurrentTurn
-	clusterRow, err := q.ReadClusterMetaByGameID(e.Store.Context, gameRow.ID)
-	if err != nil {
-		return 0, 0, err
+		return 0, ErrGameInProgress
 	}
 
-	parms := sqlc.CreateEmpireParams{
-		GameID:       gameRow.ID,
-		UserID:       userID,
-		EmpireNo:     gameRow.LastEmpireNo + 1,
-		Name:         fmt.Sprintf("Empire %03d", gameRow.LastEmpireNo+1),
-		HomeSystemID: clusterRow.HomeSystemID,
-		HomeStarID:   clusterRow.HomeStarID,
-		HomeOrbitID:  clusterRow.HomeOrbitID,
-		HomePlanetID: clusterRow.HomePlanetID,
+	empireID := cfg.EmpireID
+	if empireID == 0 {
+		empireID, err = q.ReadNextEmpireNumber(e.Store.Context)
+		if err != nil {
+			return 0, err
+		}
 	}
-	empireId, err := q.CreateEmpire(e.Store.Context, parms)
+	if isActive, err := q.IsEmpireActive(e.Store.Context, cfg.EmpireID); err != nil {
+		return 0, err
+	} else if isActive != 0 {
+		return 0, ErrEmpireNotAvailable
+	}
+	err = q.UpdateEmpireStatus(e.Store.Context, sqlc.UpdateEmpireStatusParams{
+		EmpireID: cfg.EmpireID,
+		IsActive: 1,
+	})
 	if err != nil {
-		return 0, 0, err
+		return 0, err
+	}
+	parms := sqlc.CreateEmpireParams{
+		EmpireID:     empireID,
+		EmpireName:   fmt.Sprintf("Empire %03d", empireID),
+		Username:     cfg.Username,
+		Email:        cfg.Email,
+		HomeSystemID: gameRow.HomeSystemID,
+		HomeStarID:   gameRow.HomeStarID,
+		HomeOrbitID:  gameRow.HomeOrbitID,
+	}
+	err = q.CreateEmpire(e.Store.Context, parms)
+	if err != nil {
+		return 0, err
 	}
 
 	// create a home open surface colony
-	sorcParams := sqlc.CreateSorCParams{
-		EmpireID:    empireId,
-		SorcCd:      "COPN",
-		TechLevel:   1,
+	scParams := sqlc.CreateSCParams{
+		EmpireID:    empireID,
+		ScCd:        "COPN",
+		ScTechLevel: 1,
 		Name:        "Not Named",
-		OrbitID:     clusterRow.HomeOrbitID,
+		Location:    gameRow.HomeOrbitID,
 		IsOnSurface: 1,
 		Rations:     1.0,
 		Sol:         0.4881,
 		BirthRate:   0,
 		DeathRate:   0.0625,
 	}
-	sorcId, err := q.CreateSorC(e.Store.Context, sorcParams)
+	scId, err := q.CreateSC(e.Store.Context, scParams)
 	if err != nil {
-		log.Printf("create: empire: sorc %+v\n", sorcParams)
-		return 0, 0, err
+		log.Printf("create: empire: sc %+v\n", scParams)
+		return 0, err
 	}
-	log.Printf("create: empire: id %d: no %d: colony %d\n", empireId, parms.EmpireNo, sorcId)
+	log.Printf("create: empire: id %d: colony %d\n", empireID, scId)
 
 	for _, pop := range []struct {
 		code string
@@ -95,17 +109,17 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		{code: "CNW", qty: 10_000, pay: 0.5},
 		{code: "SPY", qty: 20, pay: 0.625},
 	} {
-		sorcPopParms := sqlc.CreateSorCPopulationParams{
-			SorcID:       sorcId,
+		scPopParms := sqlc.CreateSCPopulationParams{
+			ScID:         scId,
 			PopulationCd: pop.code,
 			Qty:          pop.qty,
 			PayRate:      pop.pay,
 			RebelQty:     0,
 		}
-		err = q.CreateSorCPopulation(e.Store.Context, sorcPopParms)
+		err = q.CreateSCPopulation(e.Store.Context, scPopParms)
 		if err != nil {
-			log.Printf("create: empire: sorc pop %+v\n", sorcPopParms)
-			return 0, 0, err
+			log.Printf("create: empire: sc pop %+v\n", scPopParms)
+			return 0, err
 		}
 	}
 
@@ -137,8 +151,8 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		{code: "STU", techLevel: 0, qty: 14_500_000, isStored: true},
 		{code: "TPT", techLevel: 1, qty: 20_000, isStored: true},
 	} {
-		sorcInvParams := sqlc.CreateSorCInventoryParams{
-			SorcID:    sorcId,
+		scInvParams := sqlc.CreateSCInventoryParams{
+			ScID:      scId,
 			UnitCd:    unit.code,
 			TechLevel: unit.techLevel,
 			Qty:       unit.qty,
@@ -146,137 +160,20 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 		}
 		if IsOperational(unit.code) {
 			if unit.isAssembled {
-				sorcInvParams.IsAssembled = 1
-				sorcInvParams.Volume = VolumeAssembled(unit.code, unit.techLevel, unit.qty)
+				scInvParams.IsAssembled = 1
+				scInvParams.Volume = VolumeAssembled(unit.code, unit.techLevel, unit.qty)
 			} else {
-				sorcInvParams.Volume = VolumeDisassembled(unit.code, unit.techLevel, unit.qty)
+				scInvParams.Volume = VolumeDisassembled(unit.code, unit.techLevel, unit.qty)
 			}
 		}
 		if unit.isStored {
-			sorcInvParams.IsStored = 1
-			sorcInvParams.Volume = VolumeStored(unit.code, unit.techLevel, unit.qty)
+			scInvParams.IsStored = 1
+			scInvParams.Volume = VolumeStored(unit.code, unit.techLevel, unit.qty)
 		}
-		err = q.CreateSorCInventory(e.Store.Context, sorcInvParams)
+		err = q.CreateSCInventory(e.Store.Context, scInvParams)
 		if err != nil {
-			log.Printf("create: empire: sorc inv %+v\n", sorcInvParams)
-			return 0, 0, err
-		}
-	}
-
-	// insert survey and probe orders
-	err = q.CreateSorCSurveyOrder(e.Store.Context, sqlc.CreateSorCSurveyOrderParams{SorcID: sorcId, TurnNo: turnNo, TechLevel: 1, OrbitID: clusterRow.HomeOrbitID})
-	if err != nil {
-		log.Printf("create: empire: survey %v\n", err)
-		return 0, 0, err
-	}
-	err = q.CreateSorCProbeOrder(e.Store.Context, sqlc.CreateSorCProbeOrderParams{SorcID: sorcId, TurnNo: turnNo, TechLevel: 1, Kind: "system", TargetID: clusterRow.HomeSystemID})
-	if err != nil {
-		log.Printf("create: empire: probe system %v\n", err)
-		return 0, 0, err
-	}
-	err = q.CreateSorCProbeOrder(e.Store.Context, sqlc.CreateSorCProbeOrderParams{SorcID: sorcId, TurnNo: turnNo, TechLevel: 1, Kind: "star", TargetID: clusterRow.HomeStarID})
-	if err != nil {
-		log.Printf("create: empire: probe star %v\n", err)
-		return 0, 0, err
-	}
-
-	// populate reports
-	reportId, err := q.CreateReport(e.Store.Context, sqlc.CreateReportParams{
-		SorcID: sorcId,
-		TurnNo: turnNo,
-	})
-	if err != nil {
-		log.Printf("create: empire: sorc prod %+v\n", err)
-		return 0, 0, err
-	}
-	for _, category := range []struct {
-		name      string
-		fuel      int64
-		gold      int64
-		metals    int64
-		nonMetals int64
-	}{
-		{"Farming", 65_000, 0, 0, 0},
-		{"Mining", 150_000, 0, 0, 0},
-		{"Manufacturing", 425_000, 0, 1_395_833, 1_354_167},
-	} {
-		_, err = q.CreateReportProductionInput(e.Store.Context, sqlc.CreateReportProductionInputParams{
-			ReportID:  reportId,
-			Category:  category.name,
-			Fuel:      category.fuel,
-			Gold:      category.gold,
-			Metals:    category.metals,
-			NonMetals: category.nonMetals,
-		})
-		if err != nil {
-			log.Printf("create: empire: sorc prod %+v\n", err)
-			return 0, 0, err
-		}
-	}
-	for _, category := range []struct {
-		name         string
-		unitCode     string
-		tech_level   int64
-		farmed       int64
-		mined        int64
-		manufactured int64
-	}{
-		{name: "CNGD", unitCode: "CNGD", manufactured: 2_083_333},
-		{name: "FOOD", unitCode: "FOOD", farmed: 3_250_000},
-		{name: "FUEL", unitCode: "FUEL", mined: 500_000},
-		{name: "GOLD", unitCode: "GOLD", mined: 0},
-		{name: "METS", unitCode: "METS", mined: 2_750_000},
-		{name: "NMTS", unitCode: "NMTS", mined: 0},
-	} {
-		_, err = q.CreateReportProductionOutput(e.Store.Context, sqlc.CreateReportProductionOutputParams{
-			ReportID:     reportId,
-			Category:     category.name,
-			UnitCd:       category.unitCode,
-			TechLevel:    category.tech_level,
-			Farmed:       category.farmed,
-			Mined:        category.mined,
-			Manufactured: category.manufactured,
-		})
-		if err != nil {
-			log.Printf("create: empire: sorc prod %+v\n", err)
-			return 0, 0, err
-		}
-	}
-
-	type farmGroupUnitData struct {
-		code      string // always "FRM"
-		techLevel int64  // tech level of the farming unit
-		qty       int64  // number of units in the group
-	}
-	type farmGroupData struct {
-		groupNo int64
-		units   []farmGroupUnitData
-	}
-	for _, fg := range []farmGroupData{
-		{groupNo: 1, units: []farmGroupUnitData{
-			{code: "FRM", techLevel: 1, qty: 130_000}}},
-	} {
-		fgParms := sqlc.CreateSorCFarmGroupParams{
-			SorcID:  sorcId,
-			GroupNo: fg.groupNo,
-		}
-		fgID, err := q.CreateSorCFarmGroup(e.Store.Context, fgParms)
-		if err != nil {
-			log.Printf("create: empire: sorc farm group %+v\n", fgParms)
-			return 0, 0, err
-		}
-		for _, unit := range fg.units {
-			fgUnitParms := sqlc.CreateSorCFarmGroupUnitParams{
-				FarmGroupID: fgID,
-				UnitCd:      unit.code,
-				TechLevel:   unit.techLevel,
-				NbrOfUnits:  unit.qty,
-			}
-			_, err = q.CreateSorCFarmGroupUnit(e.Store.Context, fgUnitParms)
-			if err != nil {
-				log.Printf("create: empire: sorc farm group unit %+v\n", fgUnitParms)
-				return 0, 0, err
-			}
+			log.Printf("create: empire: sc inv %+v\n", scInvParams)
+			return 0, err
 		}
 	}
 
@@ -332,22 +229,22 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 			},
 		},
 	} {
-		fgParms := sqlc.CreateSorCFactoryGroupParams{
-			SorcID:          sorcId,
+		fgParms := sqlc.CreateSCFactoryGroupParams{
+			ScID:            scId,
 			GroupNo:         fg.groupNo,
 			OrdersCd:        fg.ordersCode,
 			OrdersTechLevel: fg.ordersTechLevel,
 		}
-		fgID, err := q.CreateSorCFactoryGroup(e.Store.Context, fgParms)
+		err := q.CreateSCFactoryGroup(e.Store.Context, fgParms)
 		if err != nil {
-			log.Printf("create: empire: sorc factory group %+v\n", fgParms)
-			return 0, 0, err
+			log.Printf("create: empire: sc factory group %+v\n", fgParms)
+			return 0, err
 		}
 		for _, unit := range fg.units {
-			fgUnitParms := sqlc.CreateSorCFactoryGroupUnitParams{
-				FactoryGroupID:  fgID,
-				UnitCd:          unit.code,
-				TechLevel:       unit.techLevel,
+			fgUnitParms := sqlc.CreateSCFactoryGroupUnitParams{
+				ScID:            scId,
+				GroupNo:         fg.groupNo,
+				GroupTechLevel:  unit.techLevel,
 				NbrOfUnits:      unit.nbrOfUnits,
 				OrdersCd:        unit.ordersCode,
 				OrdersTechLevel: unit.ordersTechLevel,
@@ -355,19 +252,56 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 				Wip50pctQty:     unit.wip[1],
 				Wip75pctQty:     unit.wip[2],
 			}
-			_, err = q.CreateSorCFactoryGroupUnit(e.Store.Context, fgUnitParms)
+			err = q.CreateSCFactoryGroupUnit(e.Store.Context, fgUnitParms)
 			if err != nil {
-				log.Printf("create: empire: sorc factory group unit %+v\n", fgUnitParms)
-				return 0, 0, err
+				log.Printf("create: empire: sc factory group unit %+v\n", fgUnitParms)
+				return 0, err
+			}
+		}
+	}
+
+	type farmGroupUnitData struct {
+		code      string // always "FRM"
+		techLevel int64  // tech level of the farming unit
+		qty       int64  // number of units in the group
+	}
+	type farmGroupData struct {
+		groupNo int64
+		units   []farmGroupUnitData
+	}
+	for _, fg := range []farmGroupData{
+		{groupNo: 1, units: []farmGroupUnitData{
+			{code: "FRM", techLevel: 1, qty: 130_000}}},
+	} {
+		fgParms := sqlc.CreateSCFarmGroupParams{
+			ScID:    scId,
+			GroupNo: fg.groupNo,
+		}
+		err = q.CreateSCFarmGroup(e.Store.Context, fgParms)
+		if err != nil {
+			log.Printf("create: empire: sc farm group %+v\n", fgParms)
+			return 0, err
+		}
+		for _, unit := range fg.units {
+			fgUnitParms := sqlc.CreateSCFarmGroupUnitParams{
+				ScID:           scId,
+				GroupNo:        fg.groupNo,
+				GroupTechLevel: unit.techLevel,
+				NbrOfUnits:     unit.qty,
+			}
+			err = q.CreateSCFarmGroupUnit(e.Store.Context, fgUnitParms)
+			if err != nil {
+				log.Printf("create: empire: sc farm group unit %+v\n", fgUnitParms)
+				return 0, err
 			}
 		}
 	}
 
 	// deposit maps the deposit no to the deposit id
 	depositMap := map[int64]int64{}
-	if rows, err := q.ReadDepositsByPlanet(e.Store.Context, clusterRow.HomePlanetID); err != nil {
-		log.Printf("create: empire: sorc planet %d: %+v\n", clusterRow.HomePlanetID, err)
-		return 0, 0, err
+	if rows, err := q.ReadDepositsByOrbit(e.Store.Context, gameRow.HomeOrbitID); err != nil {
+		log.Printf("create: empire: sc orbit %d: %+v\n", gameRow.HomeOrbitID, err)
+		return 0, err
 	} else {
 		for _, row := range rows {
 			depositMap[row.DepositNo] = row.ID
@@ -448,38 +382,52 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, int64, 
 	for _, mg := range miningGroups {
 		depositID, ok := depositMap[mg.depositNo]
 		if !ok {
-			log.Printf("create: empire: sorc mining group %+v\n", mg)
-			return 0, 0, fmt.Errorf("missing deposit")
+			log.Printf("create: empire: sc mining group %+v\n", mg)
+			return 0, ErrMissingDeposit
 		}
-		mgParms := sqlc.CreateSorCMiningGroupParams{
-			SorcID:    sorcId,
+		mgParms := sqlc.CreateSCMiningGroupParams{
+			ScID:      scId,
 			GroupNo:   mg.groupNo,
 			DepositID: depositID,
 		}
-		mgID, err := q.CreateSorCMiningGroup(e.Store.Context, mgParms)
+		err = q.CreateSCMiningGroup(e.Store.Context, mgParms)
 		if err != nil {
-			log.Printf("create: empire: sorc mining group %+v\n", mgParms)
-			return 0, 0, err
+			log.Printf("create: empire: sc mining group %+v\n", mgParms)
+			return 0, err
 		}
 		for _, unit := range mg.units {
-			mgUnitParms := sqlc.CreateSorCMiningGroupUnitParams{
-				MiningGroupID: mgID,
-				UnitCd:        unit.code,
-				TechLevel:     unit.techLevel,
-				NbrOfUnits:    unit.nbrOfUnits,
+			mgUnitParms := sqlc.CreateSCMiningGroupUnitParams{
+				ScID:           scId,
+				GroupNo:        mg.groupNo,
+				GroupTechLevel: unit.techLevel,
+				NbrOfUnits:     unit.nbrOfUnits,
 			}
-			_, err = q.CreateSorCMiningGroupUnit(e.Store.Context, mgUnitParms)
+			err = q.CreateSCMiningGroupUnit(e.Store.Context, mgUnitParms)
 			if err != nil {
-				log.Printf("create: empire: sorc mining group unit %+v\n", mgUnitParms)
-				return 0, 0, err
+				log.Printf("create: empire: sc mining group unit %+v\n", mgUnitParms)
+				return 0, err
 			}
 		}
 	}
 
-	err = q.UpdateEmpireCounterByGameID(e.Store.Context, sqlc.UpdateEmpireCounterByGameIDParams{GameID: gameRow.ID, EmpireNo: parms.EmpireNo})
-	if err != nil {
-		return 0, 0, err
-	}
+	// todo: reports are going to need us to fake survey, probe, and production data from the previous turn
+	//// insert survey and probe orders
+	//err = q.CreateSCSurveyOrder(e.Store.Context, sqlc.CreateSCSurveyOrderParams{ScID: scId, TargetID: gameRow.HomeOrbitID})
+	//if err != nil {
+	//	log.Printf("create: empire: survey %v\n", err)
+	//	return err
+	//}
+	//err = q.CreateSCProbeOrder(e.Store.Context, sqlc.CreateSCProbeOrderParams{ScID: scId, Kind: "system", TargetID: gameRow.HomeSystemID})
+	//if err != nil {
+	//	log.Printf("create: empire: probe system %v\n", err)
+	//	return err
+	//}
+	//err = q.CreateSCProbeOrder(e.Store.Context, sqlc.CreateSCProbeOrderParams{ScID: scId, Kind: "star", TargetID: gameRow.HomeStarID})
+	//if err != nil {
+	//	log.Printf("create: empire: probe star %v\n", err)
+	//	return err
+	//}
+	//
 
-	return empireId, parms.EmpireNo, tx.Commit()
+	return empireID, tx.Commit()
 }

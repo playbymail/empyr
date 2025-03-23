@@ -11,16 +11,17 @@ import (
 
 const createSystem = `-- name: CreateSystem :one
 
-INSERT INTO systems (cluster_id, x, y, z)
-VALUES (?1, ?2, ?3, ?4)
-RETURNING id
+insert into systems (x, y, z, system_name, nbr_of_stars)
+values (?1, ?2, ?3, ?4, ?5)
+returning id
 `
 
 type CreateSystemParams struct {
-	ClusterID int64
-	X         int64
-	Y         int64
-	Z         int64
+	X          int64
+	Y          int64
+	Z          int64
+	SystemName string
+	NbrOfStars int64
 }
 
 //	Copyright (c) 2025 Michael D Henderson. All rights reserved.
@@ -28,10 +29,11 @@ type CreateSystemParams struct {
 // CreateSystem creates a new system.
 func (q *Queries) CreateSystem(ctx context.Context, arg CreateSystemParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, createSystem,
-		arg.ClusterID,
 		arg.X,
 		arg.Y,
 		arg.Z,
+		arg.SystemName,
+		arg.NbrOfStars,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -39,34 +41,28 @@ func (q *Queries) CreateSystem(ctx context.Context, arg CreateSystemParams) (int
 }
 
 const readAllSystems = `-- name: ReadAllSystems :many
-SELECT systems.id      AS id,
-       systems.x       as x,
-       systems.y       as y,
-       systems.z       as z,
-       count(stars.id) AS number_of_stars
-FROM games,
-     clusters,
-     systems,
-     stars
-WHERE games.id = ?1
-  AND clusters.game_id = games.id
-  AND systems.cluster_id = clusters.id
-  AND stars.system_id = systems.id
-GROUP BY systems.id, systems.x, systems.y, systems.z
-ORDER BY systems.id
+select id as system_id,
+       system_name,
+       x  as x,
+       y  as y,
+       z  as z,
+       nbr_of_stars
+from systems
+order by id
 `
 
 type ReadAllSystemsRow struct {
-	ID            int64
-	X             int64
-	Y             int64
-	Z             int64
-	NumberOfStars int64
+	SystemID   int64
+	SystemName string
+	X          int64
+	Y          int64
+	Z          int64
+	NbrOfStars int64
 }
 
 // ReadAllSystems reads the system data for a game.
-func (q *Queries) ReadAllSystems(ctx context.Context, gameID int64) ([]ReadAllSystemsRow, error) {
-	rows, err := q.db.QueryContext(ctx, readAllSystems, gameID)
+func (q *Queries) ReadAllSystems(ctx context.Context) ([]ReadAllSystemsRow, error) {
+	rows, err := q.db.QueryContext(ctx, readAllSystems)
 	if err != nil {
 		return nil, err
 	}
@@ -75,11 +71,12 @@ func (q *Queries) ReadAllSystems(ctx context.Context, gameID int64) ([]ReadAllSy
 	for rows.Next() {
 		var i ReadAllSystemsRow
 		if err := rows.Scan(
-			&i.ID,
+			&i.SystemID,
+			&i.SystemName,
 			&i.X,
 			&i.Y,
 			&i.Z,
-			&i.NumberOfStars,
+			&i.NbrOfStars,
 		); err != nil {
 			return nil, err
 		}

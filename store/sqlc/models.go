@@ -9,42 +9,36 @@ import (
 	"time"
 )
 
-type Clusters struct {
-	GameID       int64
-	ID           int64
+type Deposits struct {
+	ID        int64
+	SystemID  int64
+	StarID    int64
+	OrbitID   int64
+	DepositNo int64
+	Kind      string
+	Qty       int64
+	YieldPct  int64
+}
+
+type Empire struct {
+	EmpireID     int64
+	EmpireName   string
+	Username     string
+	Email        string
 	HomeSystemID int64
 	HomeStarID   int64
 	HomeOrbitID  int64
-	HomePlanetID int64
-}
-
-type Deposits struct {
-	PlanetID     int64
-	ID           int64
-	DepositNo    int64
-	Kind         string
-	RemainingQty int64
-	YieldPct     int64
 }
 
 type Empires struct {
-	GameID       int64
-	UserID       int64
-	ID           int64
-	IsActive     int64
-	EmpireNo     int64
-	Name         string
-	HomeSystemID int64
-	HomeStarID   int64
-	HomeOrbitID  int64
-	HomePlanetID int64
+	ID       int64
+	IsActive int64
 }
 
 type FactoryGroup struct {
-	FactoryGroupID  int64
-	ID              int64
-	UnitCd          string
-	TechLevel       int64
+	ScID            int64
+	GroupNo         int64
+	GroupTechLevel  int64
 	NbrOfUnits      int64
 	OrdersCd        string
 	OrdersTechLevel int64
@@ -53,43 +47,47 @@ type FactoryGroup struct {
 	Wip75pctQty     int64
 }
 
+type FactoryGroupRetool struct {
+	ScID            int64
+	GroupNo         int64
+	TurnNo          int64
+	OrdersCd        string
+	OrdersTechLevel int64
+}
+
 type FactoryGroups struct {
-	SorcID          int64
-	ID              int64
+	ScID            int64
 	GroupNo         int64
 	OrdersCd        string
 	OrdersTechLevel int64
-	RetoolTurnNo    sql.NullInt64
 }
 
 type FarmGroup struct {
-	FarmGroupID int64
-	ID          int64
-	UnitCd      string
-	TechLevel   int64
-	NbrOfUnits  int64
+	ScID           int64
+	GroupNo        int64
+	GroupTechLevel int64
+	NbrOfUnits     int64
 }
 
 type FarmGroups struct {
-	SorcID  int64
-	ID      int64
+	ScID    int64
 	GroupNo int64
 }
 
 type Games struct {
-	ID           int64
 	Code         string
 	Name         string
 	DisplayName  string
 	CurrentTurn  int64
-	LastEmpireNo int64
-	IsActive     int64
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
 
 type Inventory struct {
-	SorcID      int64
+	ScID        int64
 	UnitCd      string
 	TechLevel   int64
 	Qty         int64
@@ -107,18 +105,16 @@ type MetaMigrations struct {
 }
 
 type MiningGroup struct {
-	MiningGroupID int64
-	ID            int64
-	UnitCd        string
-	TechLevel     int64
-	NbrOfUnits    int64
+	ScID           int64
+	GroupNo        int64
+	GroupTechLevel int64
+	NbrOfUnits     int64
 }
 
 type MiningGroups struct {
-	SorcID    int64
-	DepositID int64
-	ID        int64
+	ScID      int64
 	GroupNo   int64
+	DepositID int64
 }
 
 type OrbitCodes struct {
@@ -127,26 +123,17 @@ type OrbitCodes struct {
 }
 
 type Orbits struct {
-	StarID  int64
-	ID      int64
-	OrbitNo int64
-	Kind    string
-}
-
-type PlanetCodes struct {
-	Code string
-	Name string
-}
-
-type Planets struct {
-	OrbitID      int64
-	ID           int64
-	Kind         string
-	Habitability int64
+	ID            int64
+	SystemID      int64
+	StarID        int64
+	OrbitNo       int64
+	Kind          string
+	Habitability  int64
+	NbrOfDeposits int64
 }
 
 type Population struct {
-	SorcID       int64
+	ScID         int64
 	PopulationCd string
 	Qty          int64
 	PayRate      float64
@@ -161,92 +148,24 @@ type PopulationCodes struct {
 }
 
 type ProbeOrders struct {
-	SorcID    int64
-	TurnNo    int64
-	TechLevel int64
-	Kind      string
-	TargetID  int64
-	Status    sql.NullString
+	ScID     int64
+	Kind     string
+	TargetID int64
+	Status   string
 }
 
-type ReportProbeSorcs struct {
-	ID       int64
-	ReportID int64
-	EmpireID int64
-	SorcID   int64
-	SorcCd   string
-	SorcMass int64
-}
-
-type ReportProbes struct {
-	ID           int64
-	ReportID     int64
-	OrbitID      int64
-	Habitability int64
-	FuelQty      int64
-	GoldQty      int64
-	MetalsQty    int64
-	NonMetalsQty int64
-}
-
-type ReportProductionInputs struct {
-	ReportID  int64
-	ID        int64
-	Category  string
-	Fuel      int64
-	Gold      int64
-	Metals    int64
-	NonMetals int64
-}
-
-type ReportProductionOutputs struct {
-	ReportID     int64
-	ID           int64
-	Category     string
-	UnitCd       string
-	TechLevel    int64
-	Farmed       int64
-	Mined        int64
-	Manufactured int64
-}
-
-type ReportSpies struct {
-	ReportID int64
-	ID       int64
-}
-
-type ReportSurveyDeposits struct {
-	ReportID        int64
-	DepositNo       int64
-	DepositQty      int64
-	DepositKind     string
-	DepositYieldPct int64
-}
-
-type ReportSurveys struct {
-	ID       int64
-	ReportID int64
-	OrbitID  int64
-}
-
-type Reports struct {
-	SorcID int64
-	ID     int64
-	TurnNo int64
-}
-
-type SorcCodes struct {
+type ScCodes struct {
 	Code string
 	Name string
 }
 
-type Sorcs struct {
-	EmpireID    int64
+type Scs struct {
 	ID          int64
-	SorcCd      string
-	TechLevel   int64
+	EmpireID    int64
+	ScCd        string
+	ScTechLevel int64
 	Name        string
-	OrbitID     int64
+	Location    int64
 	IsOnSurface int64
 	Rations     float64
 	Sol         float64
@@ -255,31 +174,26 @@ type Sorcs struct {
 }
 
 type Stars struct {
-	SystemID int64
-	ID       int64
-	Sequence string
+	ID          int64
+	SystemID    int64
+	Sequence    string
+	StarName    string
+	NbrOfOrbits int64
 }
 
 type SurveyOrders struct {
-	SorcID    int64
-	TurnNo    int64
-	TechLevel int64
-	OrbitID   int64
-	Status    sql.NullString
-}
-
-type SystemDistances struct {
-	FromSystemID int64
-	ToSystemID   int64
-	Distance     int64
+	ScID     int64
+	TargetID int64
+	Status   string
 }
 
 type Systems struct {
-	ClusterID int64
-	ID        int64
-	X         int64
-	Y         int64
-	Z         int64
+	ID         int64
+	X          int64
+	Y          int64
+	Z          int64
+	SystemName string
+	NbrOfStars int64
 }
 
 type UnitCodes struct {
@@ -290,15 +204,4 @@ type UnitCodes struct {
 	IsConsumable  int64
 	IsResource    int64
 	Aliases       sql.NullString
-}
-
-type Users struct {
-	ID             int64
-	Username       string
-	Email          string
-	HashedPassword string
-	IsActive       int64
-	IsAdmin        int64
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
 }

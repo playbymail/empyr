@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	version = semver.Version{Major: 0, Minor: 15, Patch: 0}
+	version = semver.Version{Major: 0, Minor: 17, Patch: 0}
 )
 
 func main() {

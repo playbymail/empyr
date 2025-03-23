@@ -9,11 +9,10 @@ import (
 	"context"
 )
 
-const createGame = `-- name: CreateGame :one
+const createGame = `-- name: CreateGame :exec
 
-INSERT INTO games (code, name, display_name)
-VALUES (?1, ?2, ?3)
-RETURNING id
+insert into games (code, name, display_name)
+values (?1, ?2, ?3)
 `
 
 type CreateGameParams struct {
@@ -25,395 +24,87 @@ type CreateGameParams struct {
 //	Copyright (c) 2025 Michael D Henderson. All rights reserved.
 //
 // CreateGame creates a new game.
-func (q *Queries) CreateGame(ctx context.Context, arg CreateGameParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createGame, arg.Code, arg.Name, arg.DisplayName)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
-const deleteGameByCode = `-- name: DeleteGameByCode :exec
-DELETE
-FROM games
-WHERE code = ?1
-`
-
-// DeleteGameByCode deletes an existing game using its code.
-func (q *Queries) DeleteGameByCode(ctx context.Context, gameCode string) error {
-	_, err := q.db.ExecContext(ctx, deleteGameByCode, gameCode)
+func (q *Queries) CreateGame(ctx context.Context, arg CreateGameParams) error {
+	_, err := q.db.ExecContext(ctx, createGame, arg.Code, arg.Name, arg.DisplayName)
 	return err
 }
 
-const deleteGameByID = `-- name: DeleteGameByID :exec
-DELETE
-FROM games
-WHERE id = ?1
-`
-
-// DeleteGameByID deletes an existing game using its ID.
-func (q *Queries) DeleteGameByID(ctx context.Context, gameID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteGameByID, gameID)
-	return err
-}
-
-const readActiveGameSummariesByUser = `-- name: ReadActiveGameSummariesByUser :many
-SELECT games.id,
-       games.code,
-       games.name,
-       games.display_name,
-       games.current_turn,
-       empires.id as empire_id,
-       empires.empire_no
-FROM games,
-     empires
-WHERE empires.user_id = ?1
-  AND games.id = empires.game_id
-  AND games.id = ?2
-  AND games.is_active = 1
-ORDER BY code
-`
-
-type ReadActiveGameSummariesByUserParams struct {
-	UserID int64
-	GameID int64
-}
-
-type ReadActiveGameSummariesByUserRow struct {
-	ID          int64
-	Code        string
-	Name        string
-	DisplayName string
-	CurrentTurn int64
-	EmpireID    int64
-	EmpireNo    int64
-}
-
-// ReadActiveGameSummariesByUser returns a list of all active games that the user has an empire in.
-func (q *Queries) ReadActiveGameSummariesByUser(ctx context.Context, arg ReadActiveGameSummariesByUserParams) ([]ReadActiveGameSummariesByUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, readActiveGameSummariesByUser, arg.UserID, arg.GameID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadActiveGameSummariesByUserRow
-	for rows.Next() {
-		var i ReadActiveGameSummariesByUserRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.Name,
-			&i.DisplayName,
-			&i.CurrentTurn,
-			&i.EmpireID,
-			&i.EmpireNo,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const readAllGameInfo = `-- name: ReadAllGameInfo :many
-SELECT games.id,
-       games.code,
-       games.name,
-       games.display_name,
-       games.is_active,
-       games.current_turn,
-       games.last_empire_no
-FROM games
-ORDER BY games.code
+const readAllGameInfo = `-- name: ReadAllGameInfo :one
+select code,
+       name,
+       display_name,
+       current_turn,
+       home_system_id,
+       home_star_id,
+       home_orbit_id
+from games
 `
 
 type ReadAllGameInfoRow struct {
-	ID           int64
 	Code         string
 	Name         string
 	DisplayName  string
-	IsActive     int64
 	CurrentTurn  int64
-	LastEmpireNo int64
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
 }
 
 // ReadAllGameInfo returns a list of all games in the database, even the inactive ones.
-func (q *Queries) ReadAllGameInfo(ctx context.Context) ([]ReadAllGameInfoRow, error) {
-	rows, err := q.db.QueryContext(ctx, readAllGameInfo)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadAllGameInfoRow
-	for rows.Next() {
-		var i ReadAllGameInfoRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.Name,
-			&i.DisplayName,
-			&i.IsActive,
-			&i.CurrentTurn,
-			&i.LastEmpireNo,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) ReadAllGameInfo(ctx context.Context) (ReadAllGameInfoRow, error) {
+	row := q.db.QueryRowContext(ctx, readAllGameInfo)
+	var i ReadAllGameInfoRow
+	err := row.Scan(
+		&i.Code,
+		&i.Name,
+		&i.DisplayName,
+		&i.CurrentTurn,
+		&i.HomeSystemID,
+		&i.HomeStarID,
+		&i.HomeOrbitID,
+	)
+	return i, err
 }
 
-const readAllGamesByUser = `-- name: ReadAllGamesByUser :many
-SELECT games.id,
-       games.code,
-       games.name,
-       games.display_name,
-       games.current_turn,
-       games.is_active,
-       empires.id as empire_id,
-       empires.empire_no
-FROM empires,
-     games
-WHERE empires.user_id = ?1
-  AND games.id = empires.game_id
-ORDER BY games.code
+const readCurrentTurn = `-- name: ReadCurrentTurn :one
+select current_turn
+from games
 `
 
-type ReadAllGamesByUserRow struct {
-	ID          int64
-	Code        string
-	Name        string
-	DisplayName string
-	CurrentTurn int64
-	IsActive    int64
-	EmpireID    int64
-	EmpireNo    int64
-}
-
-// ReadAllGamesByUser returns all games that the user has a empire in.
-func (q *Queries) ReadAllGamesByUser(ctx context.Context, userID int64) ([]ReadAllGamesByUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, readAllGamesByUser, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadAllGamesByUserRow
-	for rows.Next() {
-		var i ReadAllGamesByUserRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Code,
-			&i.Name,
-			&i.DisplayName,
-			&i.CurrentTurn,
-			&i.IsActive,
-			&i.EmpireID,
-			&i.EmpireNo,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const readCurrentTurnByGameCode = `-- name: ReadCurrentTurnByGameCode :one
-SELECT current_turn
-FROM games
-WHERE code = ?1
-`
-
-// ReadCurrentTurnByGameCode gets the current turn for a game.
-func (q *Queries) ReadCurrentTurnByGameCode(ctx context.Context, gameCode string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, readCurrentTurnByGameCode, gameCode)
+// ReadCurrentTurn gets the current turn for a game.
+func (q *Queries) ReadCurrentTurn(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, readCurrentTurn)
 	var current_turn int64
 	err := row.Scan(&current_turn)
 	return current_turn, err
 }
 
-const readCurrentTurnByGameID = `-- name: ReadCurrentTurnByGameID :one
-SELECT current_turn
-FROM games
-WHERE id = ?1
+const updateCurrentTurn = `-- name: UpdateCurrentTurn :exec
+update games
+set current_turn = ?1
 `
 
-// ReadCurrentTurnByGameID gets the current turn for a game.
-func (q *Queries) ReadCurrentTurnByGameID(ctx context.Context, gameID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, readCurrentTurnByGameID, gameID)
-	var current_turn int64
-	err := row.Scan(&current_turn)
-	return current_turn, err
-}
-
-const readGameInfoByCode = `-- name: ReadGameInfoByCode :one
-SELECT games.id,
-       games.code,
-       games.name,
-       games.display_name,
-       games.is_active,
-       games.current_turn,
-       games.last_empire_no
-FROM games
-WHERE games.code = ?1
-`
-
-type ReadGameInfoByCodeRow struct {
-	ID           int64
-	Code         string
-	Name         string
-	DisplayName  string
-	IsActive     int64
-	CurrentTurn  int64
-	LastEmpireNo int64
-}
-
-// ReadGameInfoByCode returns data for a single game using the game code.
-func (q *Queries) ReadGameInfoByCode(ctx context.Context, gameCode string) (ReadGameInfoByCodeRow, error) {
-	row := q.db.QueryRowContext(ctx, readGameInfoByCode, gameCode)
-	var i ReadGameInfoByCodeRow
-	err := row.Scan(
-		&i.ID,
-		&i.Code,
-		&i.Name,
-		&i.DisplayName,
-		&i.IsActive,
-		&i.CurrentTurn,
-		&i.LastEmpireNo,
-	)
-	return i, err
-}
-
-const readGameSummaryByEmpire = `-- name: ReadGameSummaryByEmpire :one
-SELECT games.id,
-       games.code,
-       games.name,
-       games.display_name,
-       games.is_active,
-       games.current_turn,
-       empires.id as empire_id,
-       empires.empire_no
-FROM empires,
-     games
-WHERE empires.user_id = ?1
-  AND games.id = empires.game_id
-  AND games.id = ?2
-ORDER BY code
-`
-
-type ReadGameSummaryByEmpireParams struct {
-	UserID int64
-	GameID int64
-}
-
-type ReadGameSummaryByEmpireRow struct {
-	ID          int64
-	Code        string
-	Name        string
-	DisplayName string
-	IsActive    int64
-	CurrentTurn int64
-	EmpireID    int64
-	EmpireNo    int64
-}
-
-// ReadGameSummaryByUserGame returns a game summary for a user in a game.
-func (q *Queries) ReadGameSummaryByEmpire(ctx context.Context, arg ReadGameSummaryByEmpireParams) (ReadGameSummaryByEmpireRow, error) {
-	row := q.db.QueryRowContext(ctx, readGameSummaryByEmpire, arg.UserID, arg.GameID)
-	var i ReadGameSummaryByEmpireRow
-	err := row.Scan(
-		&i.ID,
-		&i.Code,
-		&i.Name,
-		&i.DisplayName,
-		&i.IsActive,
-		&i.CurrentTurn,
-		&i.EmpireID,
-		&i.EmpireNo,
-	)
-	return i, err
-}
-
-const updateCurrentTurnByGameCode = `-- name: UpdateCurrentTurnByGameCode :exec
-UPDATE games
-SET current_turn = ?1
-WHERE code = ?2
-`
-
-type UpdateCurrentTurnByGameCodeParams struct {
-	TurnNumber int64
-	GameCode   string
-}
-
-// UpdateCurrentTurnByGameCode increments the game turn number.
-func (q *Queries) UpdateCurrentTurnByGameCode(ctx context.Context, arg UpdateCurrentTurnByGameCodeParams) error {
-	_, err := q.db.ExecContext(ctx, updateCurrentTurnByGameCode, arg.TurnNumber, arg.GameCode)
+// UpdateCurrentTurn increments the game turn number.
+func (q *Queries) UpdateCurrentTurn(ctx context.Context, turnNumber int64) error {
+	_, err := q.db.ExecContext(ctx, updateCurrentTurn, turnNumber)
 	return err
 }
 
-const updateCurrentTurnByGameID = `-- name: UpdateCurrentTurnByGameID :exec
-UPDATE games
-SET current_turn = ?1
-WHERE id = ?2
+const updateGameHomeSystems = `-- name: UpdateGameHomeSystems :exec
+update games
+set home_system_id = ?1,
+    home_star_id   = ?2,
+    home_orbit_id  = ?3
 `
 
-type UpdateCurrentTurnByGameIDParams struct {
-	TurnNumber int64
-	GameID     int64
+type UpdateGameHomeSystemsParams struct {
+	HomeSystemID int64
+	HomeStarID   int64
+	HomeOrbitID  int64
 }
 
-// UpdateCurrentTurnByGameID increments the game turn number.
-func (q *Queries) UpdateCurrentTurnByGameID(ctx context.Context, arg UpdateCurrentTurnByGameIDParams) error {
-	_, err := q.db.ExecContext(ctx, updateCurrentTurnByGameID, arg.TurnNumber, arg.GameID)
-	return err
-}
-
-const updateEmpireCounterByGameCode = `-- name: UpdateEmpireCounterByGameCode :exec
-UPDATE games
-SET last_empire_no = ?1
-WHERE code = ?2
-`
-
-type UpdateEmpireCounterByGameCodeParams struct {
-	EmpireNo int64
-	GameCode string
-}
-
-// UpdateEmpireCounterByGameCode updates the empire metadata in the games table.
-func (q *Queries) UpdateEmpireCounterByGameCode(ctx context.Context, arg UpdateEmpireCounterByGameCodeParams) error {
-	_, err := q.db.ExecContext(ctx, updateEmpireCounterByGameCode, arg.EmpireNo, arg.GameCode)
-	return err
-}
-
-const updateEmpireCounterByGameID = `-- name: UpdateEmpireCounterByGameID :exec
-UPDATE games
-SET last_empire_no = ?1
-WHERE id = ?2
-`
-
-type UpdateEmpireCounterByGameIDParams struct {
-	EmpireNo int64
-	GameID   int64
-}
-
-// UpdateEmpireCounterByGameID updates the empire metadata in the games table.
-func (q *Queries) UpdateEmpireCounterByGameID(ctx context.Context, arg UpdateEmpireCounterByGameIDParams) error {
-	_, err := q.db.ExecContext(ctx, updateEmpireCounterByGameID, arg.EmpireNo, arg.GameID)
+// UpdateGameHomeSystems updates the home system for a game.
+func (q *Queries) UpdateGameHomeSystems(ctx context.Context, arg UpdateGameHomeSystemsParams) error {
+	_, err := q.db.ExecContext(ctx, updateGameHomeSystems, arg.HomeSystemID, arg.HomeStarID, arg.HomeOrbitID)
 	return err
 }

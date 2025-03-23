@@ -29,6 +29,7 @@ func Close(e *Engine_t) error {
 
 func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResources, calculateSystemDistances bool, r *rand.Rand, forceCreate bool) (*Game_t, error) {
 	g := &Game_t{
+		Code:     code,
 		Systems:  make(map[int64]*System_t),
 		Stars:    make(map[int64]*Star_t),
 		Orbits:   make(map[int64]*Orbit_t),
@@ -75,9 +76,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 	g.Home.Planet = g.Home.Orbit.Planet
 
 	if forceCreate {
-		if err := e.DeleteGame(code); err != nil {
-			return nil, errors.Join(fmt.Errorf("force delete game"), err)
-		}
+		return nil, fmt.Errorf("force create game not implemented")
 	}
 
 	q, tx, err := e.Store.Begin()
@@ -86,7 +85,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 	}
 	defer tx.Rollback()
 
-	id, err := q.CreateGame(e.Store.Context, sqlc.CreateGameParams{
+	err = q.CreateGame(e.Store.Context, sqlc.CreateGameParams{
 		Code:        code,
 		Name:        name,
 		DisplayName: displayName,
@@ -94,18 +93,15 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("create game"), err)
 	}
-	g.Id = id
-	log.Printf("create: game: %d: %s\n", g.Id, code)
+	log.Printf("create: game %q\n", g.Code)
 
-	clusterID, err := q.CreateCluster(e.Store.Context, sqlc.CreateClusterParams{
-		GameID:       id,
+	err = q.UpdateGameHomeSystems(e.Store.Context, sqlc.UpdateGameHomeSystemsParams{
 		HomeSystemID: g.Home.System.Id,
 		HomeStarID:   g.Home.Star.Id,
 		HomeOrbitID:  g.Home.Orbit.Id,
-		HomePlanetID: g.Home.Planet.Id,
 	})
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("create cluster"), err)
+		return nil, errors.Join(fmt.Errorf("update home systems"), err)
 	}
 
 	var systems []*System_t
@@ -161,10 +157,11 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 			continue
 		}
 		systemId, err := q.CreateSystem(e.Store.Context, sqlc.CreateSystemParams{
-			ClusterID: clusterID,
-			X:         system.Coordinates.X,
-			Y:         system.Coordinates.Y,
-			Z:         system.Coordinates.Z,
+			X:          system.Coordinates.X,
+			Y:          system.Coordinates.Y,
+			Z:          system.Coordinates.Z,
+			SystemName: fmt.Sprintf("%02d/%02d/%02d", system.Coordinates.X, system.Coordinates.Y, system.Coordinates.Z),
+			NbrOfStars: int64(len(system.Stars)),
 		})
 		if err != nil {
 			return nil, errors.Join(fmt.Errorf("create system"), err)
@@ -181,9 +178,23 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		if star == nil {
 			continue
 		}
+		var starName string
+		if len(star.System.Stars) == 1 {
+			starName = fmt.Sprintf("%02d/%02d/%02d", star.System.Coordinates.X, star.System.Coordinates.Y, star.System.Coordinates.Z)
+		} else {
+			starName = fmt.Sprintf("%02d/%02d/%02d%s", star.System.Coordinates.X, star.System.Coordinates.Y, star.System.Coordinates.Z, star.Sequence)
+		}
+		nbrOfOrbits := int64(0)
+		for _, orbit := range star.Orbits {
+			if orbit != nil {
+				nbrOfOrbits++
+			}
+		}
 		starId, err := q.CreateStar(e.Store.Context, sqlc.CreateStarParams{
-			SystemID: star.System.Id,
-			Sequence: star.Sequence,
+			SystemID:    star.System.Id,
+			Sequence:    star.Sequence,
+			StarName:    starName,
+			NbrOfOrbits: nbrOfOrbits,
 		})
 		if err != nil {
 			return nil, errors.Join(fmt.Errorf("create star"), err)
@@ -201,9 +212,10 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 			continue
 		}
 		orbitId, err := q.CreateOrbit(e.Store.Context, sqlc.CreateOrbitParams{
-			StarID:  orbit.Star.Id,
-			OrbitNo: orbit.OrbitNo,
-			Kind:    orbit.Kind.Code(),
+			SystemID: orbit.System.Id,
+			StarID:   orbit.Star.Id,
+			OrbitNo:  orbit.OrbitNo,
+			Kind:     "NONE",
 		})
 		if err != nil {
 			return nil, errors.Join(fmt.Errorf("create orbit"), err)
@@ -220,16 +232,23 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		if planet == nil {
 			continue
 		}
-		planetId, err := q.CreatePlanet(e.Store.Context, sqlc.CreatePlanetParams{
-			OrbitID:      planet.Orbit.Id,
-			Kind:         planet.Kind.Code(),
-			Habitability: planet.Habitability,
+		nbrOfDeposits := int64(0)
+		for _, deposit := range planet.Deposits {
+			if deposit != nil {
+				nbrOfDeposits++
+			}
+		}
+		err = q.UpdateOrbit(e.Store.Context, sqlc.UpdateOrbitParams{
+			OrbitID:       planet.Orbit.Id,
+			Kind:          planet.Kind.Code(),
+			Habitability:  planet.Habitability,
+			NbrOfDeposits: nbrOfDeposits,
 		})
 		if err != nil {
 			return nil, errors.Join(fmt.Errorf("create planet"), err)
 		}
 		// update the planet with the id from the database
-		planet.Id = planetId
+		planet.Id = planet.Orbit.Id
 		// update the id numbers in the game map
 		g.Planets[planet.Id] = planet
 	}
@@ -241,11 +260,13 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 			continue
 		}
 		depositParams := sqlc.CreateDepositParams{
-			PlanetID:     deposit.Planet.Id,
-			DepositNo:    deposit.DepositNo,
-			Kind:         deposit.Resource.Code(),
-			YieldPct:     deposit.Yield,
-			RemainingQty: deposit.Quantity,
+			SystemID:  deposit.Planet.System.Id,
+			StarID:    deposit.Planet.Orbit.Star.Id,
+			OrbitID:   deposit.Planet.Orbit.Id,
+			DepositNo: deposit.DepositNo,
+			Kind:      deposit.Resource.Code(),
+			YieldPct:  deposit.Yield,
+			Qty:       deposit.Quantity,
 		}
 		depositId, err := q.CreateDeposit(e.Store.Context, depositParams)
 		if err != nil {
@@ -260,36 +281,10 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 	}
 
 	log.Printf("create: empires: %8d empires\n", len(g.Empires))
-	for _, empire := range g.Empires {
-		parms := sqlc.CreateEmpireParams{
-			GameID:       id,
-			EmpireNo:     empire.EmpireNo,
-			Name:         empire.Name,
-			HomeSystemID: empire.HomeSystem.Id,
-			HomeStarID:   empire.HomeStar.Id,
-			HomeOrbitID:  empire.HomeOrbit.Id,
-			HomePlanetID: empire.HomePlanet.Id,
-		}
-		empireId, err := q.CreateEmpire(e.Store.Context, parms)
+	for i := int64(1); i <= 256; i++ {
+		err = q.CreateInactiveEmpires(e.Store.Context, i)
 		if err != nil {
 			return nil, errors.Join(fmt.Errorf("create empire"), err)
-		}
-		// update the empire with the id from the database
-		empire.Id = empireId
-	}
-	// update the id numbers in the game map
-	if src := g.Empires; len(src) != 0 {
-		g.Empires = make(map[int64]*Empire_t)
-		for _, empire := range src {
-			g.Empires[empire.Id] = empire
-		}
-	}
-
-	// calculate the system distances to help reporting
-	if calculateSystemDistances {
-		err = q.PopulateSystemDistanceByCluster(e.Store.Context, clusterID)
-		if err != nil {
-			return nil, errors.Join(fmt.Errorf("populate system distance"), err)
 		}
 	}
 
@@ -411,14 +406,6 @@ func (e *Engine_t) ObsoleteCreateCluster(r *rand.Rand, numberOfEmpires int64) (*
 	}
 
 	return cluster, nil
-}
-
-func (e *Engine_t) DeleteGame(code string) error {
-	err := e.Store.Queries.DeleteGameByCode(e.Store.Context, code)
-	if err != nil {
-		return errors.Join(fmt.Errorf("delete game"), err)
-	}
-	return nil
 }
 
 // createPlanet creates a planet.

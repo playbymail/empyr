@@ -3,21 +3,16 @@ sql:
   - engine: "sqlite"
     schema:
       - "sqlc/schema.sql"
-      - "sqlc/reports.ddl"
     queries:
       - "sqlc/queries.sql"
-      - "sqlc/authn.sql"
       - "sqlc/clusters.sql"
       - "sqlc/deposits.sql"
       - "sqlc/empires.sql"
       - "sqlc/games.sql"
       - "sqlc/orbits.sql"
-      - "sqlc/planets.sql"
-      - "sqlc/reports.sql"
-      - "sqlc/sorcs.sql"
+      - "sqlc/scs.sql"
       - "sqlc/stars.sql"
       - "sqlc/systems.sql"
-      - "sqlc/users.sql"
     gen:
       go:
         emit_exact_table_names: true

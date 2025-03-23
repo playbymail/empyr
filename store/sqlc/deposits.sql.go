@@ -10,26 +10,30 @@ import (
 )
 
 const createDeposit = `-- name: CreateDeposit :one
-INSERT INTO deposits (planet_id, deposit_no, kind, remaining_qty, yield_pct)
-VALUES (?1, ?2, ?3, ?4, ?5)
+INSERT INTO deposits (system_id, star_id, orbit_id, deposit_no, kind, qty, yield_pct)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
 RETURNING id
 `
 
 type CreateDepositParams struct {
-	PlanetID     int64
-	DepositNo    int64
-	Kind         string
-	RemainingQty int64
-	YieldPct     int64
+	SystemID  int64
+	StarID    int64
+	OrbitID   int64
+	DepositNo int64
+	Kind      string
+	Qty       int64
+	YieldPct  int64
 }
 
-// CreateDeposit creates a new deposit on an existing planet.
+// CreateDeposit creates a new deposit on an existing orbit.
 func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, createDeposit,
-		arg.PlanetID,
+		arg.SystemID,
+		arg.StarID,
+		arg.OrbitID,
 		arg.DepositNo,
 		arg.Kind,
-		arg.RemainingQty,
+		arg.Qty,
 		arg.YieldPct,
 	)
 	var id int64
@@ -37,70 +41,70 @@ func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (i
 	return id, err
 }
 
-const readDepositByNo = `-- name: ReadDepositByNo :one
-SELECT deposits.id, deposits.deposit_no, deposits.kind, deposits.remaining_qty, deposits.yield_pct
+const readDepositByOrbitDepositNo = `-- name: ReadDepositByOrbitDepositNo :one
+SELECT id, deposit_no, kind, qty, yield_pct
 FROM deposits
-WHERE deposits.planet_id = ?1
-  AND deposits.deposit_no = ?2
+WHERE orbit_id = ?1
+  AND deposit_no = ?2
 `
 
-type ReadDepositByNoParams struct {
-	PlanetID  int64
+type ReadDepositByOrbitDepositNoParams struct {
+	OrbitID   int64
 	DepositNo int64
 }
 
-type ReadDepositByNoRow struct {
-	ID           int64
-	DepositNo    int64
-	Kind         string
-	RemainingQty int64
-	YieldPct     int64
+type ReadDepositByOrbitDepositNoRow struct {
+	ID        int64
+	DepositNo int64
+	Kind      string
+	Qty       int64
+	YieldPct  int64
 }
 
-// ReadDepositByNo reads a deposit by its deposit number and planet ID.
-func (q *Queries) ReadDepositByNo(ctx context.Context, arg ReadDepositByNoParams) (ReadDepositByNoRow, error) {
-	row := q.db.QueryRowContext(ctx, readDepositByNo, arg.PlanetID, arg.DepositNo)
-	var i ReadDepositByNoRow
+// ReadDepositByOrbitDepositNo reads a deposit by its deposit number and orbit ID.
+func (q *Queries) ReadDepositByOrbitDepositNo(ctx context.Context, arg ReadDepositByOrbitDepositNoParams) (ReadDepositByOrbitDepositNoRow, error) {
+	row := q.db.QueryRowContext(ctx, readDepositByOrbitDepositNo, arg.OrbitID, arg.DepositNo)
+	var i ReadDepositByOrbitDepositNoRow
 	err := row.Scan(
 		&i.ID,
 		&i.DepositNo,
 		&i.Kind,
-		&i.RemainingQty,
+		&i.Qty,
 		&i.YieldPct,
 	)
 	return i, err
 }
 
-const readDepositsByPlanet = `-- name: ReadDepositsByPlanet :many
-SELECT deposits.id, deposits.deposit_no, deposits.kind, deposits.remaining_qty, deposits.yield_pct
+const readDepositsByOrbit = `-- name: ReadDepositsByOrbit :many
+SELECT id, deposit_no, kind, qty, yield_pct
 FROM deposits
-WHERE deposits.planet_id = ?1
-ORDER BY deposits.deposit_no
+WHERE orbit_id = ?1
+ORDER BY deposit_no
 `
 
-type ReadDepositsByPlanetRow struct {
-	ID           int64
-	DepositNo    int64
-	Kind         string
-	RemainingQty int64
-	YieldPct     int64
+type ReadDepositsByOrbitRow struct {
+	ID        int64
+	DepositNo int64
+	Kind      string
+	Qty       int64
+	YieldPct  int64
 }
 
-// ReadDepositsByPlanet returns a list of all deposits on a planet.
-func (q *Queries) ReadDepositsByPlanet(ctx context.Context, planetID int64) ([]ReadDepositsByPlanetRow, error) {
-	rows, err := q.db.QueryContext(ctx, readDepositsByPlanet, planetID)
+// ReadDepositsByOrbit returns a list of all deposits on a orbit.
+func (q *Queries) ReadDepositsByOrbit(ctx context.Context, orbitID int64) ([]ReadDepositsByOrbitRow, error) {
+	rows, err := q.db.QueryContext(ctx, readDepositsByOrbit, orbitID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ReadDepositsByPlanetRow
+	var items []ReadDepositsByOrbitRow
 	for rows.Next() {
-		var i ReadDepositsByPlanetRow
+		var i ReadDepositsByOrbitRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.DepositNo,
 			&i.Kind,
-			&i.RemainingQty,
+			&i.Qty,
 			&i.YieldPct,
 		); err != nil {
 			return nil, err

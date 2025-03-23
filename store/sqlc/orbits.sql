@@ -1,65 +1,57 @@
 -- CreateOrbit creates a new orbit.
 --
 -- name: CreateOrbit :one
-INSERT INTO orbits (star_id, orbit_no, kind)
-VALUES (:star_id, :orbit_no, :kind)
-RETURNING id;
-
--- ReadOrbitPlanet returns the planet for a given orbit.
---
--- name: ReadOrbitPlanet :one
-SELECT planets.id
-FROM planets
-WHERE planets.orbit_id = :orbit_id;
+insert into orbits (system_id, star_id, orbit_no, kind, habitability, nbr_of_deposits)
+values (:system_id, :star_id, :orbit_no, :kind, :habitability, :nbr_of_deposits)
+returning id;
 
 -- ReadOrbitStar returns the star for a given orbit.
 --
 -- name: ReadOrbitStar :one
-SELECT systems.id      AS system_id,
-       systems.x       AS x,
-       systems.y       AS y,
-       systems.z       AS z,
-       stars.id        AS star_id,
-       stars.sequence  AS star_sequence,
-       orbits.orbit_no AS orbit_no
-FROM orbits,
+select systems.id as system_id,
+       systems.system_name,
+       stars.id   as star_id,
+       stars.star_name,
+       orbits.orbit_no
+from orbits,
      stars,
      systems
-WHERE orbits.id = :orbit_id
-  AND stars.id = orbits.star_id
-  AND systems.id = stars.system_id;
+where orbits.id = :orbit_id
+  and stars.id = orbits.star_id
+  and systems.id = orbits.system_id;
 
 -- ReadOrbitSurvey reads the orbit survey data for a game.
 --
 -- name: ReadOrbitSurvey :many
-SELECT systems.id             AS system_id,
-       systems.x              AS x,
-       systems.y              AS y,
-       systems.z              AS z,
-       stars.id               AS star_id,
-       stars.sequence         AS star_sequence,
-       orbits.id              AS orbit_id,
-       orbits.orbit_no        AS orbit_no,
-       planets.id             AS planet_id,
-       planet_codes.name      AS planet_kind,
-       deposits.id            AS deposit_id,
-       deposits.deposit_no    AS deposit_no,
-       unit_codes.code        AS deposit_kind,
-       deposits.remaining_qty AS deposit_qty,
-       deposits.yield_pct     AS yield_pct
-FROM orbits,
-     planets,
-     planet_codes,
+select systems.id          as system_id,
+       systems.system_name,
+       stars.id            as star_id,
+       stars.star_name,
+       orbits.orbit_no     as orbit_no,
+       orbit_codes.name    as orbit_kind,
+       deposits.id         as deposit_id,
+       deposits.deposit_no as deposit_no,
+       unit_codes.code     as deposit_kind,
+       deposits.qty        as deposit_qty,
+       deposits.yield_pct  as yield_pct
+from orbits,
+     orbit_codes,
      deposits,
      unit_codes,
      stars,
      systems
-WHERE orbits.id = :orbit_id
-  AND planets.orbit_id = orbits.id
-  AND planet_codes.code = planets.kind
-  AND deposits.planet_id = planets.id
-  AND unit_codes.code = deposits.kind
-  AND orbits.id = planets.orbit_id
-  AND stars.id = orbits.star_id
-  AND systems.id = stars.system_id
-ORDER BY deposits.deposit_no;
+where orbits.id = :orbit_id
+  and deposits.orbit_id = orbits.id
+  and unit_codes.code = deposits.kind
+  and stars.id = orbits.star_id
+  and systems.id = orbits.system_id
+order by deposits.deposit_no;
+
+-- UpdateOrbit updates an existing orbit.
+--
+-- name: UpdateOrbit :exec
+update orbits
+set kind            = :kind,
+    habitability    = :habitability,
+    nbr_of_deposits = :nbr_of_deposits
+where id = :orbit_id;

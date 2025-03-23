@@ -53,13 +53,13 @@ func CreateClusterMapCommand(e *Engine_t, cfg *CreateClusterMapParams_t) ([]byte
 		Game: cfg.Code,
 	}
 
-	rows, err := e.Store.Queries.ReadClusterMapByGameCode(e.Store.Context, cfg.Code)
+	rows, err := e.Store.Queries.ReadClusterMap(e.Store.Context)
 	if err != nil {
 		return nil, err
 	}
 	for _, row := range rows {
 		var color template.JS
-		switch row.NumberOfStars {
+		switch row.NbrOfStars {
 		case 1:
 			color = "Blue"
 		case 2:
@@ -69,10 +69,10 @@ func CreateClusterMapCommand(e *Engine_t, cfg *CreateClusterMapParams_t) ([]byte
 		case 4:
 			color = "Red"
 		default:
-			return nil, fmt.Errorf("assert(s.NumberOfStars != %d)", row.NumberOfStars)
+			return nil, fmt.Errorf("assert(s.NumberOfStars != %d)", row.NbrOfStars)
 		}
 		payload.Systems = append(payload.Systems, system_t{
-			Id:    row.ID,
+			Id:    row.SystemID,
 			X:     row.X - 15, // shift the origin back to 0,0,0
 			Y:     row.Y - 15, // shift the origin back to 0,0,0
 			Z:     row.Z - 15, // shift the origin back to 0,0,0
@@ -129,7 +129,7 @@ func CreateClusterStarListCommand(e *Engine_t, cfg *CreateClusterStarListParams_
 		UpdatedDate: time.Now().UTC().Format("2006-01-02"),
 	}
 
-	rows, err := e.Store.Queries.ReadClusterMapByGameCode(e.Store.Context, cfg.Code)
+	rows, err := e.Store.Queries.ReadClusterMap(e.Store.Context)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -138,13 +138,13 @@ func CreateClusterStarListCommand(e *Engine_t, cfg *CreateClusterStarListParams_
 		dx, dy, dz := row.X-15, row.Y-15, row.Z-15
 		distance := int64(math.Ceil(math.Sqrt(float64(dx*dx + dy*dy + dz*dz))))
 		payload.Systems = append(payload.Systems, system_t{
-			Id:                 row.ID,
+			Id:                 row.SystemID,
 			X:                  row.X,
 			Y:                  row.Y,
 			Z:                  row.Z,
 			Coordinates:        coordinates,
 			DistanceFromCenter: distance,
-			NumberOfStars:      row.NumberOfStars,
+			NumberOfStars:      row.NbrOfStars,
 		})
 	}
 
@@ -176,24 +176,11 @@ type CreateGameParams_t struct {
 }
 
 // CreateGameCommand creates a new game.
-func CreateGameCommand(e *Engine_t, cfg *CreateGameParams_t) (int64, error) {
+func CreateGameCommand(e *Engine_t, cfg *CreateGameParams_t) error {
 	log.Printf("create: game: code %q: name %q: display %q\n", cfg.Code, cfg.Name, cfg.DisplayName)
 
-	g, err := e.CreateGame(cfg.Code, cfg.Name, cfg.DisplayName, cfg.IncludeEmptyResources, cfg.PopulateSystemDistanceTable, cfg.Rand, cfg.ForceCreate)
-	if err != nil {
-		return 0, err
-	}
-	return g.Id, err
-}
-
-type DeleteGameParams_t struct {
-	Code string
-}
-
-// DeleteGameCommand deletes an existing game..
-func DeleteGameCommand(e *Engine_t, cfg *DeleteGameParams_t) error {
-	log.Printf("delete: game: code %q\n", cfg.Code)
-	return e.DeleteGame(cfg.Code)
+	_, err := e.CreateGame(cfg.Code, cfg.Name, cfg.DisplayName, cfg.IncludeEmptyResources, cfg.PopulateSystemDistanceTable, cfg.Rand, cfg.ForceCreate)
+	return err
 }
 
 func codeTL(code string, tl int64) string {

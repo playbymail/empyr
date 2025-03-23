@@ -9,310 +9,90 @@ import (
 	"context"
 )
 
-const createCluster = `-- name: CreateCluster :one
-INSERT INTO clusters (game_id, home_system_id, home_star_id, home_orbit_id, home_planet_id)
-VALUES (?1, ?2, ?3, ?4, ?5)
-RETURNING id
+const readClusterMap = `-- name: ReadClusterMap :many
+select id      as system_id,
+       x       as x,
+       y       as y,
+       z       as z,
+       nbr_of_stars
+from systems
+order by systems.id
 `
 
-type CreateClusterParams struct {
-	GameID       int64
+type ReadClusterMapRow struct {
+	SystemID   int64
+	X          int64
+	Y          int64
+	Z          int64
+	NbrOfStars int64
+}
+
+// ReadClusterMap reads the cluster map for a game
+func (q *Queries) ReadClusterMap(ctx context.Context) ([]ReadClusterMapRow, error) {
+	rows, err := q.db.QueryContext(ctx, readClusterMap)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadClusterMapRow
+	for rows.Next() {
+		var i ReadClusterMapRow
+		if err := rows.Scan(
+			&i.SystemID,
+			&i.X,
+			&i.Y,
+			&i.Z,
+			&i.NbrOfStars,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readClusterMeta = `-- name: ReadClusterMeta :one
+select home_system_id,
+       home_star_id,
+       home_orbit_id
+from games
+`
+
+type ReadClusterMetaRow struct {
 	HomeSystemID int64
 	HomeStarID   int64
 	HomeOrbitID  int64
-	HomePlanetID int64
 }
 
-// CreateCluster creates a new cluster.
-func (q *Queries) CreateCluster(ctx context.Context, arg CreateClusterParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createCluster,
-		arg.GameID,
-		arg.HomeSystemID,
-		arg.HomeStarID,
-		arg.HomeOrbitID,
-		arg.HomePlanetID,
-	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
-const populateSystemDistanceByCluster = `-- name: PopulateSystemDistanceByCluster :exec
-INSERT INTO system_distances (from_system_id, to_system_id, distance)
-SELECT from_system.id,
-       to_system.id,
-       ceil(sqrt((from_system.x - to_system.x) * (from_system.x - to_system.x)
-           + (from_system.y - to_system.y) * (from_system.y - to_system.y)
-           + (from_system.z - to_system.z) * (from_system.z - to_system.z)))
-FROM systems from_system,
-     systems to_system
-WHERE from_system.cluster_id = ?1
-  AND to_system.cluster_id = ?1
-  and from_system.id != to_system.id
-`
-
-// PopulateSystemDistanceByCluster populates the system distance table with the
-// distance between all systems in the cluster.
-func (q *Queries) PopulateSystemDistanceByCluster(ctx context.Context, clusterID int64) error {
-	_, err := q.db.ExecContext(ctx, populateSystemDistanceByCluster, clusterID)
-	return err
-}
-
-const readClusterMapByClusterID = `-- name: ReadClusterMapByClusterID :many
-SELECT systems.id      AS id,
-       systems.x       as x,
-       systems.y       as y,
-       systems.z       as z,
-       count(stars.id) AS number_of_stars
-FROM clusters,
-     systems,
-     stars
-WHERE clusters.id = ?1
-  AND systems.cluster_id = clusters.id
-  AND stars.system_id = systems.id
-GROUP BY systems.id, systems.x, systems.y, systems.z
-ORDER BY systems.id
-`
-
-type ReadClusterMapByClusterIDRow struct {
-	ID            int64
-	X             int64
-	Y             int64
-	Z             int64
-	NumberOfStars int64
-}
-
-// ReadClusterMapByClusterID reads the cluster map for a game
-func (q *Queries) ReadClusterMapByClusterID(ctx context.Context, clusterID int64) ([]ReadClusterMapByClusterIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, readClusterMapByClusterID, clusterID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadClusterMapByClusterIDRow
-	for rows.Next() {
-		var i ReadClusterMapByClusterIDRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.X,
-			&i.Y,
-			&i.Z,
-			&i.NumberOfStars,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const readClusterMapByGameCode = `-- name: ReadClusterMapByGameCode :many
-SELECT systems.id      AS id,
-       systems.x       as x,
-       systems.y       as y,
-       systems.z       as z,
-       count(stars.id) AS number_of_stars
-FROM games,
-     clusters,
-     systems,
-     stars
-WHERE games.code = ?1
-  AND clusters.game_id = games.id
-  AND systems.cluster_id = clusters.id
-  AND stars.system_id = systems.id
-GROUP BY systems.id, systems.x, systems.y, systems.z
-ORDER BY systems.id
-`
-
-type ReadClusterMapByGameCodeRow struct {
-	ID            int64
-	X             int64
-	Y             int64
-	Z             int64
-	NumberOfStars int64
-}
-
-// ReadClusterMapByGameCode reads the cluster map for a game
-func (q *Queries) ReadClusterMapByGameCode(ctx context.Context, gameCode string) ([]ReadClusterMapByGameCodeRow, error) {
-	rows, err := q.db.QueryContext(ctx, readClusterMapByGameCode, gameCode)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadClusterMapByGameCodeRow
-	for rows.Next() {
-		var i ReadClusterMapByGameCodeRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.X,
-			&i.Y,
-			&i.Z,
-			&i.NumberOfStars,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const readClusterMapByGameID = `-- name: ReadClusterMapByGameID :many
-SELECT systems.id      AS id,
-       systems.x       as x,
-       systems.y       as y,
-       systems.z       as z,
-       count(stars.id) AS number_of_stars
-FROM games,
-     clusters,
-     systems,
-     stars
-WHERE games.id = ?1
-  AND clusters.game_id = games.id
-  AND systems.cluster_id = clusters.id
-  AND stars.system_id = systems.id
-GROUP BY systems.id, systems.x, systems.y, systems.z
-ORDER BY systems.id
-`
-
-type ReadClusterMapByGameIDRow struct {
-	ID            int64
-	X             int64
-	Y             int64
-	Z             int64
-	NumberOfStars int64
-}
-
-// ReadClusterMapByGameID reads the cluster map for a game
-func (q *Queries) ReadClusterMapByGameID(ctx context.Context, gameID int64) ([]ReadClusterMapByGameIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, readClusterMapByGameID, gameID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ReadClusterMapByGameIDRow
-	for rows.Next() {
-		var i ReadClusterMapByGameIDRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.X,
-			&i.Y,
-			&i.Z,
-			&i.NumberOfStars,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const readClusterMetaByGameCode = `-- name: ReadClusterMetaByGameCode :one
-SELECT clusters.id,
-       clusters.home_system_id,
-       clusters.home_star_id,
-       clusters.home_orbit_id,
-       clusters.home_planet_id
-FROM clusters
-WHERE clusters.game_id = (SELECT id FROM games WHERE code = ?1)
-`
-
-type ReadClusterMetaByGameCodeRow struct {
-	ID           int64
-	HomeSystemID int64
-	HomeStarID   int64
-	HomeOrbitID  int64
-	HomePlanetID int64
-}
-
-// ReadClusterMetaByGameCode reads the cluster metadata for a game
-func (q *Queries) ReadClusterMetaByGameCode(ctx context.Context, gameCode string) (ReadClusterMetaByGameCodeRow, error) {
-	row := q.db.QueryRowContext(ctx, readClusterMetaByGameCode, gameCode)
-	var i ReadClusterMetaByGameCodeRow
-	err := row.Scan(
-		&i.ID,
-		&i.HomeSystemID,
-		&i.HomeStarID,
-		&i.HomeOrbitID,
-		&i.HomePlanetID,
-	)
+// ReadClusterMeta reads the cluster metadata for a game
+func (q *Queries) ReadClusterMeta(ctx context.Context) (ReadClusterMetaRow, error) {
+	row := q.db.QueryRowContext(ctx, readClusterMeta)
+	var i ReadClusterMetaRow
+	err := row.Scan(&i.HomeSystemID, &i.HomeStarID, &i.HomeOrbitID)
 	return i, err
 }
 
-const readClusterMetaByGameID = `-- name: ReadClusterMetaByGameID :one
-SELECT clusters.id,
-       clusters.home_system_id,
-       clusters.home_star_id,
-       clusters.home_orbit_id,
-       clusters.home_planet_id
-FROM clusters
-WHERE clusters.game_id = ?1
-`
-
-type ReadClusterMetaByGameIDRow struct {
-	ID           int64
-	HomeSystemID int64
-	HomeStarID   int64
-	HomeOrbitID  int64
-	HomePlanetID int64
-}
-
-// ReadClusterMetaByGameID reads the cluster metadata for a game
-func (q *Queries) ReadClusterMetaByGameID(ctx context.Context, gameID int64) (ReadClusterMetaByGameIDRow, error) {
-	row := q.db.QueryRowContext(ctx, readClusterMetaByGameID, gameID)
-	var i ReadClusterMetaByGameIDRow
-	err := row.Scan(
-		&i.ID,
-		&i.HomeSystemID,
-		&i.HomeStarID,
-		&i.HomeOrbitID,
-		&i.HomePlanetID,
-	)
-	return i, err
-}
-
-const updateEmpireMetadataByClusterID = `-- name: UpdateEmpireMetadataByClusterID :exec
-UPDATE clusters
-SET home_system_id = ?1,
+const updateEmpireMetadata = `-- name: UpdateEmpireMetadata :exec
+update games
+set home_system_id = ?1,
     home_star_id   = ?2,
-    home_orbit_id  = ?3,
-    home_planet_id = ?4
-WHERE id = ?5
+    home_orbit_id  = ?3
 `
 
-type UpdateEmpireMetadataByClusterIDParams struct {
+type UpdateEmpireMetadataParams struct {
 	HomeSystemID int64
 	HomeStarID   int64
 	HomeOrbitID  int64
-	HomePlanetID int64
-	ClusterID    int64
 }
 
-// UpdateEmpireMetadataByClusterID updates the empire metadata in the clusters table.
-func (q *Queries) UpdateEmpireMetadataByClusterID(ctx context.Context, arg UpdateEmpireMetadataByClusterIDParams) error {
-	_, err := q.db.ExecContext(ctx, updateEmpireMetadataByClusterID,
-		arg.HomeSystemID,
-		arg.HomeStarID,
-		arg.HomeOrbitID,
-		arg.HomePlanetID,
-		arg.ClusterID,
-	)
+// UpdateEmpireMetadata updates the empire metadata in the games table.
+func (q *Queries) UpdateEmpireMetadata(ctx context.Context, arg UpdateEmpireMetadataParams) error {
+	_, err := q.db.ExecContext(ctx, updateEmpireMetadata, arg.HomeSystemID, arg.HomeStarID, arg.HomeOrbitID)
 	return err
 }

@@ -3,64 +3,59 @@
 -- CreateStar creates a new star in an existing system.
 --
 -- name: CreateStar :one
-INSERT INTO stars (system_id, sequence)
-VALUES (:system_id, :sequence)
-RETURNING id;
+insert into stars (system_id, sequence, star_name, nbr_of_orbits)
+values (:system_id, :sequence, :star_name, :nbr_of_orbits)
+returning id;
 
 -- ReadStarByID returns a star by its ID.
 --
 -- name: ReadStarByID :one
-SELECT stars.id, stars.sequence, systems.x, systems.y, systems.z
-FROM stars,
+select systems.x, systems.y, systems.z, star_name, stars.sequence
+from stars,
      systems
-WHERE stars.id = :star_id
-  AND systems.id = stars.system_id;
+where stars.id = :star_id
+  and systems.id = stars.system_id;
 
 -- ReadAllStarsInCluster returns a list of all the stars in a cluster.
 --
 -- name: ReadAllStarsInCluster :many
-SELECT systems.id     AS system_id,
-       stars.id       AS star_id,
-       stars.sequence AS sequence,
-       systems.x      AS x,
-       systems.y      AS y,
-       systems.z      AS z
-FROM clusters,
-     systems,
+select systems.id     as system_id,
+       system_name,
+       stars.id       as star_id,
+       stars.sequence as sequence,
+       stars.star_name,
+       systems.x      as x,
+       systems.y      as y,
+       systems.z      as z
+from systems,
      stars
-WHERE clusters.id = :cluster_id
-  AND systems.cluster_id = clusters.id
-  AND stars.system_id = systems.id
-ORDER BY systems.id, stars.sequence;
+where stars.system_id = systems.id
+order by systems.id, stars.sequence;
 
 -- ReadAllStarsInSystem returns a list of stars in a system.
 --
 -- name: ReadAllStarsInSystem :many
-SELECT stars.id, systems.x, systems.y, systems.z, stars.sequence
-FROM systems,
+select stars.id, systems.x, systems.y, systems.z, stars.sequence, stars.star_name
+from systems,
      stars
-WHERE systems.id = :system_id
-  AND stars.system_id = systems.id
-ORDER BY stars.id;
+where systems.id = :system_id
+  and stars.system_id = systems.id
+order by stars.sequence;
 
 -- ReadStarSurvey reads the star survey data for star in a game.
 --
 -- name: ReadStarSurvey :many
-SELECT orbits.id                   AS orbit_id,
-       planets.id                  AS planet_id,
-       orbits.kind                 AS orbit_kind,
-       orbits.orbit_no             AS orbit_no,
-       planets.kind                AS planet_kind,
-       deposits.kind               AS deposit_kind,
-       sum(deposits.remaining_qty) AS quantity
-FROM stars,
+select orbits.id         as orbit_id,
+       orbits.orbit_no   as orbit_no,
+       orbits.kind       as orbit_kind,
+       deposits.kind     as deposit_kind,
+       sum(deposits.qty) as quantity
+from stars,
      orbits,
-     planets,
      deposits
-WHERE stars.id = :star_id
-  AND orbits.star_id = stars.id
-  AND planets.orbit_id = orbits.id
-  AND deposits.planet_id = planets.id
-GROUP BY orbits.id, orbits.orbit_no, orbits.kind, planets.id, planets.kind, deposits.kind
-ORDER BY orbits.orbit_no, deposits.kind;
+where stars.id = :star_id
+  and orbits.star_id = stars.id
+  and deposits.orbit_id = orbits.id
+group by orbits.id, orbits.orbit_no, orbits.kind, orbits.kind, deposits.kind
+order by orbits.orbit_no, deposits.kind;
 

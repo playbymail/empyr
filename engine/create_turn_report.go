@@ -18,29 +18,27 @@ import (
 )
 
 type CreateTurnReportsParams_t struct {
-	Code   string
-	TurnNo int64
-	Path   string // path to the output directory
+	Path string // path to the output directory
 }
 
 // CreateTurnReportsCommand creates turn reports for all empires in the given game.
 func CreateTurnReportsCommand(e *Engine_t, cfg *CreateTurnReportsParams_t) error {
-	log.Printf("create: turn-reports: code %q\n", cfg.Code)
 	log.Printf("create: turn-reports: path %q\n", cfg.Path)
 	if !stdlib.IsDirExists(cfg.Path) {
 		log.Printf("error: reports path does not exist\n")
 		return ErrInvalidPath
 	}
 
-	var gameId, turnNo int64
-	if row, err := e.Store.Queries.ReadGameInfoByCode(e.Store.Context, cfg.Code); err != nil {
+	var gameCode string
+	var turnNo int64
+	if row, err := e.Store.Queries.ReadAllGameInfo(e.Store.Context); err != nil {
 		return err
 	} else {
-		gameId, turnNo = row.ID, row.CurrentTurn
+		gameCode, turnNo = row.Code, row.CurrentTurn
 	}
-	log.Printf("game: %d: turn: %d\n", gameId, turnNo)
+	log.Printf("game: %q: turn: %d\n", gameCode, turnNo)
 
-	rows, err := e.Store.Queries.ReadAllEmpiresByGameID(e.Store.Context, gameId)
+	listOfEmpireID, err := e.Store.Queries.ReadActiveEmpires(e.Store.Context)
 	if err != nil {
 		log.Printf("error: %v\n", err)
 		return err
@@ -48,9 +46,8 @@ func CreateTurnReportsCommand(e *Engine_t, cfg *CreateTurnReportsParams_t) error
 
 	// before we start, make sure the output directory exists for each empire
 	errorCount := 0
-	for _, row := range rows {
-		empireNo := row.EmpireNo
-		empireReportPath := filepath.Join(cfg.Path, fmt.Sprintf("e%03d", empireNo), "reports")
+	for _, empireID := range listOfEmpireID {
+		empireReportPath := filepath.Join(cfg.Path, fmt.Sprintf("e%03d", empireID), "reports")
 		if !stdlib.IsDirExists(empireReportPath) {
 			log.Printf("error: empire report path does not exist\n")
 			log.Printf("error: %q\n", empireReportPath)
@@ -62,24 +59,23 @@ func CreateTurnReportsCommand(e *Engine_t, cfg *CreateTurnReportsParams_t) error
 	}
 
 	// try to build out the reports
-	for _, row := range rows {
-		empireId, empireNo := row.EmpireID, row.EmpireNo
-		empireReportPath := filepath.Join(cfg.Path, fmt.Sprintf("e%03d", empireNo), "reports")
-		log.Printf("game: %d: turn: %d: empire %d (%d)\n", gameId, turnNo, empireId, empireNo)
-		data, err := CreateTurnReportCommand(e, &CreateTurnReportParams_t{Code: cfg.Code, TurnNo: cfg.TurnNo, EmpireNo: empireNo})
+	for _, empireID := range listOfEmpireID {
+		empireReportPath := filepath.Join(cfg.Path, fmt.Sprintf("e%03d", empireID), "reports")
+		log.Printf("game: %d: turn: %d: empire %d (%d)\n", gameCode, turnNo, empireID, empireID)
+		data, err := CreateTurnReportCommand(e, &CreateTurnReportParams_t{EmpireID: empireID})
 		if err != nil {
 			log.Printf("error: turn report: %v\n", err)
 			errorCount++
 			continue
 		}
-		reportName := filepath.Join(empireReportPath, fmt.Sprintf("e%03d-turn-%04d.html", empireNo, turnNo))
+		reportName := filepath.Join(empireReportPath, fmt.Sprintf("e%03d-turn-%04d.html", empireID, turnNo))
 		if err := os.WriteFile(reportName, data, 0644); err != nil {
 			log.Printf("error: %q\n", reportName)
 			log.Printf("error: os.WriteFile: %v\n", err)
 			errorCount++
 			continue
 		}
-		log.Printf("game: %d: turn: %d: empire %d (%d): created turn report\n", gameId, turnNo, empireId, empireNo)
+		log.Printf("game: %d: turn: %d: empire %d (%d): created turn report\n", gameCode, turnNo, empireID, empireID)
 	}
 	if errorCount > 0 {
 		return ErrWritingReport
@@ -94,34 +90,24 @@ var (
 )
 
 type CreateTurnReportParams_t struct {
-	Code     string // code of the game to create the turn report for
-	TurnNo   int64  // turn number to create the turn report for
-	EmpireNo int64  // empire number to create the turn report for
+	EmpireID int64 // empire number to create the turn report for
 }
 
 // CreateTurnReportCommand creates a turn report for a game.
 // It returns a byte array containing the turn report as HTML.
 func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte, error) {
-	gameRow, err := e.Store.Queries.ReadGameInfoByCode(e.Store.Context, cfg.Code)
+	gameRow, err := e.Store.Queries.ReadAllGameInfo(e.Store.Context)
 	if err != nil {
 		log.Printf("error: %v\n", err)
 		return nil, err
 	}
-	clusterRow, err := e.Store.Queries.ReadClusterMetaByGameID(e.Store.Context, gameRow.ID)
+	gameCode, turnNo := gameRow.Code, gameRow.CurrentTurn
+	empireRow, err := e.Store.Queries.ReadEmpireByID(e.Store.Context, cfg.EmpireID)
 	if err != nil {
 		log.Printf("error: %v\n", err)
 		return nil, err
 	}
-	_ = clusterRow
-	empireRow, err := e.Store.Queries.ReadEmpireByGameIDByID(e.Store.Context, sqlc.ReadEmpireByGameIDByIDParams{
-		GameID:   gameRow.ID,
-		EmpireNo: cfg.EmpireNo,
-	})
-	if err != nil {
-		log.Printf("error: %v\n", err)
-		return nil, err
-	}
-	log.Printf("game %d: empire %d: turn %d\n", empireRow.GameID, empireRow.EmpireNo, cfg.TurnNo)
+	log.Printf("game %d: empire %d: turn %d\n", gameCode, empireRow.EmpireID, turnNo)
 
 	ts, err := template.New("turn-report").Parse(turnReportTmpl)
 	if err != nil {
@@ -130,11 +116,11 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 
 	payload := TurnReport_t{
 		Heading: &ReportHeading_t{
-			Game:       cfg.Code,
-			TurnNo:     cfg.TurnNo,
-			TurnCode:   fmt.Sprintf("T%05d", cfg.TurnNo),
-			EmpireNo:   cfg.EmpireNo,
-			EmpireCode: fmt.Sprintf("E%03d", cfg.EmpireNo),
+			Game:       gameCode,
+			TurnNo:     turnNo,
+			TurnCode:   fmt.Sprintf("T%05d", turnNo),
+			EmpireNo:   empireRow.EmpireID,
+			EmpireCode: fmt.Sprintf("E%03d", empireRow.EmpireID),
 		},
 		CreatedDate:     time.Now().UTC().Format("2006-01-02"),
 		CreatedDateTime: time.Now().UTC().Format(time.RFC3339),
@@ -146,15 +132,15 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 		return nil, err
 	}
 	for _, colonyRow := range colonyRows {
-		log.Printf("colony: %d\n", colonyRow.SorcsID)
+		log.Printf("colony: %d\n", colonyRow.ScID)
 		colonyReport := &ColonyReport_t{
-			Id:          colonyRow.SorcsID,
-			Coordinates: fmt.Sprintf("%02d/%02d/%02d%s", colonyRow.X, colonyRow.Y, colonyRow.Z, colonyRow.Suffix),
+			Id:          colonyRow.ScID,
+			Coordinates: colonyRow.StarName,
 			OrbitNo:     colonyRow.OrbitNo,
-			Kind:        colonyRow.SorcKind,
+			Kind:        colonyRow.ScKind,
 			Name:        colonyRow.Name,
 			VitalStatistics: &ColonyStatisticsReport_t{
-				TechLevel:        colonyRow.TechLevel,
+				TechLevel:        colonyRow.ScTechLevel,
 				StandardOfLiving: fmt.Sprintf("%6.4f", colonyRow.Sol),
 				Rations:          fmt.Sprintf("%6.2f %%", colonyRow.Rations*100),
 				BirthRate:        fmt.Sprintf("%6.4f %%", colonyRow.BirthRate),
@@ -164,7 +150,7 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 		if colonyReport.Name == "" {
 			colonyReport.Name = "Not Named"
 		}
-		if popRows, err := e.Store.Queries.ReadSorCPopulation(e.Store.Context, colonyRow.SorcsID); err != nil {
+		if popRows, err := e.Store.Queries.ReadSCPopulation(e.Store.Context, colonyRow.ScID); err != nil {
 			log.Printf("error: %v\n", err)
 			return nil, err
 		} else {
@@ -200,7 +186,7 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 			Used:      "0",
 			Available: "400,000",
 		}
-		if inventoryRows, err := e.Store.Queries.ReadSorCInventory(e.Store.Context, colonyRow.SorcsID); err != nil {
+		if inventoryRows, err := e.Store.Queries.ReadSCInventory(e.Store.Context, colonyRow.ScID); err != nil {
 			log.Printf("error: %v\n", err)
 			return nil, err
 		} else {
@@ -256,54 +242,54 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 				})
 			}
 		}
-		if reportRows, err := e.Store.Queries.ReadReportProductionInputs(e.Store.Context, sqlc.ReadReportProductionInputsParams{
-			SorcID: colonyRow.SorcsID,
-			TurnNo: cfg.TurnNo,
-		}); err != nil {
-			log.Printf("error: %v\n", err)
-			return nil, err
-		} else {
-			var totalFuel, totalGold, totalMetals, totalNonMetals int64
-			for _, reportRow := range reportRows {
-				totalFuel += reportRow.Fuel
-				totalGold += reportRow.Gold
-				totalMetals += reportRow.Metals
-				totalNonMetals += reportRow.NonMetals
-				colonyReport.ProductionConsumed = append(colonyReport.ProductionConsumed, &ProductionConsumedLine_t{
-					Category:  reportRow.Category,
-					Fuel:      commas(reportRow.Fuel),
-					Gold:      commas(reportRow.Gold),
-					Metals:    commas(reportRow.Metals),
-					NonMetals: commas(reportRow.NonMetals),
-				})
-			}
-			if len(reportRows) != 0 {
-				colonyReport.ProductionConsumed = append(colonyReport.ProductionConsumed, &ProductionConsumedLine_t{
-					Category:  "Total",
-					Fuel:      commas(totalFuel),
-					Gold:      commas(totalGold),
-					Metals:    commas(totalMetals),
-					NonMetals: commas(totalNonMetals),
-				})
-			}
-		}
-		if reportRows, err := e.Store.Queries.ReadReportProductionOutputs(e.Store.Context, sqlc.ReadReportProductionOutputsParams{
-			SorcID: colonyRow.SorcsID,
-			TurnNo: cfg.TurnNo,
-		}); err != nil {
-			log.Printf("error: %v\n", err)
-			return nil, err
-		} else {
-			for _, reportRow := range reportRows {
-				colonyReport.ProductionCreated = append(colonyReport.ProductionCreated, &ProductionCreatedLine_t{
-					Category:     reportRow.Category,
-					Farmed:       commas(reportRow.Farmed),
-					Mined:        commas(reportRow.Mined),
-					Manufactured: commas(reportRow.Manufactured),
-				})
-			}
-		}
-		if fgRows, err := e.Store.Queries.ReadSorCFactoryGroups(e.Store.Context, colonyRow.SorcsID); err != nil {
+		//if reportRows, err := e.Store.Queries.ReadReportProductionInputs(e.Store.Context, sqlc.ReadReportProductionInputsParams{
+		//	SorcID: colonyRow.ScID,
+		//	TurnNo: cfg.TurnNo,
+		//}); err != nil {
+		//	log.Printf("error: %v\n", err)
+		//	return nil, err
+		//} else {
+		//	var totalFuel, totalGold, totalMetals, totalNonMetals int64
+		//	for _, reportRow := range reportRows {
+		//		totalFuel += reportRow.Fuel
+		//		totalGold += reportRow.Gold
+		//		totalMetals += reportRow.Metals
+		//		totalNonMetals += reportRow.NonMetals
+		//		colonyReport.ProductionConsumed = append(colonyReport.ProductionConsumed, &ProductionConsumedLine_t{
+		//			Category:  reportRow.Category,
+		//			Fuel:      commas(reportRow.Fuel),
+		//			Gold:      commas(reportRow.Gold),
+		//			Metals:    commas(reportRow.Metals),
+		//			NonMetals: commas(reportRow.NonMetals),
+		//		})
+		//	}
+		//	if len(reportRows) != 0 {
+		//		colonyReport.ProductionConsumed = append(colonyReport.ProductionConsumed, &ProductionConsumedLine_t{
+		//			Category:  "Total",
+		//			Fuel:      commas(totalFuel),
+		//			Gold:      commas(totalGold),
+		//			Metals:    commas(totalMetals),
+		//			NonMetals: commas(totalNonMetals),
+		//		})
+		//	}
+		//}
+		//if reportRows, err := e.Store.Queries.ReadReportProductionOutputs(e.Store.Context, sqlc.ReadReportProductionOutputsParams{
+		//	SorcID: colonyRow.ScID,
+		//	TurnNo: cfg.TurnNo,
+		//}); err != nil {
+		//	log.Printf("error: %v\n", err)
+		//	return nil, err
+		//} else {
+		//	for _, reportRow := range reportRows {
+		//		colonyReport.ProductionCreated = append(colonyReport.ProductionCreated, &ProductionCreatedLine_t{
+		//			Category:     reportRow.Category,
+		//			Farmed:       commas(reportRow.Farmed),
+		//			Mined:        commas(reportRow.Mined),
+		//			Manufactured: commas(reportRow.Manufactured),
+		//		})
+		//	}
+		//}
+		if fgRows, err := e.Store.Queries.ReadSCFactoryGroups(e.Store.Context, colonyRow.ScID); err != nil {
 			log.Printf("error: %v\n", err)
 		} else {
 			for _, fgRow := range fgRows {
@@ -317,11 +303,17 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 					GroupNo: fmt.Sprintf("%02d", fgRow.GroupNo),
 					Orders:  code,
 				}
-				if fgRow.RetoolTurnNo.Valid {
+				if fgRetool, err := e.Store.Queries.ReadSCFactoryGroupRetoolOrder(e.Store.Context, sqlc.ReadSCFactoryGroupRetoolOrderParams{
+					ScID:    colonyRow.ScID,
+					GroupNo: fgRow.GroupNo,
+				}); err == nil {
 					rpt.Orders += " *"
-					rpt.RetoolTurn = fmt.Sprintf("%d", fgRow.RetoolTurnNo.Int64)
+					rpt.RetoolTurn = fmt.Sprintf("%d", fgRetool.TurnNo)
 				}
-				if grpRows, err := e.Store.Queries.ReadSorCFactoryGroup(e.Store.Context, fgRow.GroupID); err != nil {
+				if grpRows, err := e.Store.Queries.ReadSCFactoryGroup(e.Store.Context, sqlc.ReadSCFactoryGroupParams{
+					ScID:    colonyRow.ScID,
+					GroupNo: fgRow.GroupNo,
+				}); err != nil {
 					log.Printf("error: %v\n", err)
 				} else {
 					for _, grpRow := range grpRows {
@@ -331,7 +323,7 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 							code = fmt.Sprintf("%s-%d", grpRow.OrdersCd, grpRow.OrdersTechLevel)
 						}
 						rptLine := &ColonyFactoryGroupReport_t{
-							TechLevel:  grpRow.FactoryTechLevel,
+							TechLevel:  grpRow.GroupTechLevel,
 							NbrOfUnits: commas(grpRow.NbrOfUnits),
 						}
 						rptLine.Pipeline[0] = &ColonyFactoryPipelineReport_t{
@@ -355,34 +347,37 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 				colonyReport.FactoryGroups = append(colonyReport.FactoryGroups, rpt)
 			}
 		}
-		if fgRows, err := e.Store.Queries.ReadSorCFarmGroups(e.Store.Context, colonyRow.SorcsID); err != nil {
+		if fgRows, err := e.Store.Queries.ReadSCFarmGroups(e.Store.Context, colonyRow.ScID); err != nil {
 			log.Printf("error: %v\n", err)
 		} else {
 			for _, fgRow := range fgRows {
 				colonyReport.FarmGroups = append(colonyReport.FarmGroups, &ColonyFarmGroupsReport_t{
 					GroupNo:    fmt.Sprintf("%02d", fgRow.GroupNo),
-					TechLevel:  fgRow.TechLevel,
+					TechLevel:  fgRow.GroupTechLevel,
 					NbrOfUnits: commas(int64(fgRow.NbrOfUnits.Float64)),
 				})
 			}
 		}
-		if mgRows, err := e.Store.Queries.ReadSorCMiningGroups(e.Store.Context, colonyRow.SorcsID); err != nil {
+		if mgRows, err := e.Store.Queries.ReadSCMiningGroups(e.Store.Context, colonyRow.ScID); err != nil {
 			log.Printf("error: %v\n", err)
 		} else {
 			for _, mgRow := range mgRows {
 				rpt := &ColonyMiningGroupsReport_t{
 					GroupNo:      fmt.Sprintf("%02d", mgRow.GroupNo),
 					DepositNo:    fmt.Sprintf("%02d", mgRow.DepositNo),
-					DepositQty:   commas(mgRow.RemainingQty),
+					DepositQty:   commas(mgRow.Qty),
 					DepositKind:  mgRow.DepositKind,
 					DepositYield: fmt.Sprintf("%d %%", mgRow.YieldPct),
 				}
-				if grpRows, err := e.Store.Queries.ReadSorCMiningGroup(e.Store.Context, mgRow.GroupID); err != nil {
+				if grpRows, err := e.Store.Queries.ReadSCMiningGroup(e.Store.Context, sqlc.ReadSCMiningGroupParams{
+					ScID:    colonyRow.ScID,
+					GroupNo: mgRow.GroupNo,
+				}); err != nil {
 					log.Printf("error: %v\n", err)
 				} else {
 					for _, grpRow := range grpRows {
 						rpt.Units = append(rpt.Units, &MiningGroupUnitReport_t{
-							TechLevel:  grpRow.TechLevel,
+							TechLevel:  grpRow.GroupTechLevel,
 							NbrOfUnits: commas(int64(grpRow.NbrOfUnits.Float64)),
 						})
 					}

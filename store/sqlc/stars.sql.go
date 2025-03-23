@@ -12,54 +12,62 @@ import (
 
 const createStar = `-- name: CreateStar :one
 
-INSERT INTO stars (system_id, sequence)
-VALUES (?1, ?2)
-RETURNING id
+insert into stars (system_id, sequence, star_name, nbr_of_orbits)
+values (?1, ?2, ?3, ?4)
+returning id
 `
 
 type CreateStarParams struct {
-	SystemID int64
-	Sequence string
+	SystemID    int64
+	Sequence    string
+	StarName    string
+	NbrOfOrbits int64
 }
 
 //	Copyright (c) 2025 Michael D Henderson. All rights reserved.
 //
 // CreateStar creates a new star in an existing system.
 func (q *Queries) CreateStar(ctx context.Context, arg CreateStarParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createStar, arg.SystemID, arg.Sequence)
+	row := q.db.QueryRowContext(ctx, createStar,
+		arg.SystemID,
+		arg.Sequence,
+		arg.StarName,
+		arg.NbrOfOrbits,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
 }
 
 const readAllStarsInCluster = `-- name: ReadAllStarsInCluster :many
-SELECT systems.id     AS system_id,
-       stars.id       AS star_id,
-       stars.sequence AS sequence,
-       systems.x      AS x,
-       systems.y      AS y,
-       systems.z      AS z
-FROM clusters,
-     systems,
+select systems.id     as system_id,
+       system_name,
+       stars.id       as star_id,
+       stars.sequence as sequence,
+       stars.star_name,
+       systems.x      as x,
+       systems.y      as y,
+       systems.z      as z
+from systems,
      stars
-WHERE clusters.id = ?1
-  AND systems.cluster_id = clusters.id
-  AND stars.system_id = systems.id
-ORDER BY systems.id, stars.sequence
+where stars.system_id = systems.id
+order by systems.id, stars.sequence
 `
 
 type ReadAllStarsInClusterRow struct {
-	SystemID int64
-	StarID   int64
-	Sequence string
-	X        int64
-	Y        int64
-	Z        int64
+	SystemID   int64
+	SystemName string
+	StarID     int64
+	Sequence   string
+	StarName   string
+	X          int64
+	Y          int64
+	Z          int64
 }
 
 // ReadAllStarsInCluster returns a list of all the stars in a cluster.
-func (q *Queries) ReadAllStarsInCluster(ctx context.Context, clusterID int64) ([]ReadAllStarsInClusterRow, error) {
-	rows, err := q.db.QueryContext(ctx, readAllStarsInCluster, clusterID)
+func (q *Queries) ReadAllStarsInCluster(ctx context.Context) ([]ReadAllStarsInClusterRow, error) {
+	rows, err := q.db.QueryContext(ctx, readAllStarsInCluster)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +77,10 @@ func (q *Queries) ReadAllStarsInCluster(ctx context.Context, clusterID int64) ([
 		var i ReadAllStarsInClusterRow
 		if err := rows.Scan(
 			&i.SystemID,
+			&i.SystemName,
 			&i.StarID,
 			&i.Sequence,
+			&i.StarName,
 			&i.X,
 			&i.Y,
 			&i.Z,
@@ -89,12 +99,12 @@ func (q *Queries) ReadAllStarsInCluster(ctx context.Context, clusterID int64) ([
 }
 
 const readAllStarsInSystem = `-- name: ReadAllStarsInSystem :many
-SELECT stars.id, systems.x, systems.y, systems.z, stars.sequence
-FROM systems,
+select stars.id, systems.x, systems.y, systems.z, stars.sequence, stars.star_name
+from systems,
      stars
-WHERE systems.id = ?1
-  AND stars.system_id = systems.id
-ORDER BY stars.id
+where systems.id = ?1
+  and stars.system_id = systems.id
+order by stars.sequence
 `
 
 type ReadAllStarsInSystemRow struct {
@@ -103,6 +113,7 @@ type ReadAllStarsInSystemRow struct {
 	Y        int64
 	Z        int64
 	Sequence string
+	StarName string
 }
 
 // ReadAllStarsInSystem returns a list of stars in a system.
@@ -121,6 +132,7 @@ func (q *Queries) ReadAllStarsInSystem(ctx context.Context, systemID int64) ([]R
 			&i.Y,
 			&i.Z,
 			&i.Sequence,
+			&i.StarName,
 		); err != nil {
 			return nil, err
 		}
@@ -136,19 +148,19 @@ func (q *Queries) ReadAllStarsInSystem(ctx context.Context, systemID int64) ([]R
 }
 
 const readStarByID = `-- name: ReadStarByID :one
-SELECT stars.id, stars.sequence, systems.x, systems.y, systems.z
-FROM stars,
+select systems.x, systems.y, systems.z, star_name, stars.sequence
+from stars,
      systems
-WHERE stars.id = ?1
-  AND systems.id = stars.system_id
+where stars.id = ?1
+  and systems.id = stars.system_id
 `
 
 type ReadStarByIDRow struct {
-	ID       int64
-	Sequence string
 	X        int64
 	Y        int64
 	Z        int64
+	StarName string
+	Sequence string
 }
 
 // ReadStarByID returns a star by its ID.
@@ -156,41 +168,35 @@ func (q *Queries) ReadStarByID(ctx context.Context, starID int64) (ReadStarByIDR
 	row := q.db.QueryRowContext(ctx, readStarByID, starID)
 	var i ReadStarByIDRow
 	err := row.Scan(
-		&i.ID,
-		&i.Sequence,
 		&i.X,
 		&i.Y,
 		&i.Z,
+		&i.StarName,
+		&i.Sequence,
 	)
 	return i, err
 }
 
 const readStarSurvey = `-- name: ReadStarSurvey :many
-SELECT orbits.id                   AS orbit_id,
-       planets.id                  AS planet_id,
-       orbits.kind                 AS orbit_kind,
-       orbits.orbit_no             AS orbit_no,
-       planets.kind                AS planet_kind,
-       deposits.kind               AS deposit_kind,
-       sum(deposits.remaining_qty) AS quantity
-FROM stars,
+select orbits.id         as orbit_id,
+       orbits.orbit_no   as orbit_no,
+       orbits.kind       as orbit_kind,
+       deposits.kind     as deposit_kind,
+       sum(deposits.qty) as quantity
+from stars,
      orbits,
-     planets,
      deposits
-WHERE stars.id = ?1
-  AND orbits.star_id = stars.id
-  AND planets.orbit_id = orbits.id
-  AND deposits.planet_id = planets.id
-GROUP BY orbits.id, orbits.orbit_no, orbits.kind, planets.id, planets.kind, deposits.kind
-ORDER BY orbits.orbit_no, deposits.kind
+where stars.id = ?1
+  and orbits.star_id = stars.id
+  and deposits.orbit_id = orbits.id
+group by orbits.id, orbits.orbit_no, orbits.kind, orbits.kind, deposits.kind
+order by orbits.orbit_no, deposits.kind
 `
 
 type ReadStarSurveyRow struct {
 	OrbitID     int64
-	PlanetID    int64
-	OrbitKind   string
 	OrbitNo     int64
-	PlanetKind  string
+	OrbitKind   string
 	DepositKind string
 	Quantity    sql.NullFloat64
 }
@@ -207,10 +213,8 @@ func (q *Queries) ReadStarSurvey(ctx context.Context, starID int64) ([]ReadStarS
 		var i ReadStarSurveyRow
 		if err := rows.Scan(
 			&i.OrbitID,
-			&i.PlanetID,
-			&i.OrbitKind,
 			&i.OrbitNo,
-			&i.PlanetKind,
+			&i.OrbitKind,
 			&i.DepositKind,
 			&i.Quantity,
 		); err != nil {

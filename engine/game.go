@@ -3,7 +3,7 @@
 package engine
 
 type Game_t struct {
-	Id int64 // database key
+	Code string // database key
 
 	Home struct {
 		System *System_t

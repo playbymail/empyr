@@ -10,63 +10,55 @@ import (
 )
 
 const createOrbit = `-- name: CreateOrbit :one
-INSERT INTO orbits (star_id, orbit_no, kind)
-VALUES (?1, ?2, ?3)
-RETURNING id
+insert into orbits (system_id, star_id, orbit_no, kind, habitability, nbr_of_deposits)
+values (?1, ?2, ?3, ?4, ?5, ?6)
+returning id
 `
 
 type CreateOrbitParams struct {
-	StarID  int64
-	OrbitNo int64
-	Kind    string
+	SystemID      int64
+	StarID        int64
+	OrbitNo       int64
+	Kind          string
+	Habitability  int64
+	NbrOfDeposits int64
 }
 
 // CreateOrbit creates a new orbit.
 func (q *Queries) CreateOrbit(ctx context.Context, arg CreateOrbitParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createOrbit, arg.StarID, arg.OrbitNo, arg.Kind)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
-const readOrbitPlanet = `-- name: ReadOrbitPlanet :one
-SELECT planets.id
-FROM planets
-WHERE planets.orbit_id = ?1
-`
-
-// ReadOrbitPlanet returns the planet for a given orbit.
-func (q *Queries) ReadOrbitPlanet(ctx context.Context, orbitID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, readOrbitPlanet, orbitID)
+	row := q.db.QueryRowContext(ctx, createOrbit,
+		arg.SystemID,
+		arg.StarID,
+		arg.OrbitNo,
+		arg.Kind,
+		arg.Habitability,
+		arg.NbrOfDeposits,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
 }
 
 const readOrbitStar = `-- name: ReadOrbitStar :one
-SELECT systems.id      AS system_id,
-       systems.x       AS x,
-       systems.y       AS y,
-       systems.z       AS z,
-       stars.id        AS star_id,
-       stars.sequence  AS star_sequence,
-       orbits.orbit_no AS orbit_no
-FROM orbits,
+select systems.id as system_id,
+       systems.system_name,
+       stars.id   as star_id,
+       stars.star_name,
+       orbits.orbit_no
+from orbits,
      stars,
      systems
-WHERE orbits.id = ?1
-  AND stars.id = orbits.star_id
-  AND systems.id = stars.system_id
+where orbits.id = ?1
+  and stars.id = orbits.star_id
+  and systems.id = orbits.system_id
 `
 
 type ReadOrbitStarRow struct {
-	SystemID     int64
-	X            int64
-	Y            int64
-	Z            int64
-	StarID       int64
-	StarSequence string
-	OrbitNo      int64
+	SystemID   int64
+	SystemName string
+	StarID     int64
+	StarName   string
+	OrbitNo    int64
 }
 
 // ReadOrbitStar returns the star for a given orbit.
@@ -75,66 +67,52 @@ func (q *Queries) ReadOrbitStar(ctx context.Context, orbitID int64) (ReadOrbitSt
 	var i ReadOrbitStarRow
 	err := row.Scan(
 		&i.SystemID,
-		&i.X,
-		&i.Y,
-		&i.Z,
+		&i.SystemName,
 		&i.StarID,
-		&i.StarSequence,
+		&i.StarName,
 		&i.OrbitNo,
 	)
 	return i, err
 }
 
 const readOrbitSurvey = `-- name: ReadOrbitSurvey :many
-SELECT systems.id             AS system_id,
-       systems.x              AS x,
-       systems.y              AS y,
-       systems.z              AS z,
-       stars.id               AS star_id,
-       stars.sequence         AS star_sequence,
-       orbits.id              AS orbit_id,
-       orbits.orbit_no        AS orbit_no,
-       planets.id             AS planet_id,
-       planet_codes.name      AS planet_kind,
-       deposits.id            AS deposit_id,
-       deposits.deposit_no    AS deposit_no,
-       unit_codes.code        AS deposit_kind,
-       deposits.remaining_qty AS deposit_qty,
-       deposits.yield_pct     AS yield_pct
-FROM orbits,
-     planets,
-     planet_codes,
+select systems.id          as system_id,
+       systems.system_name,
+       stars.id            as star_id,
+       stars.star_name,
+       orbits.orbit_no     as orbit_no,
+       orbit_codes.name    as orbit_kind,
+       deposits.id         as deposit_id,
+       deposits.deposit_no as deposit_no,
+       unit_codes.code     as deposit_kind,
+       deposits.qty        as deposit_qty,
+       deposits.yield_pct  as yield_pct
+from orbits,
+     orbit_codes,
      deposits,
      unit_codes,
      stars,
      systems
-WHERE orbits.id = ?1
-  AND planets.orbit_id = orbits.id
-  AND planet_codes.code = planets.kind
-  AND deposits.planet_id = planets.id
-  AND unit_codes.code = deposits.kind
-  AND orbits.id = planets.orbit_id
-  AND stars.id = orbits.star_id
-  AND systems.id = stars.system_id
-ORDER BY deposits.deposit_no
+where orbits.id = ?1
+  and deposits.orbit_id = orbits.id
+  and unit_codes.code = deposits.kind
+  and stars.id = orbits.star_id
+  and systems.id = orbits.system_id
+order by deposits.deposit_no
 `
 
 type ReadOrbitSurveyRow struct {
-	SystemID     int64
-	X            int64
-	Y            int64
-	Z            int64
-	StarID       int64
-	StarSequence string
-	OrbitID      int64
-	OrbitNo      int64
-	PlanetID     int64
-	PlanetKind   string
-	DepositID    int64
-	DepositNo    int64
-	DepositKind  string
-	DepositQty   int64
-	YieldPct     int64
+	SystemID    int64
+	SystemName  string
+	StarID      int64
+	StarName    string
+	OrbitNo     int64
+	OrbitKind   string
+	DepositID   int64
+	DepositNo   int64
+	DepositKind string
+	DepositQty  int64
+	YieldPct    int64
 }
 
 // ReadOrbitSurvey reads the orbit survey data for a game.
@@ -149,15 +127,11 @@ func (q *Queries) ReadOrbitSurvey(ctx context.Context, orbitID int64) ([]ReadOrb
 		var i ReadOrbitSurveyRow
 		if err := rows.Scan(
 			&i.SystemID,
-			&i.X,
-			&i.Y,
-			&i.Z,
+			&i.SystemName,
 			&i.StarID,
-			&i.StarSequence,
-			&i.OrbitID,
+			&i.StarName,
 			&i.OrbitNo,
-			&i.PlanetID,
-			&i.PlanetKind,
+			&i.OrbitKind,
 			&i.DepositID,
 			&i.DepositNo,
 			&i.DepositKind,
@@ -175,4 +149,30 @@ func (q *Queries) ReadOrbitSurvey(ctx context.Context, orbitID int64) ([]ReadOrb
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateOrbit = `-- name: UpdateOrbit :exec
+update orbits
+set kind            = ?1,
+    habitability    = ?2,
+    nbr_of_deposits = ?3
+where id = ?4
+`
+
+type UpdateOrbitParams struct {
+	Kind          string
+	Habitability  int64
+	NbrOfDeposits int64
+	OrbitID       int64
+}
+
+// UpdateOrbit updates an existing orbit.
+func (q *Queries) UpdateOrbit(ctx context.Context, arg UpdateOrbitParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrbit,
+		arg.Kind,
+		arg.Habitability,
+		arg.NbrOfDeposits,
+		arg.OrbitID,
+	)
+	return err
 }
