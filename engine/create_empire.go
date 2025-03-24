@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/playbymail/empyr/store/sqlc"
 	"log"
+	"math"
 )
 
 const (
@@ -42,6 +43,26 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, error) 
 	}
 	if gameRow.CurrentTurn != 0 {
 		return 0, ErrGameInProgress
+	}
+
+	type deposit_t struct {
+		no       int64
+		kind     string
+		qty      int64
+		yieldPct float64
+	}
+	deposits := map[int64]deposit_t{}
+	if rows, err := q.ReadDepositsByOrbit(e.Store.Context, gameRow.HomeOrbitID); err != nil {
+		return 0, err
+	} else {
+		for _, row := range rows {
+			deposits[row.DepositNo] = deposit_t{
+				no:       row.DepositNo,
+				kind:     row.Kind,
+				qty:      row.Qty,
+				yieldPct: float64(row.YieldPct) / 100,
+			}
+		}
 	}
 
 	empireID := cfg.EmpireID
@@ -257,6 +278,76 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, error) 
 				log.Printf("create: empire: sc factory group unit %+v\n", fgUnitParms)
 				return 0, err
 			}
+			// assumes FCT-1 for fuel and labor costs and actual production values
+			if unit.techLevel != 1 {
+				panic(fmt.Sprintf("assert(FCT-1 == FCT-%d)", unit.techLevel))
+			}
+			ps := sqlc.CreateSCFactoryProductionSummaryParams{
+				ScID:          scId,
+				GroupNo:       fg.groupNo,
+				TurnNo:        0,
+				FuelConsumed:  int64(math.Ceil(float64(unit.nbrOfUnits) * 0.5)),
+				MetsConsumed:  0,
+				NmtsConsumed:  0,
+				UnitCd:        fg.ordersCode,
+				UnitTechLevel: fg.ordersTechLevel,
+			}
+			if unit.nbrOfUnits < 5 {
+				ps.ProConsumed = unit.nbrOfUnits * 6
+				ps.UskConsumed = unit.nbrOfUnits * 18
+			} else if unit.nbrOfUnits < 50 {
+				ps.ProConsumed = unit.nbrOfUnits * 5
+				ps.UskConsumed = unit.nbrOfUnits * 15
+			} else if unit.nbrOfUnits < 500 {
+				ps.ProConsumed = unit.nbrOfUnits * 4
+				ps.UskConsumed = unit.nbrOfUnits * 12
+			} else if unit.nbrOfUnits < 5_000 {
+				ps.ProConsumed = unit.nbrOfUnits * 3
+				ps.UskConsumed = unit.nbrOfUnits * 9
+			} else if unit.nbrOfUnits < 50_000 {
+				ps.ProConsumed = unit.nbrOfUnits * 2
+				ps.UskConsumed = unit.nbrOfUnits * 6
+			} else {
+				ps.ProConsumed = unit.nbrOfUnits * 1
+				ps.UskConsumed = unit.nbrOfUnits * 3
+			}
+
+			massConvertedPerYear := 20.0 * float64(unit.nbrOfUnits)
+
+			metsPerUnit, nmtsPerUnit := 0.0, 0.0
+			if fg.ordersCode == "AUT" {
+				metsPerUnit, nmtsPerUnit = 2, 2
+			} else if fg.ordersCode == "CNGD" {
+				metsPerUnit, nmtsPerUnit = 0.2, 0.4
+			} else if fg.ordersCode == "EWP" {
+				metsPerUnit, nmtsPerUnit = 5, 5
+			} else if fg.ordersCode == "MIN" {
+				metsPerUnit, nmtsPerUnit = 6, 6
+			} else if fg.ordersCode == "MTSP" {
+				metsPerUnit, nmtsPerUnit = 0.02, 0.02
+			} else if fg.ordersCode == "RSCH" {
+				metsPerUnit, nmtsPerUnit = 0, 0
+			} else if fg.ordersCode == "STU" {
+				metsPerUnit, nmtsPerUnit = 0.07, 0.03
+			} else {
+				panic(fmt.Sprintf("assert(ordersCode != %q)", fg.ordersCode))
+			}
+			totalMassPerUnit := metsPerUnit + nmtsPerUnit
+			if fg.ordersCode == "RSCH" {
+				totalMassPerUnit = 1
+			}
+			unitsProducedPerYear := massConvertedPerYear / totalMassPerUnit
+			unitsProducedPerTurn := math.Floor(unitsProducedPerYear / 4)
+
+			ps.MetsConsumed = int64(math.Ceil(unitsProducedPerTurn * metsPerUnit))
+			ps.NmtsConsumed = int64(math.Ceil(unitsProducedPerTurn * nmtsPerUnit))
+			ps.UnitsProduced = int64(unitsProducedPerTurn)
+
+			err = q.CreateSCFactoryProductionSummary(e.Store.Context, ps)
+			if err != nil {
+				log.Printf("create: empire: sc factory production summary %+v\n", ps)
+				return 0, err
+			}
 		}
 	}
 
@@ -292,6 +383,39 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, error) 
 			err = q.CreateSCFarmGroupUnit(e.Store.Context, fgUnitParms)
 			if err != nil {
 				log.Printf("create: empire: sc farm group unit %+v\n", fgUnitParms)
+				return 0, err
+			}
+			// assumes FRM-1 for fuel and labor costs and actual production values
+			if unit.techLevel != 1 {
+				panic(fmt.Sprintf("assert(FRM-1 == FRM-%d)", unit.techLevel))
+			}
+			var ps = struct {
+				groupNo      int64
+				fuelConsumed int64
+				proConsumed  int64
+				uskConsumed  int64
+				autConsumed  int64
+				foodProduced int64
+			}{
+				groupNo:      fg.groupNo,
+				fuelConsumed: int64(math.Ceil(float64(unit.qty) * 0.5)),
+				proConsumed:  unit.qty,
+				uskConsumed:  unit.qty * 3,
+				autConsumed:  0,
+				foodProduced: unit.qty * 100,
+			}
+			err = q.CreateSCFarmProductionSummary(e.Store.Context, sqlc.CreateSCFarmProductionSummaryParams{
+				ScID:         scId,
+				GroupNo:      ps.groupNo,
+				TurnNo:       0,
+				FuelConsumed: ps.fuelConsumed,
+				ProConsumed:  ps.proConsumed,
+				UskConsumed:  ps.uskConsumed,
+				AutConsumed:  ps.autConsumed,
+				FoodProduced: ps.foodProduced,
+			})
+			if err != nil {
+				log.Printf("create: empire: sc farm production summary %+v\n", ps)
 				return 0, err
 			}
 		}
@@ -378,6 +502,13 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, error) 
 			{groupNo: 3, depositNo: 6, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 165000}}},
 			{groupNo: 4, depositNo: 21, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 60000}}},
 		}
+	} else {
+		miningGroups = []miningGroup{
+			{groupNo: 1, depositNo: 1, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 1000}}},
+			{groupNo: 2, depositNo: 2, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 74000}}},
+			{groupNo: 3, depositNo: 6, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 165000}}},
+			{groupNo: 4, depositNo: 21, units: []miningUnit{{code: "MIN", techLevel: 1, nbrOfUnits: 60000}}},
+		}
 	}
 	for _, mg := range miningGroups {
 		depositID, ok := depositMap[mg.depositNo]
@@ -405,6 +536,64 @@ func CreateEmpireCommand(e *Engine_t, cfg *CreateEmpireParams_t) (int64, error) 
 			err = q.CreateSCMiningGroupUnit(e.Store.Context, mgUnitParms)
 			if err != nil {
 				log.Printf("create: empire: sc mining group unit %+v\n", mgUnitParms)
+				return 0, err
+			}
+			// assumes MIN-1 for fuel and labor costs and actual production values
+			if unit.techLevel != 1 {
+				panic(fmt.Sprintf("assert(MIN-1 == MIN-%d)", unit.techLevel))
+			}
+			deposit, ok := deposits[mg.depositNo]
+			if !ok {
+				log.Printf("create: empire: sc mining group unit %+v\n", mgUnitParms)
+				return 0, ErrMissingDeposit
+			}
+			amtMinedPerTurn := unit.nbrOfUnits * 25
+			amtProducedPerTurn := int64(math.Ceil(float64(amtMinedPerTurn) * deposit.yieldPct))
+			if amtProducedPerTurn > deposit.qty {
+				amtProducedPerTurn = deposit.qty
+			}
+			var ps = struct {
+				groupNo      int64
+				fuelConsumed int64
+				proConsumed  int64
+				uskConsumed  int64
+				autConsumed  int64
+				fuelProduced int64
+				goldProduced int64
+				metsProduced int64
+				nmtsProduced int64
+			}{
+				groupNo:      mg.groupNo,
+				fuelConsumed: int64(math.Ceil(float64(unit.nbrOfUnits) * 0.5)),
+				proConsumed:  unit.nbrOfUnits,
+				uskConsumed:  unit.nbrOfUnits * 3,
+				autConsumed:  0,
+			}
+			switch deposit.kind {
+			case "FUEL":
+				ps.fuelProduced = amtProducedPerTurn
+			case "GOLD":
+				ps.goldProduced = amtProducedPerTurn
+			case "METS":
+				ps.metsProduced = amtProducedPerTurn
+			case "NMTS":
+				ps.nmtsProduced = amtProducedPerTurn
+			}
+			err = q.CreateSCMiningProductionSummary(e.Store.Context, sqlc.CreateSCMiningProductionSummaryParams{
+				ScID:         scId,
+				GroupNo:      ps.groupNo,
+				TurnNo:       0,
+				FuelConsumed: ps.fuelConsumed,
+				ProConsumed:  ps.proConsumed,
+				UskConsumed:  ps.uskConsumed,
+				AutConsumed:  ps.autConsumed,
+				FuelProduced: ps.fuelProduced,
+				GoldProduced: ps.goldProduced,
+				MetsProduced: ps.metsProduced,
+				NmtsProduced: ps.nmtsProduced,
+			})
+			if err != nil {
+				log.Printf("create: empire: sc farm production summary %+v\n", ps)
 				return 0, err
 			}
 		}

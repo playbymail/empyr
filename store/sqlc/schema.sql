@@ -203,6 +203,28 @@ CREATE TABLE deposits
             REFERENCES unit_codes (code)
 );
 
+-- deposits_summary is a temporary table that is used to summarize the
+-- deposits table for reporting. It holds the total quantity of each
+-- resource type from all the deposits on a planet. It also holds the
+-- log10 estimated value of the resources.
+create table deposits_summary
+(
+    deposit_id   integer not null,
+    eff_turn     integer not null,
+    end_turn     integer not null,
+    fuel_qty     integer not null,
+    fuel_est_qty integer not null,
+    gold_qty     integer not null,
+    gold_est_qty integer not null,
+    mets_qty     integer not null,
+    mets_est_qty integer not null,
+    nmts_qty     integer not null,
+    nmts_est_qty integer not null,
+    CONSTRAINT fk_deposit_id
+        FOREIGN KEY (deposit_id)
+            REFERENCES deposits (id)
+);
+
 CREATE TABLE empires
 (
     id        INTEGER NOT NULL UNIQUE CHECK (id BETWEEN 1 AND 256),
@@ -451,4 +473,68 @@ CREATE TABLE survey_orders
     CONSTRAINT fk_target_id
         FOREIGN KEY (target_id)
             REFERENCES orbits (id)
+);
+
+-- sc_farming_summary is a summary of the farming activity of a single group
+-- on a ship/colony for a single turn.
+create table sc_farming_summary
+(
+    sc_id         integer not null,
+    group_no      integer not null,
+    turn_no       integer not null,
+    fuel_consumed integer not null,
+    pro_consumed  integer not null,
+    usk_consumed  integer not null,
+    aut_consumed  integer not null,
+    food_produced integer not null,
+    primary key (sc_id, group_no, turn_no),
+    constraint fk_sc_id
+        foreign key (sc_id)
+            references scs (id)
+);
+
+-- sc_manufacturing_summary is a summary of the manufacturing activity of a single group
+-- on a ship/colony for a single turn. The primary key is the sc_id, group_no, and turn_no.
+-- This works because each factory group can only create one type of unit per turn.
+create table sc_manufacturing_summary
+(
+    sc_id           integer not null,
+    group_no        integer not null,
+    turn_no         integer not null,
+    fuel_consumed   integer not null,
+    mets_consumed   integer not null,
+    nmts_consumed   integer not null,
+    pro_consumed    integer not null,
+    usk_consumed    integer not null,
+    aut_consumed    integer not null,
+    unit_cd         text    not null,
+    unit_tech_level integer not null,
+    units_produced  integer not null,
+    primary key (sc_id, group_no, turn_no),
+    constraint fk_sc_id
+        foreign key (sc_id)
+            references scs (id)
+);
+
+-- sc_mining_summary is a summary of the mining activity of a single group
+-- on a ship/colony for a single turn. The primary key is the sc_id, group_no,
+-- and turn_no. This works because each mining group can only mine one deposit
+-- per turn.
+create table sc_mining_summary
+(
+    sc_id         integer not null,
+    group_no      integer not null,
+    turn_no       integer not null,
+    fuel_consumed integer not null,
+    pro_consumed  integer not null,
+    usk_consumed  integer not null,
+    aut_consumed  integer not null,
+    fuel_produced integer not null,
+    gold_produced integer not null,
+    mets_produced integer not null,
+    nmts_produced integer not null,
+    primary key (sc_id, group_no, turn_no),
+    constraint fk_sc_id
+        foreign key (sc_id)
+            references scs (id)
 );

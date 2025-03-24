@@ -108,6 +108,62 @@ func (q *Queries) CreateSCFactoryGroupUnit(ctx context.Context, arg CreateSCFact
 	return err
 }
 
+const createSCFactoryProductionSummary = `-- name: CreateSCFactoryProductionSummary :exec
+insert into sc_manufacturing_summary (sc_id, group_no, turn_no,
+                                      fuel_consumed, mets_consumed, nmts_consumed,
+                                      pro_consumed, usk_consumed, aut_consumed,
+                                      unit_cd, unit_tech_level, units_produced)
+values (?1, ?2, ?3,
+        ?4, ?5, ?6,
+        ?7, ?8, ?9,
+        ?10, ?11, ?12)
+on conflict (sc_id, group_no, turn_no)
+    do update set fuel_consumed   = ?4,
+                  mets_consumed   = ?5,
+                  nmts_consumed   = ?6,
+                  pro_consumed    = ?7,
+                  usk_consumed    = ?8,
+                  aut_consumed    = ?9,
+                  unit_cd         = ?10,
+                  unit_tech_level = ?11,
+                  units_produced  = ?12
+`
+
+type CreateSCFactoryProductionSummaryParams struct {
+	ScID          int64
+	GroupNo       int64
+	TurnNo        int64
+	FuelConsumed  int64
+	MetsConsumed  int64
+	NmtsConsumed  int64
+	ProConsumed   int64
+	UskConsumed   int64
+	AutConsumed   int64
+	UnitCd        string
+	UnitTechLevel int64
+	UnitsProduced int64
+}
+
+// CreateSCFactoryProductionSummary creates a new ship or colony factory summary
+// of production for a single turn.
+func (q *Queries) CreateSCFactoryProductionSummary(ctx context.Context, arg CreateSCFactoryProductionSummaryParams) error {
+	_, err := q.db.ExecContext(ctx, createSCFactoryProductionSummary,
+		arg.ScID,
+		arg.GroupNo,
+		arg.TurnNo,
+		arg.FuelConsumed,
+		arg.MetsConsumed,
+		arg.NmtsConsumed,
+		arg.ProConsumed,
+		arg.UskConsumed,
+		arg.AutConsumed,
+		arg.UnitCd,
+		arg.UnitTechLevel,
+		arg.UnitsProduced,
+	)
+	return err
+}
+
 const createSCFarmGroup = `-- name: CreateSCFarmGroup :exec
 insert into farm_groups (sc_id, group_no)
 values (?1, ?2)
@@ -143,6 +199,50 @@ func (q *Queries) CreateSCFarmGroupUnit(ctx context.Context, arg CreateSCFarmGro
 		arg.GroupNo,
 		arg.GroupTechLevel,
 		arg.NbrOfUnits,
+	)
+	return err
+}
+
+const createSCFarmProductionSummary = `-- name: CreateSCFarmProductionSummary :exec
+insert into sc_farming_summary (sc_id, group_no, turn_no,
+                                fuel_consumed,
+                                pro_consumed, usk_consumed, aut_consumed,
+                                food_produced)
+values (?1, ?2, ?3,
+        ?4,
+        ?5, ?6, ?7,
+        ?8)
+on conflict (sc_id, group_no, turn_no)
+    do update set fuel_consumed = ?4,
+                  pro_consumed  = ?5,
+                  usk_consumed  = ?6,
+                  aut_consumed  = ?7,
+                  food_produced = ?8
+`
+
+type CreateSCFarmProductionSummaryParams struct {
+	ScID         int64
+	GroupNo      int64
+	TurnNo       int64
+	FuelConsumed int64
+	ProConsumed  int64
+	UskConsumed  int64
+	AutConsumed  int64
+	FoodProduced int64
+}
+
+// CreateSCFarmProductionSummary creates a new ship or colony farm summary
+// of production for a single turn.
+func (q *Queries) CreateSCFarmProductionSummary(ctx context.Context, arg CreateSCFarmProductionSummaryParams) error {
+	_, err := q.db.ExecContext(ctx, createSCFarmProductionSummary,
+		arg.ScID,
+		arg.GroupNo,
+		arg.TurnNo,
+		arg.FuelConsumed,
+		arg.ProConsumed,
+		arg.UskConsumed,
+		arg.AutConsumed,
+		arg.FoodProduced,
 	)
 	return err
 }
@@ -214,6 +314,59 @@ func (q *Queries) CreateSCMiningGroupUnit(ctx context.Context, arg CreateSCMinin
 		arg.GroupNo,
 		arg.GroupTechLevel,
 		arg.NbrOfUnits,
+	)
+	return err
+}
+
+const createSCMiningProductionSummary = `-- name: CreateSCMiningProductionSummary :exec
+insert into sc_mining_summary (sc_id, group_no, turn_no,
+                               fuel_consumed,
+                               pro_consumed, usk_consumed, aut_consumed,
+                               fuel_produced, gold_produced, mets_produced, nmts_produced)
+values (?1, ?2, ?3,
+        ?4,
+        ?5, ?6, ?7,
+        ?8, ?9, ?10, ?11)
+on conflict (sc_id, group_no, turn_no)
+    do update set fuel_consumed = ?4,
+                  pro_consumed  = ?5,
+                  usk_consumed  = ?6,
+                  aut_consumed  = ?7,
+                  fuel_produced = ?8,
+                  gold_produced = ?9,
+                  mets_produced = ?10,
+                  nmts_produced = ?11
+`
+
+type CreateSCMiningProductionSummaryParams struct {
+	ScID         int64
+	GroupNo      int64
+	TurnNo       int64
+	FuelConsumed int64
+	ProConsumed  int64
+	UskConsumed  int64
+	AutConsumed  int64
+	FuelProduced int64
+	GoldProduced int64
+	MetsProduced int64
+	NmtsProduced int64
+}
+
+// CreateSCMiningProductionSummary creates a new ship or colony mining summary
+// of production for a single turn.
+func (q *Queries) CreateSCMiningProductionSummary(ctx context.Context, arg CreateSCMiningProductionSummaryParams) error {
+	_, err := q.db.ExecContext(ctx, createSCMiningProductionSummary,
+		arg.ScID,
+		arg.GroupNo,
+		arg.TurnNo,
+		arg.FuelConsumed,
+		arg.ProConsumed,
+		arg.UskConsumed,
+		arg.AutConsumed,
+		arg.FuelProduced,
+		arg.GoldProduced,
+		arg.MetsProduced,
+		arg.NmtsProduced,
 	)
 	return err
 }

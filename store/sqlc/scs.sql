@@ -33,6 +33,29 @@ values (:sc_id, :group_no, :group_tech_level, :nbr_of_units,
         :orders_cd, :orders_tech_level,
         :wip_25pct_qty, :wip_50pct_qty, :wip_75pct_qty);
 
+-- CreateSCFactoryProductionSummary creates a new ship or colony factory summary
+-- of production for a single turn.
+--
+-- name: CreateSCFactoryProductionSummary :exec
+insert into sc_manufacturing_summary (sc_id, group_no, turn_no,
+                                      fuel_consumed, mets_consumed, nmts_consumed,
+                                      pro_consumed, usk_consumed, aut_consumed,
+                                      unit_cd, unit_tech_level, units_produced)
+values (:sc_id, :group_no, :turn_no,
+        :fuel_consumed, :mets_consumed, :nmts_consumed,
+        :pro_consumed, :usk_consumed, :aut_consumed,
+        :unit_cd, :unit_tech_level, :units_produced)
+on conflict (sc_id, group_no, turn_no)
+    do update set fuel_consumed   = ?4,
+                  mets_consumed   = ?5,
+                  nmts_consumed   = ?6,
+                  pro_consumed    = ?7,
+                  usk_consumed    = ?8,
+                  aut_consumed    = ?9,
+                  unit_cd         = ?10,
+                  unit_tech_level = ?11,
+                  units_produced  = ?12;
+
 -- CreateSCFarmGroup creates a new ship or colony farm group.
 --
 -- name: CreateSCFarmGroup :exec
@@ -45,6 +68,25 @@ values (:sc_id, :group_no);
 insert into farm_group (sc_id, group_no, group_tech_level, nbr_of_units)
 values (:sc_id, :group_no, :group_tech_level, :nbr_of_units);
 
+-- CreateSCFarmProductionSummary creates a new ship or colony farm summary
+-- of production for a single turn.
+--
+-- name: CreateSCFarmProductionSummary :exec
+insert into sc_farming_summary (sc_id, group_no, turn_no,
+                                fuel_consumed,
+                                pro_consumed, usk_consumed, aut_consumed,
+                                food_produced)
+values (:sc_id, :group_no, :turn_no,
+        :fuel_consumed,
+        :pro_consumed, :usk_consumed, :aut_consumed,
+        :food_produced)
+on conflict (sc_id, group_no, turn_no)
+    do update set fuel_consumed = ?4,
+                  pro_consumed  = ?5,
+                  usk_consumed  = ?6,
+                  aut_consumed  = ?7,
+                  food_produced = ?8;
+
 -- CreateSCMiningGroup creates a new ship or colony mining group.
 --
 -- name: CreateSCMiningGroup :exec
@@ -56,6 +98,28 @@ values (:sc_id, :group_no, :deposit_id);
 -- name: CreateSCMiningGroupUnit :exec
 insert into mining_group (sc_id, group_no, group_tech_level, nbr_of_units)
 values (:sc_id, :group_no, :group_tech_level, :nbr_of_units);
+
+-- CreateSCMiningProductionSummary creates a new ship or colony mining summary
+-- of production for a single turn.
+--
+-- name: CreateSCMiningProductionSummary :exec
+insert into sc_mining_summary (sc_id, group_no, turn_no,
+                               fuel_consumed,
+                               pro_consumed, usk_consumed, aut_consumed,
+                               fuel_produced, gold_produced, mets_produced, nmts_produced)
+values (:sc_id, :group_no, :turn_no,
+        :fuel_consumed,
+        :pro_consumed, :usk_consumed, :aut_consumed,
+        :fuel_produced, :gold_produced, :mets_produced, :nmts_produced)
+on conflict (sc_id, group_no, turn_no)
+    do update set fuel_consumed = ?4,
+                  pro_consumed  = ?5,
+                  usk_consumed  = ?6,
+                  aut_consumed  = ?7,
+                  fuel_produced = ?8,
+                  gold_produced = ?9,
+                  mets_produced = ?10,
+                  nmts_produced = ?11;
 
 -- CreateSCProbeOrder creates a new ship or colony probe order.
 --

@@ -20,6 +20,20 @@ type Deposits struct {
 	YieldPct  int64
 }
 
+type DepositsSummary struct {
+	DepositID  int64
+	EffTurn    int64
+	EndTurn    int64
+	FuelQty    int64
+	FuelEstQty int64
+	GoldQty    int64
+	GoldEstQty int64
+	MetsQty    int64
+	MetsEstQty int64
+	NmtsQty    int64
+	NmtsEstQty int64
+}
+
 type Empire struct {
 	EmpireID     int64
 	EmpireName   string
@@ -157,6 +171,46 @@ type ProbeOrders struct {
 type ScCodes struct {
 	Code string
 	Name string
+}
+
+type ScFarmingSummary struct {
+	ScID         int64
+	GroupNo      int64
+	TurnNo       int64
+	FuelConsumed int64
+	ProConsumed  int64
+	UskConsumed  int64
+	AutConsumed  int64
+	FoodProduced int64
+}
+
+type ScManufacturingSummary struct {
+	ScID          int64
+	GroupNo       int64
+	TurnNo        int64
+	FuelConsumed  int64
+	MetsConsumed  int64
+	NmtsConsumed  int64
+	ProConsumed   int64
+	UskConsumed   int64
+	AutConsumed   int64
+	UnitCd        string
+	UnitTechLevel int64
+	UnitsProduced int64
+}
+
+type ScMiningSummary struct {
+	ScID         int64
+	GroupNo      int64
+	TurnNo       int64
+	FuelConsumed int64
+	ProConsumed  int64
+	UskConsumed  int64
+	AutConsumed  int64
+	FuelProduced int64
+	GoldProduced int64
+	MetsProduced int64
+	NmtsProduced int64
 }
 
 type Scs struct {
