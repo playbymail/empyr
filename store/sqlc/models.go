@@ -21,6 +21,20 @@ type Deposits struct {
 }
 
 type DepositsSummary struct {
+	OrbitID    int64
+	EffTurn    int64
+	EndTurn    int64
+	FuelQty    int64
+	FuelEstQty int64
+	GoldQty    int64
+	GoldEstQty int64
+	MetsQty    int64
+	MetsEstQty int64
+	NmtsQty    int64
+	NmtsEstQty int64
+}
+
+type DepositsSummaryPivot struct {
 	DepositID  int64
 	EffTurn    int64
 	EndTurn    int64
@@ -182,6 +196,19 @@ type ScFarmingSummary struct {
 	UskConsumed  int64
 	AutConsumed  int64
 	FoodProduced int64
+}
+
+type ScInventory struct {
+	ScID        int64
+	UnitCd      string
+	TechLevel   int64
+	EffTurn     int64
+	EndTurn     int64
+	Qty         int64
+	Mass        float64
+	Volume      float64
+	IsAssembled int64
+	IsStored    int64
 }
 
 type ScManufacturingSummary struct {

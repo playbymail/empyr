@@ -8,11 +8,16 @@ import (
 	"github.com/playbymail/empyr/store"
 	"github.com/playbymail/empyr/store/sqlc"
 	"log"
+	"math"
 	"math/rand/v2"
 	"sort"
 )
 
 // this file implements the commands to create assets such as games, systems, and planets.
+
+const (
+	endMaxTurnNo = 99_999
+)
 
 func Open(db *store.Store) (*Engine_t, error) {
 	return &Engine_t{Store: db}, nil
@@ -278,6 +283,81 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		deposit.Id = depositId
 		// update the id numbers in the game map
 		g.Deposits[deposit.Id] = deposit
+	}
+
+	// create the deposit summary records for all deposits
+	for _, orbit := range g.Orbits {
+		if orbit == nil {
+			continue
+		}
+		var totalFuelQty, totalGoldQty, totalMetsQty, totalNmtsQty int64
+		depositRows, err := q.ReadDepositSummaryByOrbitId(e.Store.Context, orbit.Id)
+		if err != nil {
+			log.Printf("engine: createGame: readDepositSummary: %d\n", orbit.Id)
+			log.Printf("engine: createGame: readDepositSummary: %v\n", err)
+			return nil, errors.Join(fmt.Errorf("read deposit summary"), err)
+		}
+		for _, row := range depositRows {
+			totalFuelQty += row.FuelQty
+			totalGoldQty += row.GoldQty
+			totalMetsQty += row.MetsQty
+			totalNmtsQty += row.NmtsQty
+			depositSummary := sqlc.CreateDepositsSummaryPivotParams{
+				DepositID: row.DepositID,
+				EffTurn:   0,
+				EndTurn:   endMaxTurnNo,
+				FuelQty:   row.FuelQty,
+				GoldQty:   row.GoldQty,
+				MetsQty:   row.MetsQty,
+				NmtsQty:   row.NmtsQty,
+			}
+			if row.FuelQty > 0 {
+				depositSummary.FuelEstQty = int64(math.Ceil(math.Log10(float64(row.FuelQty))))
+			}
+			if row.GoldQty > 0 {
+				depositSummary.GoldEstQty = int64(math.Ceil(math.Log10(float64(row.GoldQty))))
+			}
+			if row.MetsQty > 0 {
+				depositSummary.MetsEstQty = int64(math.Ceil(math.Log10(float64(row.MetsQty))))
+			}
+			if row.NmtsQty > 0 {
+				depositSummary.NmtsEstQty = int64(math.Ceil(math.Log10(float64(row.NmtsQty))))
+			}
+			err = q.CreateDepositsSummaryPivot(e.Store.Context, depositSummary)
+			if err != nil {
+				log.Printf("engine: createGame: createDepositSummaryPivot: %d %d\n", orbit.Id, row.DepositID)
+				log.Printf("engine: createGame: createDepositSummaryPivot: %v\n", err)
+				return nil, errors.Join(fmt.Errorf("create deposit summary pivot"), err)
+			}
+		}
+
+		orbitSummary := sqlc.CreateDepositSummaryParams{
+			OrbitID: orbit.Id,
+			EffTurn: 0,
+			EndTurn: endMaxTurnNo,
+			FuelQty: totalFuelQty,
+			GoldQty: totalGoldQty,
+			MetsQty: totalMetsQty,
+			NmtsQty: totalNmtsQty,
+		}
+		if totalFuelQty > 0 {
+			orbitSummary.FuelEstQty = int64(math.Ceil(math.Log10(float64(totalFuelQty))))
+		}
+		if totalGoldQty > 0 {
+			orbitSummary.GoldEstQty = int64(math.Ceil(math.Log10(float64(totalGoldQty))))
+		}
+		if totalMetsQty > 0 {
+			orbitSummary.MetsEstQty = int64(math.Ceil(math.Log10(float64(totalMetsQty))))
+		}
+		if totalNmtsQty > 0 {
+			orbitSummary.NmtsEstQty = int64(math.Ceil(math.Log10(float64(totalNmtsQty))))
+		}
+		err = q.CreateDepositSummary(e.Store.Context, orbitSummary)
+		if err != nil {
+			log.Printf("engine: createGame: createDepositSummary: %d\n", orbit.Id)
+			log.Printf("engine: createGame: createDepositSummary: %v\n", err)
+			return nil, errors.Join(fmt.Errorf("create deposit summary"), err)
+		}
 	}
 
 	log.Printf("create: empires: %8d empires\n", len(g.Empires))

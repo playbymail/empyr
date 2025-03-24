@@ -10,9 +10,9 @@ import (
 )
 
 const createDeposit = `-- name: CreateDeposit :one
-INSERT INTO deposits (system_id, star_id, orbit_id, deposit_no, kind, qty, yield_pct)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-RETURNING id
+insert into deposits (system_id, star_id, orbit_id, deposit_no, kind, qty, yield_pct)
+values (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+returning id
 `
 
 type CreateDepositParams struct {
@@ -41,11 +41,101 @@ func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (i
 	return id, err
 }
 
+const createDepositSummary = `-- name: CreateDepositSummary :exec
+insert into deposits_summary (orbit_id, eff_turn, end_turn,
+                              fuel_qty, fuel_est_qty,
+                              gold_qty, gold_est_qty,
+                              mets_qty, mets_est_qty,
+                              nmts_qty, nmts_est_qty)
+VALUES (?1, ?2, ?3,
+        ?4, ?5,
+        ?6, ?7,
+        ?8, ?9,
+        ?10, ?11)
+`
+
+type CreateDepositSummaryParams struct {
+	OrbitID    int64
+	EffTurn    int64
+	EndTurn    int64
+	FuelQty    int64
+	FuelEstQty int64
+	GoldQty    int64
+	GoldEstQty int64
+	MetsQty    int64
+	MetsEstQty int64
+	NmtsQty    int64
+	NmtsEstQty int64
+}
+
+// CreateDepositSummary creates a new deposit summary record for a planet.
+func (q *Queries) CreateDepositSummary(ctx context.Context, arg CreateDepositSummaryParams) error {
+	_, err := q.db.ExecContext(ctx, createDepositSummary,
+		arg.OrbitID,
+		arg.EffTurn,
+		arg.EndTurn,
+		arg.FuelQty,
+		arg.FuelEstQty,
+		arg.GoldQty,
+		arg.GoldEstQty,
+		arg.MetsQty,
+		arg.MetsEstQty,
+		arg.NmtsQty,
+		arg.NmtsEstQty,
+	)
+	return err
+}
+
+const createDepositsSummaryPivot = `-- name: CreateDepositsSummaryPivot :exec
+insert into deposits_summary_pivot (deposit_id, eff_turn, end_turn,
+                                   fuel_qty, fuel_est_qty,
+                                   gold_qty, gold_est_qty,
+                                   mets_qty, mets_est_qty,
+                                   nmts_qty, nmts_est_qty)
+VALUES (?1, ?2, ?3,
+        ?4, ?5,
+        ?6, ?7,
+        ?8, ?9,
+        ?10, ?11)
+`
+
+type CreateDepositsSummaryPivotParams struct {
+	DepositID  int64
+	EffTurn    int64
+	EndTurn    int64
+	FuelQty    int64
+	FuelEstQty int64
+	GoldQty    int64
+	GoldEstQty int64
+	MetsQty    int64
+	MetsEstQty int64
+	NmtsQty    int64
+	NmtsEstQty int64
+}
+
+// CreateDepositsSummaryPivot creates a new deposit summary pivot record.
+func (q *Queries) CreateDepositsSummaryPivot(ctx context.Context, arg CreateDepositsSummaryPivotParams) error {
+	_, err := q.db.ExecContext(ctx, createDepositsSummaryPivot,
+		arg.DepositID,
+		arg.EffTurn,
+		arg.EndTurn,
+		arg.FuelQty,
+		arg.FuelEstQty,
+		arg.GoldQty,
+		arg.GoldEstQty,
+		arg.MetsQty,
+		arg.MetsEstQty,
+		arg.NmtsQty,
+		arg.NmtsEstQty,
+	)
+	return err
+}
+
 const readDepositByOrbitDepositNo = `-- name: ReadDepositByOrbitDepositNo :one
-SELECT id, deposit_no, kind, qty, yield_pct
-FROM deposits
-WHERE orbit_id = ?1
-  AND deposit_no = ?2
+select id, deposit_no, kind, qty, yield_pct
+from deposits
+where orbit_id = ?1
+  and deposit_no = ?2
 `
 
 type ReadDepositByOrbitDepositNoParams struct {
@@ -75,11 +165,62 @@ func (q *Queries) ReadDepositByOrbitDepositNo(ctx context.Context, arg ReadDepos
 	return i, err
 }
 
+const readDepositSummaryByOrbitId = `-- name: ReadDepositSummaryByOrbitId :many
+select deposits.orbit_id,
+       deposits.id                                                   as deposit_id,
+       case when deposits.kind = 'FUEL' then deposits.qty else 0 end as fuel_qty,
+       case when deposits.kind = 'GOLD' then deposits.qty else 0 end as gold_qty,
+       case when deposits.kind = 'METS' then deposits.qty else 0 end as mets_qty,
+       case when deposits.kind = 'NMTS' then deposits.qty else 0 end as nmts_qty
+from deposits
+where orbit_id = ?1
+`
+
+type ReadDepositSummaryByOrbitIdRow struct {
+	OrbitID   int64
+	DepositID int64
+	FuelQty   int64
+	GoldQty   int64
+	MetsQty   int64
+	NmtsQty   int64
+}
+
+// ReadDepositSummaryByOrbitId reads a summary of deposits on a planet.
+func (q *Queries) ReadDepositSummaryByOrbitId(ctx context.Context, orbitID int64) ([]ReadDepositSummaryByOrbitIdRow, error) {
+	rows, err := q.db.QueryContext(ctx, readDepositSummaryByOrbitId, orbitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadDepositSummaryByOrbitIdRow
+	for rows.Next() {
+		var i ReadDepositSummaryByOrbitIdRow
+		if err := rows.Scan(
+			&i.OrbitID,
+			&i.DepositID,
+			&i.FuelQty,
+			&i.GoldQty,
+			&i.MetsQty,
+			&i.NmtsQty,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const readDepositsByOrbit = `-- name: ReadDepositsByOrbit :many
-SELECT id, deposit_no, kind, qty, yield_pct
-FROM deposits
-WHERE orbit_id = ?1
-ORDER BY deposit_no
+select id, deposit_no, kind, qty, yield_pct
+from deposits
+where orbit_id = ?1
+order by deposit_no
 `
 
 type ReadDepositsByOrbitRow struct {
@@ -118,4 +259,42 @@ func (q *Queries) ReadDepositsByOrbit(ctx context.Context, orbitID int64) ([]Rea
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateDepositsSummaryEndDt = `-- name: UpdateDepositsSummaryEndDt :exec
+update deposits_summary
+set end_turn = ?1
+where orbit_id = ?2
+  and eff_turn = ?3
+`
+
+type UpdateDepositsSummaryEndDtParams struct {
+	EndTurn int64
+	OrbitID int64
+	EffTurn int64
+}
+
+// UpdateDepositsSummaryEndDt updates the end turn for a deposit summary record.
+func (q *Queries) UpdateDepositsSummaryEndDt(ctx context.Context, arg UpdateDepositsSummaryEndDtParams) error {
+	_, err := q.db.ExecContext(ctx, updateDepositsSummaryEndDt, arg.EndTurn, arg.OrbitID, arg.EffTurn)
+	return err
+}
+
+const updateDepositsSummaryPivotEndDt = `-- name: UpdateDepositsSummaryPivotEndDt :exec
+update deposits_summary_pivot
+set end_turn = ?1
+where deposit_id = ?2
+  and eff_turn = ?3
+`
+
+type UpdateDepositsSummaryPivotEndDtParams struct {
+	EndTurn   int64
+	DepositID int64
+	EffTurn   int64
+}
+
+// UpdateDepositsSummaryPivotEndDt updates the end turn for a deposit summary record.
+func (q *Queries) UpdateDepositsSummaryPivotEndDt(ctx context.Context, arg UpdateDepositsSummaryPivotEndDtParams) error {
+	_, err := q.db.ExecContext(ctx, updateDepositsSummaryPivotEndDt, arg.EndTurn, arg.DepositID, arg.EffTurn)
+	return err
 }

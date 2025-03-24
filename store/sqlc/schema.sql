@@ -203,11 +203,32 @@ CREATE TABLE deposits
             REFERENCES unit_codes (code)
 );
 
--- deposits_summary is a temporary table that is used to summarize the
--- deposits table for reporting. It holds the total quantity of each
--- resource type from all the deposits on a planet. It also holds the
--- log10 estimated value of the resources.
+-- deposits_summary holds the total quantity of each resource type
+-- from all the deposits on a planet. It also holds the estimated
+-- value of the resources (the log10 of the actual quantity).
 create table deposits_summary
+(
+    orbit_id     integer not null,
+    eff_turn     integer not null,
+    end_turn     integer not null,
+    fuel_qty     integer not null,
+    fuel_est_qty integer not null,
+    gold_qty     integer not null,
+    gold_est_qty integer not null,
+    mets_qty     integer not null,
+    mets_est_qty integer not null,
+    nmts_qty     integer not null,
+    nmts_est_qty integer not null,
+    primary key (orbit_id, eff_turn),
+    CONSTRAINT fk_orbit_id
+        FOREIGN KEY (orbit_id)
+            REFERENCES orbits (id)
+);
+
+-- deposits_summary_pivot holds the quantity of each resource type
+-- into a single row using deposit_id as the key. It also holds the
+-- estimated value of the resources (the log10 of the actual quantity).
+create table deposits_summary_pivot
 (
     deposit_id   integer not null,
     eff_turn     integer not null,
@@ -220,10 +241,12 @@ create table deposits_summary
     mets_est_qty integer not null,
     nmts_qty     integer not null,
     nmts_est_qty integer not null,
+    primary key (deposit_id, eff_turn),
     CONSTRAINT fk_deposit_id
         FOREIGN KEY (deposit_id)
             REFERENCES deposits (id)
 );
+
 
 CREATE TABLE empires
 (
@@ -473,6 +496,26 @@ CREATE TABLE survey_orders
     CONSTRAINT fk_target_id
         FOREIGN KEY (target_id)
             REFERENCES orbits (id)
+);
+
+create table sc_inventory
+(
+    sc_id        integer not null,
+    unit_cd      text    not null,
+    tech_level   integer not null check (tech_level between 0 and 10),
+    eff_turn     integer not null,
+    end_turn     integer not null,
+    qty          integer not null,
+    mass         real    not null,
+    volume       real    not null,
+    is_assembled integer not null default 0 check (is_assembled in (0, 1)),
+    is_stored    integer not null default 0 check (is_stored in (0, 1)),
+    constraint fk_sc_id
+        foreign key (sc_id)
+            references scs (id),
+    constraint fk_unit_cd
+        foreign key (unit_cd)
+            references unit_codes (code)
 );
 
 -- sc_farming_summary is a summary of the farming activity of a single group
