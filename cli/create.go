@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"github.com/playbymail/empyr/engine"
 	"github.com/playbymail/empyr/pkg/stdlib"
-	"github.com/playbymail/empyr/store"
+	"github.com/playbymail/empyr/repos"
+	"github.com/playbymail/empyr/repos/empires"
 	"github.com/spf13/cobra"
 	"log"
 	"math/rand/v2"
@@ -54,8 +55,8 @@ var cmdCreateDatabase = &cobra.Command{
 			}
 		}
 		log.Printf("create: database: %q\n", flags.Database.Path)
-		if err := store.Create(flags.Database.Path); err != nil {
-			log.Fatalf("error: store.create: %v\n", err)
+		if err := repos.Create(flags.Database.Path); err != nil {
+			log.Fatalf("error: repos.create: %v\n", err)
 		}
 
 		code := cmd.Flag("code").Value.String()
@@ -70,9 +71,9 @@ var cmdCreateDatabase = &cobra.Command{
 		}
 		log.Printf("create: game: descr %q\n", descr)
 
-		repo, err := store.Open(flags.Database.Path, context.Background())
+		repo, err := repos.Open(flags.Database.Path, context.Background())
 		if err != nil {
-			log.Fatalf("error: store.open: %v\n", err)
+			log.Fatalf("error: repos.open: %v\n", err)
 		}
 		defer repo.Close()
 		e, err := engine.Open(repo)
@@ -115,22 +116,33 @@ var cmdCreateEmpire = &cobra.Command{
 			log.Fatalf("create: empire: user: %v\n", err)
 		}
 
-		repo, err := store.Open(flags.Database.Path, context.Background())
+		repo, err := repos.Open(flags.Database.Path, context.Background())
 		if err != nil {
-			log.Fatalf("error: store.open: %v\n", err)
+			log.Fatalf("error: repos.open: %v\n", err)
 		}
 		defer repo.Close()
 		e, err := engine.Open(repo)
 		if err != nil {
 			log.Fatalf("error: engine.open: %v\n", err)
 		}
+		empireRepo := empires.NewRepo(repo)
 
 		var empireID int64
 		if n, err := strconv.Atoi(cmd.Flag("id").Value.String()); err != nil {
 			log.Fatalf("create: empire: %v\n", err)
-		} else if n != 0 {
+		} else if n < 1 || n > 250 {
+			log.Fatalf("create: empire: id must be between 1 and 250\n")
+		} else {
 			empireID = int64(n)
 		}
+		empireID, err = empireRepo.CreateEmpireWithID(empireID)
+		if err != nil {
+			log.Fatalf("error: createEmpire: %v\n", err)
+		}
+		// update the username and email if we have them
+		// create the default colony
+		// some players may change their mining orders
+		// some players may retool their factories
 		empireID, err = engine.CreateEmpireCommand(e, &engine.CreateEmpireParams_t{
 			EmpireID: int64(empireID),
 			Username: userHandle,
@@ -173,9 +185,9 @@ var cmdCreateGame = &cobra.Command{
 		log.Printf("create: game: name  %q\n", name)
 		log.Printf("create: game: descr %q\n", descr)
 
-		repo, err := store.Open(flags.Database.Path, context.Background())
+		repo, err := repos.Open(flags.Database.Path, context.Background())
 		if err != nil {
-			log.Fatalf("error: store.open: %v\n", err)
+			log.Fatalf("error: repos.open: %v\n", err)
 		}
 		defer repo.Close()
 		e, err := engine.Open(repo)
@@ -209,9 +221,9 @@ var cmdCreateStarList = &cobra.Command{
 			log.Printf("create: star-list: elapsed time: %v\n", time.Now().Sub(started))
 		}()
 
-		repo, err := store.Open(flags.Database.Path, context.Background())
+		repo, err := repos.Open(flags.Database.Path, context.Background())
 		if err != nil {
-			log.Fatalf("error: store.open: %v\n", err)
+			log.Fatalf("error: repos.open: %v\n", err)
 		}
 		defer repo.Close()
 		e, err := engine.Open(repo)
@@ -244,9 +256,9 @@ var cmdCreateSystemMap = &cobra.Command{
 			log.Printf("create: system-map: elapsed time: %v\n", time.Now().Sub(started))
 		}()
 
-		repo, err := store.Open(flags.Database.Path, context.Background())
+		repo, err := repos.Open(flags.Database.Path, context.Background())
 		if err != nil {
-			log.Fatalf("error: store.open: %v\n", err)
+			log.Fatalf("error: repos.open: %v\n", err)
 		}
 		defer repo.Close()
 		e, err := engine.Open(repo)

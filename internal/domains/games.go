@@ -105,6 +105,10 @@ type GameInfo struct {
 	PlayerCount int64
 }
 
+const (
+	MaxGameTurnNo int64 = 99_999
+)
+
 type EmpireID int64
 
 type UserGame struct {

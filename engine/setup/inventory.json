@@ -1,0 +1,22 @@
+[
+  {"code": "ANM-1", "qty": 150000, "is_stored": true},
+  {"code": "ASW-1", "qty": 2400000, "is_stored": true},
+  {"code": "AUT-1", "qty": 93750, "is_stored": true},
+  {"code": "CNGD", "qty": 940821, "is_stored": true},
+  {"code": "EWP-1", "qty": 37500, "is_stored": true},
+  {"code": "FOOD", "qty": 4269990, "is_stored": true},
+  {"code": "FRM-1", "qty": 130000, "is_assembled": true},
+  {"code": "FUEL", "qty": 1360000, "is_stored": true},
+  {"code": "GOLD", "qty": 20000, "is_stored": true},
+  {"code": "METS", "qty": 5354167, "is_stored": true},
+  {"code": "MIN-1", "qty": 300000, "is_assembled": true},
+  {"code": "MIN-1", "qty": 31250, "is_stored": true},
+  {"code": "MSL-1", "qty": 50000, "is_assembled": true},
+  {"code": "MTSP-1", "qty": 150000, "is_stored": true},
+  {"code": "NMTS", "qty": 2645833, "is_stored": true},
+  {"code": "SEN-1", "qty": 20, "is_assembled": true},
+  {"code": "SEN-1", "qty": 20, "is_stored": true},
+  {"code": "STU", "qty": 60000000, "is_assembled": true},
+  {"code": "STU", "qty": 14500000, "is_stored": true},
+  {"code": "TPT-1", "qty": 20000, "is_stored": true}
+]

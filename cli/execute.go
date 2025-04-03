@@ -5,7 +5,7 @@ package cli
 import (
 	"context"
 	"github.com/playbymail/empyr/engine"
-	"github.com/playbymail/empyr/store"
+	"github.com/playbymail/empyr/repos"
 	"github.com/spf13/cobra"
 	"log"
 	"time"
@@ -30,7 +30,7 @@ var cmdExecuteProbes = &cobra.Command{
 			log.Printf("execute: probes: elapsed time: %v\n", time.Now().Sub(started))
 		}()
 		log.Printf("execute: probes: game %q\n", flags.Game.Code)
-		repo, err := store.Open(flags.Database.Path, context.Background())
+		repo, err := repos.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -53,7 +53,7 @@ var cmdExecuteReset = &cobra.Command{
 			log.Printf("execute: reset: elapsed time: %v\n", time.Now().Sub(started))
 		}()
 		log.Printf("execute: reset: game %q\n", flags.Game.Code)
-		repo, err := store.Open(flags.Database.Path, context.Background())
+		repo, err := repos.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -77,7 +77,7 @@ var cmdExecuteSurveys = &cobra.Command{
 			log.Printf("execute: surveys: elapsed time: %v\n", time.Now().Sub(started))
 		}()
 		log.Printf("execute: surveys: game %q\n", flags.Game.Code)
-		repo, err := store.Open(flags.Database.Path, context.Background())
+		repo, err := repos.Open(flags.Database.Path, context.Background())
 		if err != nil {
 			log.Fatalf("error: store.open: %v\n", err)
 		}
@@ -86,6 +86,6 @@ var cmdExecuteSurveys = &cobra.Command{
 		if err != nil {
 			log.Fatalf("error: engine.open: %v\n", err)
 		}
-		err = e.ExecuteSurveys(flags.Game.Code)
+		err = e.ExecuteSurveys(flags.Game.Code, 0)
 	},
 }

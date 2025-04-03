@@ -7,7 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/playbymail/empyr/pkg/stdlib"
-	"github.com/playbymail/empyr/store/sqlc"
+	"github.com/playbymail/empyr/repos/sqlite"
 	"html/template"
 	"log"
 	"math"
@@ -358,14 +358,17 @@ func CreateTurnReportCommand(e *Engine_t, cfg *CreateTurnReportParams_t) ([]byte
 				})
 			}
 		}
-		if mgRows, err := e.Store.Queries.ReadSCMiningGroups(e.Store.Context, colonyRow.ScID); err != nil {
+		if mgRows, err := e.Store.Queries.ReadSCMiningGroups(e.Store.Context, sqlc.ReadSCMiningGroupsParams{
+			ScID:   colonyRow.ScID,
+			TurnNo: turnNo,
+		}); err != nil {
 			log.Printf("error: %v\n", err)
 		} else {
 			for _, mgRow := range mgRows {
 				rpt := &ColonyMiningGroupsReport_t{
 					GroupNo:      fmt.Sprintf("%02d", mgRow.GroupNo),
 					DepositNo:    fmt.Sprintf("%02d", mgRow.DepositNo),
-					DepositQty:   commas(mgRow.Qty),
+					DepositQty:   commas(mgRow.DepositQty),
 					DepositKind:  mgRow.DepositKind,
 					DepositYield: fmt.Sprintf("%d %%", mgRow.YieldPct),
 				}

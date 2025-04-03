@@ -47,7 +47,7 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 
 	cmdRoot.PersistentFlags().BoolVar(&flags.Debug.DumpEnv, "dump-env", flags.Debug.DumpEnv, "dump environment variables")
 
-	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdExecute, cmdShow, cmdStart, cmdVersion)
+	cmdRoot.AddCommand(cmdCreate, cmdDB, cmdDelete, cmdExecute, cmdExport, cmdShow, cmdStart, cmdVersion)
 
 	cmdCreate.AddCommand(cmdCreateDatabase, cmdCreateEmpire, cmdCreateGame, cmdCreateStarList, cmdCreateSystemMap)
 
@@ -55,10 +55,12 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	cmdCreateDatabase.Flags().StringVar(&flags.Database.Path, "path", flags.Database.Path, "path to the database")
 	cmdCreateDatabase.Flags().StringVar(&flags.Game.Code, "code", flags.Game.Code, "code for the game")
 	if err := cmdCreateDatabase.MarkFlagRequired("code"); err != nil {
+		log.Printf("error: initialize: flag %q: required: %v\n", "code", err)
 		return nil, err
 	}
 	cmdCreateDatabase.Flags().StringVar(&flags.Game.Name, "name", flags.Game.Name, "name of the game")
 	if err := cmdCreateDatabase.MarkFlagRequired("name"); err != nil {
+		log.Printf("error: initialize: flag %q: required: %v\n", "name", err)
 		return nil, err
 	}
 	cmdCreateDatabase.Flags().StringVar(&flags.Game.Description, "descr", flags.Game.Description, "description of the game")
@@ -66,16 +68,25 @@ func Initialize(options ...Option) (*cobra.Command, error) {
 	cmdCreateEmpire.Flags().Int64("id", 0, "empire id for user")
 	cmdCreateEmpire.Flags().StringVar(&flags.Empire.UserHandle, "user", flags.Empire.UserHandle, "user handle for empire")
 	if err := cmdCreateEmpire.MarkFlagRequired("user"); err != nil {
+		log.Printf("error: initialize: flag %q: required: %v\n", "user", err)
 		return nil, err
 	}
 
 	cmdDB.PersistentFlags().String("path", "", "path to the database")
 	if err := cmdDB.MarkPersistentFlagRequired("path"); err != nil {
+		log.Printf("error: initialize: flag %q: required: %v\n", "path", err)
 		return nil, err
 	}
 	cmdDB.AddCommand(cmdDBCreate, cmdDBOpen)
 
 	cmdExecute.AddCommand(cmdExecuteProbes, cmdExecuteReset, cmdExecuteSurveys)
+
+	cmdExport.AddCommand(cmdExportEmpires)
+	cmdExportEmpires.Flags().String("output", "", "path to create the exports in")
+	if err := cmdExportEmpires.MarkFlagRequired("output"); err != nil {
+		log.Printf("error: initialize: flag %q: required: %v\n", "output", err)
+		return nil, err
+	}
 
 	cmdShow.AddCommand(cmdShowEnv)
 

@@ -1,0 +1,21 @@
+version: 2
+sql:
+  - engine: "sqlite"
+    schema:
+      - "sqlite/schema.sql"
+    queries:
+      - "sqlite/queries.sql"
+      - "sqlite/clusters.sql"
+      - "sqlite/deposits.sql"
+      - "sqlite/empires.sql"
+      - "sqlite/exports.sql"
+      - "sqlite/games.sql"
+      - "sqlite/orbits.sql"
+      - "sqlite/scs.sql"
+      - "sqlite/stars.sql"
+      - "sqlite/systems.sql"
+    gen:
+      go:
+        emit_exact_table_names: true
+        package: "sqlite"
+        out: "sqlite"

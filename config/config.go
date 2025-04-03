@@ -6,7 +6,7 @@ package config
 import (
 	"fmt"
 	"github.com/mdhender/semver"
-	"github.com/playbymail/empyr/store"
+	"github.com/playbymail/empyr/repos"
 	"os"
 	"strings"
 )
@@ -28,7 +28,7 @@ type Environment struct {
 		Name   string
 		TurnNo int64
 	}
-	Store   *store.Store
+	Store   *repos.Store
 	Verbose bool
 	Version semver.Version
 }

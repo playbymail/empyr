@@ -4,11 +4,11 @@ package engine
 
 import (
 	"fmt"
-	"github.com/playbymail/empyr/store"
+	"github.com/playbymail/empyr/repos"
 )
 
 type Engine_t struct {
-	Store *store.Store
+	Store *repos.Store
 }
 
 type Resource_e int64
@@ -219,24 +219,24 @@ type Empire_t struct {
 	HomePlanet *Planet_t
 }
 
-type SorC_e int64
+type Entity_e int64
 
 const (
-	SCShip                  SorC_e = 1
-	SCOpenSurfaceColony            = 2
-	SCEnclosedSurfaceColony        = 3
-	SCOrbitalColony                = 4
+	EShip                  Entity_e = 1
+	EOpenSurfaceColony              = 2
+	EEnclosedSurfaceColony          = 3
+	EOrbitalColony                  = 4
 )
 
-func (e SorC_e) Code() string {
+func (e Entity_e) Code() string {
 	switch e {
-	case SCShip:
+	case EShip:
 		return "SHIP"
-	case SCOpenSurfaceColony:
+	case EOpenSurfaceColony:
 		return "COPN"
-	case SCEnclosedSurfaceColony:
+	case EEnclosedSurfaceColony:
 		return "CENC"
-	case SCOrbitalColony:
+	case EOrbitalColony:
 		return "CORB"
 	default:
 		return "NONE"

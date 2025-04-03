@@ -6,9 +6,13 @@ import (
 	"log"
 )
 
-func (e *Engine_t) ExecuteSurveys(gameCode string) error {
+// ExecuteSurveys executes all the survey orders for the current turn.
+// It updates the survey results table with the results of the survey.
+// The survey includes the location, habitability, population of the
+// orbit, and data on all deposits in the orbit.
+func (e *Engine_t) ExecuteSurveys(gameCode string, turnNo int64) error {
 	// get a list of all the survey orders. these are the orders that need to be executed.
-	rows, err := e.Store.Queries.ReadAllSurveyOrdersForGameTurn(e.Store.Context)
+	surveyOrderRows, err := e.Store.Queries.ReadAllSurveyOrdersForGameTurn(e.Store.Context, turnNo)
 	if err != nil {
 		return err
 	}
@@ -21,12 +25,15 @@ func (e *Engine_t) ExecuteSurveys(gameCode string) error {
 	_ = q
 	defer tx.Rollback()
 
-	for _, row := range rows {
-		log.Printf("sorc %d: survey: %d: %q\n", row.ScID, row.TargetID, row.Status)
+	for _, surveyOrder := range surveyOrderRows {
+		log.Printf("sorc %d: turn %d: survey %d\n", surveyOrder.ScID, surveyOrder.TurnNo, surveyOrder.TargetID)
 
-		//// scID and orbitID are the id of the SC executing the survey and the orbit being surveyed.
-		//scID, orbitID := row.ScID, row.TargetID
-		//
+		// scID and orbitID are the id of the SC executing the survey and the orbit being surveyed.
+		scID, turnNo, orbitID := surveyOrder.ScID, surveyOrder.TurnNo, surveyOrder.TargetID
+		log.Printf("sorc %d: turn %d: survey %d\n", scID, turnNo, orbitID)
+
+		// think ReadOrbitSurvey
+
 		//// we may need to create a report for the SC that is executing the survey
 		//scReportID, err := q.ReadReport(e.Store.Context, sqlc.ReadReportParams{ScID: scID, TurnNo: turnNo})
 		//if errors.Is(err, sql.ErrNoRows) {

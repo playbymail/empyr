@@ -9,16 +9,13 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/maloquacious/cerrors v0.0.0-20230521213745-fc509e049165
-	github.com/mdhender/phrases/v2 v2.0.0
 	github.com/mdhender/semver v0.0.0-20240121182447-31da48bf9537
 	github.com/mdhender/xii v0.4.3
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/peterbourgon/ff/v3 v3.4.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.19.0
 	github.com/xuri/excelize/v2 v2.9.0
-	golang.org/x/crypto v0.32.0
 	modernc.org/sqlite v1.34.5
 )
 
@@ -47,6 +44,7 @@ require (
 	github.com/xuri/efp v0.0.0-20240408161823-9ad904a10d6d // indirect
 	github.com/xuri/nfp v0.0.0-20240318013403-ab9948c2c4a7 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20250207012021-f9890c6ad9f3 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect

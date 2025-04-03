@@ -36,8 +36,6 @@ github.com/maloquacious/cerrors v0.0.0-20230521213745-fc509e049165 h1:KbvfgGj+HA
 github.com/maloquacious/cerrors v0.0.0-20230521213745-fc509e049165/go.mod h1:fL49lB4RVFrkiU0Oy/e31uU/zbG1m8afkq8vsGY+PL8=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
-github.com/mdhender/phrases/v2 v2.0.0 h1:P/FijTflCVczp7XsRjvByL6pOZVyxl3D77HYlW5pptk=
-github.com/mdhender/phrases/v2 v2.0.0/go.mod h1:c8fcyB2VOa/3miAd1BV4aNJBHC88TFVpOGokhunUSp8=
 github.com/mdhender/semver v0.0.0-20240121182447-31da48bf9537 h1:7Ux/5351hvWxMbIdwLjdWGTrDKlS+N870pFt5kW2OoI=
 github.com/mdhender/semver v0.0.0-20240121182447-31da48bf9537/go.mod h1:mCbEE77BIdyn6yZkD06/4W+9Q6AldeZSL+1PQk9q0VY=
 github.com/mdhender/xii v0.4.3 h1:9rkXS9nvqA2K2+6ZxImPZqExevz3Sx7+xOO/XJ5O/+0=
@@ -52,8 +50,6 @@ github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdh
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
 github.com/pelletier/go-toml/v2 v2.2.3 h1:YmeHyLY8mFWbdkNWwpr+qIL2bEqT0o95WSdkNHvL12M=
 github.com/pelletier/go-toml/v2 v2.2.3/go.mod h1:MfCQTFTvCcUyyvvwm1+G6H/jORL20Xlb6rzQu9GuUkc=
-github.com/peterbourgon/ff/v3 v3.4.0 h1:QBvM/rizZM1cB0p0lGMdmR7HxZeI/ZrBWB4DqLkMUBc=
-github.com/peterbourgon/ff/v3 v3.4.0/go.mod h1:zjJVUhx+twciwfDl0zBcFzl4dW8axCRyXE/eKY9RztQ=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=

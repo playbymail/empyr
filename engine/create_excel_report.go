@@ -4,6 +4,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/playbymail/empyr/repos/sqlite"
 	"github.com/xuri/excelize/v2"
 	"log"
 	"math"
@@ -28,7 +29,7 @@ func CreateExcelReportCommand(e *Engine_t, cfg *CreateExcelReportParams_t, path 
 		log.Printf("error: %v\n", err)
 		return err
 	}
-	log.Printf("game %d: empire %d: turn %d\n", gameRow.Code, empireRow.EmpireID, gameRow.CurrentTurn)
+	log.Printf("game %q: empire %d: turn %d\n", gameRow.Code, empireRow.EmpireID, gameRow.CurrentTurn)
 
 	f := excelize.NewFile()
 	defer func() {
@@ -157,7 +158,10 @@ func CreateExcelReportCommand(e *Engine_t, cfg *CreateExcelReportParams_t, path 
 		_ = f.SetCellValue(sheet, "F1", "Deposit Qty")
 		_ = f.SetCellValue(sheet, "G1", "Yield Pct")
 		rowNo := 2
-		rows, err := e.Store.Queries.ReadOrbitSurvey(e.Store.Context, empireRow.HomeOrbitID)
+		rows, err := e.Store.Queries.ReadOrbitSurvey(e.Store.Context, sqlc.ReadOrbitSurveyParams{
+			OrbitID: empireRow.HomeOrbitID,
+			TurnNo:  empireRow.GameCurrentTurn,
+		})
 		if err != nil {
 			log.Printf("error: %v\n", err)
 			return err

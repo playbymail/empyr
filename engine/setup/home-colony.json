@@ -1,0 +1,55 @@
+{
+  "tech-level": 1,
+  "standard-of-living": 0.4881,
+  "census": {
+    "UEM" : 5900000,
+    "USK" : 6000000,
+    "PRO" : 1500000,
+    "SLD" : 2500000,
+    "CNW" : 10000,
+    "SPY" : 20
+  },
+  "birth-rate": 0.0625,
+  "death-rate": 0.0625,
+  "rations": 100,
+  "pay-rates": {
+    "USK": 0.125,
+    "PRO": 0.375,
+    "SLD": 0.25,
+    "CNW": 0.5,
+    "SPY": 0.625
+  },
+  "rebels": {},
+  "inventory": {
+    "storage": {
+      "non-assembled": {
+        "ASW-1": 2400000,
+        "ANM-1": 150000,
+        "MSS-1": 150000,
+        "TPT-1": 20000,
+        "METS": 5354167,
+        "NMTS": 2645833,
+        "FUEL": 1360000,
+        "GOLD": 20000,
+        "FOOD": 4269990,
+        "CNGD": 940821,
+        "MTSP": 17375000,
+        "RSCH": 32500
+      },
+      "disassembled": {
+        "AUT-1": 93750,
+        "EWP-1": 37500,
+        "MIN-1": 31250,
+        "SEN-1": 20,
+        "STU": 14500000
+      }
+    },
+    "assembled": {
+      "FRM-1": 130000,
+      "MSL-1": 50000,
+      "SEN-1": 20,
+      "STU"  : 60000000
+    }
+  }
+}
+

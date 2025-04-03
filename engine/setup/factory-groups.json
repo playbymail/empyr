@@ -1,0 +1,9 @@
+[
+  {"no": 1, "number-of-units": 250000, "tooling": "CNGD" , "wip": [ 2083334,  2083333,  2083333] },
+  {"no": 2, "number-of-units":  75000, "tooling": "MTSP" , "wip": [ 9375000,  9375000,  9375000] },
+  {"no": 3, "number-of-units":  75000, "tooling": "AUT-1", "wip": [   93750,    93750,    93750] },
+  {"no": 4, "number-of-units":  75000, "tooling": "EWP-1", "wip": [   37500,    37500,    37500] },
+  {"no": 5, "number-of-units":  75000, "tooling": "MIN-1", "wip": [   31250,    31250,    31250] },
+  {"no": 6, "number-of-units": 250000, "tooling": "STUN" , "wip": [12500000, 12500000, 12500000] },
+  {"no": 7, "number-of-units":  50000, "tooling": "RSCH" , "wip": [   12500,    12500,    12500] }
+]

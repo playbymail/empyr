@@ -4,7 +4,7 @@ package cli
 
 import (
 	"context"
-	"github.com/playbymail/empyr/store"
+	"github.com/playbymail/empyr/repos"
 	"github.com/spf13/cobra"
 	"log"
 	"time"
@@ -38,7 +38,7 @@ var cmdDBCreate = &cobra.Command{
 		}()
 		path := cmd.Flag("path").Value.String()
 		log.Printf("db: create: %s\n", path)
-		if err := store.Create(path); err != nil {
+		if err := repos.Create(path); err != nil {
 			log.Fatal(err)
 		}
 		log.Printf("db: create: finished\n")
@@ -58,7 +58,7 @@ var cmdDBOpen = &cobra.Command{
 		}()
 		path := cmd.Flag("path").Value.String()
 		log.Printf("db: open: %s\n", path)
-		s, err := store.Open(path, context.Background())
+		s, err := repos.Open(path, context.Background())
 		if err != nil {
 			log.Fatal(err)
 		}

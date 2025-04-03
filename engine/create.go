@@ -5,8 +5,9 @@ package engine
 import (
 	"errors"
 	"fmt"
-	"github.com/playbymail/empyr/store"
-	"github.com/playbymail/empyr/store/sqlc"
+	"github.com/playbymail/empyr/internal/domains"
+	"github.com/playbymail/empyr/repos"
+	"github.com/playbymail/empyr/repos/sqlite"
 	"log"
 	"math"
 	"math/rand/v2"
@@ -15,11 +16,7 @@ import (
 
 // this file implements the commands to create assets such as games, systems, and planets.
 
-const (
-	endMaxTurnNo = 99_999
-)
-
-func Open(db *store.Store) (*Engine_t, error) {
+func Open(db *repos.Store) (*Engine_t, error) {
 	return &Engine_t{Store: db}, nil
 }
 
@@ -42,6 +39,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		Deposits: make(map[int64]*Deposit_t),
 		Empires:  make(map[int64]*Empire_t),
 	}
+	turnNo := int64(0)
 
 	// create an empty cluster with about 100 systems and use templates to populate the cluster
 	cluster := emptyCluster(r)
@@ -90,7 +88,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 	}
 	defer tx.Rollback()
 
-	err = q.CreateGame(e.Store.Context, sqlc.CreateGameParams{
+	err = q.CreateGame(e.Store.Context, sqlite.CreateGameParams{
 		Code:        code,
 		Name:        name,
 		DisplayName: displayName,
@@ -100,7 +98,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 	}
 	log.Printf("create: game %q\n", g.Code)
 
-	err = q.UpdateGameHomeSystems(e.Store.Context, sqlc.UpdateGameHomeSystemsParams{
+	err = q.UpdateGameHomeSystems(e.Store.Context, sqlite.UpdateGameHomeSystemsParams{
 		HomeSystemID: g.Home.System.Id,
 		HomeStarID:   g.Home.Star.Id,
 		HomeOrbitID:  g.Home.Orbit.Id,
@@ -161,7 +159,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		if system == nil {
 			continue
 		}
-		systemId, err := q.CreateSystem(e.Store.Context, sqlc.CreateSystemParams{
+		systemId, err := q.CreateSystem(e.Store.Context, sqlite.CreateSystemParams{
 			X:          system.Coordinates.X,
 			Y:          system.Coordinates.Y,
 			Z:          system.Coordinates.Z,
@@ -195,7 +193,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 				nbrOfOrbits++
 			}
 		}
-		starId, err := q.CreateStar(e.Store.Context, sqlc.CreateStarParams{
+		starId, err := q.CreateStar(e.Store.Context, sqlite.CreateStarParams{
 			SystemID:    star.System.Id,
 			Sequence:    star.Sequence,
 			StarName:    starName,
@@ -216,7 +214,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		if orbit == nil {
 			continue
 		}
-		orbitId, err := q.CreateOrbit(e.Store.Context, sqlc.CreateOrbitParams{
+		orbitId, err := q.CreateOrbit(e.Store.Context, sqlite.CreateOrbitParams{
 			SystemID: orbit.System.Id,
 			StarID:   orbit.Star.Id,
 			OrbitNo:  orbit.OrbitNo,
@@ -243,7 +241,7 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 				nbrOfDeposits++
 			}
 		}
-		err = q.UpdateOrbit(e.Store.Context, sqlc.UpdateOrbitParams{
+		err = q.UpdateOrbit(e.Store.Context, sqlite.UpdateOrbitParams{
 			OrbitID:       planet.Orbit.Id,
 			Kind:          planet.Kind.Code(),
 			Habitability:  planet.Habitability,
@@ -264,23 +262,31 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		if deposit == nil {
 			continue
 		}
-		depositParams := sqlc.CreateDepositParams{
-			SystemID:  deposit.Planet.System.Id,
-			StarID:    deposit.Planet.Orbit.Star.Id,
+		ps := sqlite.CreateDepositParams{
 			OrbitID:   deposit.Planet.Orbit.Id,
 			DepositNo: deposit.DepositNo,
 			Kind:      deposit.Resource.Code(),
 			YieldPct:  deposit.Yield,
-			Qty:       deposit.Quantity,
 		}
-		depositId, err := q.CreateDeposit(e.Store.Context, depositParams)
+		depositID, err := q.CreateDeposit(e.Store.Context, ps)
 		if err != nil {
-			log.Printf("engine: createGame: create deposit: %+v\n", depositParams)
+			log.Printf("engine: createGame: create deposit: %+v\n", ps)
 			log.Printf("engine: createGame: create deposit: %v\n", err)
 			return nil, errors.Join(fmt.Errorf("create deposit"), err)
 		}
+		hs := sqlite.CreateDepositHistoryParams{
+			DepositIt: depositID,
+			Effdt:     0,
+			Enddt:     domains.MaxGameTurnNo,
+			Qty:       deposit.Quantity,
+		}
+		err = q.CreateDepositHistory(e.Store.Context, hs)
+		if err != nil {
+			log.Printf("error: createDepositHistory %v: %v\n", hs, err)
+			return nil, errors.Join(fmt.Errorf("create deposit"), err)
+		}
 		// update the deposit with the id from the database
-		deposit.Id = depositId
+		deposit.Id = depositID
 		// update the id numbers in the game map
 		g.Deposits[deposit.Id] = deposit
 	}
@@ -291,7 +297,11 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 			continue
 		}
 		var totalFuelQty, totalGoldQty, totalMetsQty, totalNmtsQty int64
-		depositRows, err := q.ReadDepositSummaryByOrbitId(e.Store.Context, orbit.Id)
+		ps := sqlite.ReadDepositSummaryByOrbitIdParams{
+			OrbitID: orbit.Id,
+			TurnNo:  turnNo,
+		}
+		depositRows, err := q.ReadDepositSummaryByOrbitId(e.Store.Context, ps)
 		if err != nil {
 			log.Printf("engine: createGame: readDepositSummary: %d\n", orbit.Id)
 			log.Printf("engine: createGame: readDepositSummary: %v\n", err)
@@ -302,10 +312,10 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 			totalGoldQty += row.GoldQty
 			totalMetsQty += row.MetsQty
 			totalNmtsQty += row.NmtsQty
-			depositSummary := sqlc.CreateDepositsSummaryPivotParams{
+			depositSummary := sqlite.CreateDepositsSummaryPivotParams{
 				DepositID: row.DepositID,
-				EffTurn:   0,
-				EndTurn:   endMaxTurnNo,
+				Effdt:     0,
+				Enddt:     domains.MaxGameTurnNo,
 				FuelQty:   row.FuelQty,
 				GoldQty:   row.GoldQty,
 				MetsQty:   row.MetsQty,
@@ -331,10 +341,10 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 			}
 		}
 
-		orbitSummary := sqlc.CreateDepositSummaryParams{
+		orbitSummary := sqlite.CreateDepositSummaryParams{
 			OrbitID: orbit.Id,
-			EffTurn: 0,
-			EndTurn: endMaxTurnNo,
+			Effdt:   0,
+			Enddt:   domains.MaxGameTurnNo,
 			FuelQty: totalFuelQty,
 			GoldQty: totalGoldQty,
 			MetsQty: totalMetsQty,
@@ -360,13 +370,13 @@ func (e *Engine_t) CreateGame(code, name, displayName string, includeEmptyResour
 		}
 	}
 
-	log.Printf("create: empires: %8d empires\n", len(g.Empires))
-	for i := int64(1); i <= 256; i++ {
-		err = q.CreateInactiveEmpires(e.Store.Context, i)
-		if err != nil {
-			return nil, errors.Join(fmt.Errorf("create empire"), err)
-		}
-	}
+	//log.Printf("create: empires: %8d empires\n", len(g.Empires))
+	//for i := int64(1); i <= 256; i++ {
+	//	err = q.CreateInactiveEmpires(e.Store.Context, i)
+	//	if err != nil {
+	//		return nil, errors.Join(fmt.Errorf("create empire"), err)
+	//	}
+	//}
 
 	return g, tx.Commit()
 }
